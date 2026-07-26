@@ -218,9 +218,12 @@ open class BrowseSourceScreenModel(
                 // SY <--
             }.flow.map { pagingData ->
                 pagingData.map { manga ->
+                    // Read once so the filter below has the favourite state before anything collects.
+                    val initialManga = getManga.await(manga.url, manga.source) ?: manga
                     getManga.subscribe(manga.url, manga.source)
                         .map { it ?: manga }
-                        .stateIn(ioCoroutineScope)
+                        // Release the database subscription once the item leaves composition.
+                        .stateIn(ioCoroutineScope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000), initialManga)
                 }
                     .filter { !hideInLibraryItems || !it.value.favorite }
             }
