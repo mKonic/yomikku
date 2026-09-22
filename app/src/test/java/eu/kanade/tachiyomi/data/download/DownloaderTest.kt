@@ -53,10 +53,6 @@ class DownloaderTest {
             sourceManager = sourceManager,
             chapterCache = mockk(),
             downloadPreferences = preferences,
-            xml = mockk(),
-            getCategories = mockk(),
-            getTracks = mockk(),
-            sourcePreferences = mockk(),
             store = store,
             notifierProvider = { notifier },
         )
