@@ -53,16 +53,18 @@ internal object ExtensionLoader {
         preferences.showNsfwSource().get()
     }
 
-    private const val EXTENSION_FEATURE = "tachiyomi.extension"
-    private const val METADATA_SOURCE_CLASS = "tachiyomi.extension.class"
-    private const val METADATA_SOURCE_FACTORY = "tachiyomi.extension.factory"
-    private const val METADATA_NSFW = "tachiyomi.extension.nsfw"
+    // Yomikku extensions declare their own feature and metadata keys, so a Mihon manga extension installed on the
+    // same device is never mistaken for a novel source.
+    private const val EXTENSION_FEATURE = "yomikku.extension"
+    private const val METADATA_SOURCE_CLASS = "yomikku.extension.class"
+    private const val METADATA_SOURCE_FACTORY = "yomikku.extension.factory"
+    private const val METADATA_NSFW = "yomikku.extension.nsfw"
 
-    private const val METADATA_NAME = "tachiyomix.name"
-    private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
-    private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
+    private const val METADATA_NAME = "yomikku.name"
+    private const val METADATA_EXTENSION_LIB = "yomikku.extensionLib"
+    private const val METADATA_CONTENT_WARNING = "yomikku.contentWarning"
 
-    private val SUPPORTED_LIB_VERSIONS = listOf(1.4, 1.6)
+    private val SUPPORTED_LIB_VERSIONS = listOf(1.0)
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -261,7 +263,7 @@ internal object ExtensionLoader {
         val pkgName = pkgInfo.packageName
 
         val extName = appInfo.metaData.getString(METADATA_NAME)
-            ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Tachiyomi: ")
+            ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Yomikku: ")
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 

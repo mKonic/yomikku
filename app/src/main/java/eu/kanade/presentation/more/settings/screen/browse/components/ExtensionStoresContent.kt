@@ -29,8 +29,8 @@ import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.R
 import kotlinx.collections.immutable.persistentListOf
 import mihon.domain.extension.model.ExtensionStore
-import mihon.domain.extension.model.KOMIKKU_SIGNATURE
 import mihon.domain.extension.model.REPO_SIGNATURE
+import mihon.domain.extension.model.YOMIKKU_SIGNATURE
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.ContentCopy
 import mihon.icons.materialsymbols.rounded.Delete
@@ -190,7 +190,7 @@ private fun ExtensionStoresListItem(
 
 // KMK -->
 fun repoResId(signKey: String) = when (signKey) {
-    KOMIKKU_SIGNATURE -> R.mipmap.komikku
+    YOMIKKU_SIGNATURE -> R.mipmap.komikku
     REPO_SIGNATURE -> R.mipmap.repo
     else -> R.mipmap.extension
 }
@@ -199,7 +199,7 @@ fun repoResId(signKey: String) = when (signKey) {
 @Composable
 fun ExtensionReposContentPreview() {
     val repos = persistentListOf(
-        ExtensionStore("https://komikku", "Komikku", "", KOMIKKU_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
+        ExtensionStore("https://yomikku", "Yomikku", "", YOMIKKU_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
         ExtensionStore("https://repo", "Repo", "", REPO_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
         ExtensionStore("https://other", "Other", "", "key2", ExtensionStore.Contact("", ""), true, null),
     )

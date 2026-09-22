@@ -54,7 +54,7 @@ import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import kotlinx.collections.immutable.persistentListOf
 import mihon.domain.extension.model.ExtensionStore
-import mihon.domain.extension.model.KOMIKKU_SIGNATURE
+import mihon.domain.extension.model.YOMIKKU_SIGNATURE
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Close
 import mihon.icons.materialsymbols.rounded.Download
@@ -608,11 +608,11 @@ private fun ExtensionItemContentPreview() {
         libVersion = 1.0,
         isNsfw = true,
         signatureHash = "900000",
-        storeName = "Komikku",
+        storeName = "Yomikku",
         sources = emptyList(),
         apkUrl = "Test",
         iconUrl = "",
-        store = ExtensionStore("https://komikku", "Komikku", "", KOMIKKU_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
+        store = ExtensionStore("https://yomikku", "Yomikku", "", YOMIKKU_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
     )
     val extInstalled = Extension.Installed(
         name = "Tachiyomi",
@@ -623,9 +623,9 @@ private fun ExtensionItemContentPreview() {
         libVersion = 1.0,
         isNsfw = true,
         signatureHash = "900000",
-        storeName = "Komikku",
+        storeName = "Yomikku",
         sources = emptyList(),
-        store = ExtensionStore("https://komikku", "Komikku", "", KOMIKKU_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
+        store = ExtensionStore("https://yomikku", "Yomikku", "", YOMIKKU_SIGNATURE, ExtensionStore.Contact("", ""), false, null),
         pkgFactory = null,
         icon = null,
         hasUpdate = false,
