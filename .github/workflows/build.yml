@@ -90,7 +90,7 @@ jobs:
         run: |
           set -euo pipefail
           ref=$(echo "${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}" | sed -E 's/[-\/]+/_/g')
-          name="Komikku-${ref}-r$(git rev-list --count HEAD)"
+          name="Yomikku-${ref}-r$(git rev-list --count HEAD)"
           dir=app/build/outputs/apk/preview
           apk="$dir/app-universal-preview-signed.apk"
           [ -f "$apk" ] || apk="$dir/app-universal-preview.apk"

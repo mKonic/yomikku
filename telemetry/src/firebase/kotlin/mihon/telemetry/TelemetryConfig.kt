@@ -42,8 +42,8 @@ object TelemetryConfig {
     }
 }
 
-private val MIHON_PACKAGES = hashSetOf("app.komikku", "app.komikku.beta")
+private val MIHON_PACKAGES = hashSetOf("app.yomikku", "app.yomikku.beta")
 
-// KMK: this fork's release key (alias komikku-pf), which signs both release and CI preview builds
+// KMK: yomikku's release key (alias yomikku), which signs both release and CI preview builds
 private const val MIHON_CERTIFICATE_FINGERPRINT =
-    "69:EE:01:C0:4F:9A:60:52:F1:E2:28:56:5E:83:8D:B2:30:0F:D1:41:16:03:B3:37:C7:34:97:F2:3E:63:53:C0"
+    "BF:FF:55:08:C4:07:C4:A5:FC:F8:7C:21:CE:C7:6E:A5:44:1D:C0:D6:F3:86:CF:BE:11:57:92:F8:A8:B4:07:C3"

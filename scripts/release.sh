@@ -17,8 +17,8 @@ set -euo pipefail
 
 TAG="${1:-}"
 DRY="${2:-}"
-REPO="mKonic/komikku"
-KEYSTORE="${KEYSTORE:-$HOME/dev/android/keys/my-komikku-release-key.keystore}"
+REPO="mKonic/yomikku"
+KEYSTORE="${KEYSTORE:-$HOME/dev/android/keys/yomikku-release-key.keystore}"
 ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 export ANDROID_HOME
 
@@ -52,11 +52,11 @@ BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
 APKSIGNER="$BUILD_TOOLS/apksigner"
 [ -x "$APKSIGNER" ] || { echo "No apksigner under $BUILD_TOOLS" >&2; exit 1; }
 
-# The password comes from a KEY=... line in a .env kept beside the keystore, outside the repo.
+# The password comes from a YOMIKKU_KEY=... line in a .env kept beside the keystore, outside the repo.
 # Override the location with KEYS_ENV, or set KEYSTORE_PASSWORD directly to skip the file.
 ENV_FILE="${KEYS_ENV:-$(dirname "$KEYSTORE")/.env}"
 if [ -z "${KEYSTORE_PASSWORD:-}" ] && [ -f "$ENV_FILE" ]; then
-    KEYSTORE_PASSWORD="$(grep -E '^KEY=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '\r\n')"
+    KEYSTORE_PASSWORD="$(grep -E '^YOMIKKU_KEY=' "$ENV_FILE" | head -1 | cut -d= -f2- | tr -d '\r\n')"
 fi
 if [ -z "${KEYSTORE_PASSWORD:-}" ]; then
     read -rsp 'Keystore password: ' KEYSTORE_PASSWORD
@@ -91,9 +91,9 @@ for apk in "${UNSIGNED[@]}"; do
     # The in-app updater picks the asset naming the device's ABI and falls back to the one that
     # names none, so the universal APK must not say "universal".
     if [ "$abi" = universal ]; then
-        out="dist/Komikku-${TAG}.apk"
+        out="dist/Yomikku-${TAG}.apk"
     else
-        out="dist/Komikku-${abi}-${TAG}.apk"
+        out="dist/Yomikku-${abi}-${TAG}.apk"
     fi
     "$APKSIGNER" sign \
         --ks "$KEYSTORE" \
@@ -173,13 +173,13 @@ if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
 elif [ -s "$NOTES" ]; then
     gh release create "$TAG" "${SIGNED[@]}" "${PRERELEASE[@]}" \
         --repo "$REPO" \
-        --title "Komikku $TAG" \
+        --title "Yomikku $TAG" \
         --notes-file "$NOTES"
 else
     echo "   No '## [$TAG]' section in CHANGELOG.md; falling back to generated notes." >&2
     gh release create "$TAG" "${SIGNED[@]}" "${PRERELEASE[@]}" \
         --repo "$REPO" \
-        --title "Komikku $TAG" \
+        --title "Yomikku $TAG" \
         --generate-notes
 fi
 

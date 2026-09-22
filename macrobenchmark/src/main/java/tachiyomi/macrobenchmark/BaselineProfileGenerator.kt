@@ -8,7 +8,7 @@ import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
 
-private const val TARGET_PACKAGE = "app.komikku.benchmark"
+private const val TARGET_PACKAGE = "app.yomikku.benchmark"
 private const val WAIT_MILLIS = 10_000L
 
 /**

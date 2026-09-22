@@ -30,3 +30,7 @@ app/standard/preview/*
 
 # The app and aliases the volition CLI drives here - per checkout, not per project.
 /.volition
+
+# Working notes, not repo content
+/PLAN.md
+/design/

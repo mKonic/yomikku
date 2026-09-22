@@ -99,7 +99,7 @@ class AppUpdateChecker(
 val GITHUB_REPO: String by lazy { getGithubRepo() }
 
 @Suppress("UNUSED_PARAMETER")
-fun getGithubRepo(peekIntoPreview: Boolean = false): String = "mKonic/komikku"
+fun getGithubRepo(peekIntoPreview: Boolean = false): String = "mKonic/yomikku"
 
 val RELEASE_TAG: String by lazy { getReleaseTag() }
 

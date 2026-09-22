@@ -1,6 +1,6 @@
-# Komikku – AI Agent Guide
+# Yomikku – AI Agent Guide
 
-Komikku is an Android manga reader (min SDK 26, target SDK 36, JVM 17 / Kotlin) forked from **Mihon** + **TachiyomiSY**. Stack: Jetpack Compose + Material3, Voyager navigation, SQLDelight, Injekt DI. `applicationId`: `app.komikku`.
+Yomikku is an Android light-novel reader (min SDK 26, JVM 17 / Kotlin), forked from **Komikku** (itself Mihon + TachiyomiSY) with the image reader replaced by a text reader. Sources are Kotlin extension APKs from `mKonic/yomikku-extensions`. Stack: Jetpack Compose + Material3, Voyager navigation, SQLDelight, Injekt DI. `applicationId`: `app.yomikku`. Internal model names (`Manga`, `Chapter`) are kept from Mihon; user-facing text says novel.
 
 ---
 
@@ -12,11 +12,11 @@ Komikku is an Android manga reader (min SDK 26, target SDK 36, JVM 17 / Kotlin) 
 
 | Rule | Required behavior |
 |------|-------------------|
-| Remote | Push to **`fork`** (`mKonic/komikku`) only. `origin` is upstream `komikku-app/komikku` and is not ours to push to. |
+| Remote | Push to **`origin`** (`mKonic/yomikku`) only. `komikku`, `mihon` and `tsundoku` are read-only upstreams to port from. |
 | Branch | A feature branch for anything substantial; small fixes may land on `master`, which is this fork's working branch. |
 | Commit | One-line messages in the form `area: what changed`. No body, no attribution trailers. |
 
-Before `git push`, confirm the remote is `fork` (`git remote -v`).
+Before `git push`, confirm the remote is `origin` (`git remote -v`).
 
 ### Internationalization (strings)
 

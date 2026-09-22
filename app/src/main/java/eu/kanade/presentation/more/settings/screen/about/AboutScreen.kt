@@ -284,7 +284,7 @@ class AboutScreen : Screen() {
                             icon = CustomIcons.Github,
                             // KMK --> this fork, not upstream: it is where these builds and their
                             // releases come from. Website and Discord above stay upstream's.
-                            url = "https://github.com/mKonic/komikku",
+                            url = "https://github.com/mKonic/yomikku",
                             // KMK <--
                         )
                     }

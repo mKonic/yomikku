@@ -36,7 +36,7 @@ android {
     namespace = "eu.kanade.tachiyomi"
 
     defaultConfig {
-        applicationId = "app.komikku"
+        applicationId = "app.yomikku"
 
         versionCode = getVersionCode()
         versionName = getVersionName()

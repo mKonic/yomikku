@@ -86,9 +86,9 @@ jobs:
           for apk in "${signed[@]}"; do
             abi=$(basename "$apk" | sed -E 's/^app-(.*)-release-unsigned-signed\.apk$/\1/')
             if [ "$abi" = universal ]; then
-              cp "$apk" "dist/Komikku-$TAG.apk"
+              cp "$apk" "dist/Yomikku-$TAG.apk"
             else
-              cp "$apk" "dist/Komikku-$abi-$TAG.apk"
+              cp "$apk" "dist/Yomikku-$abi-$TAG.apk"
             fi
           done
           ls -l dist
@@ -139,10 +139,10 @@ jobs:
               gh release edit "$TAG" --notes-file notes.md
             fi
           elif [ -s notes.md ]; then
-            gh release create "$TAG" dist/*.apk --verify-tag "${prerelease[@]}" --title "Komikku $TAG" --notes-file notes.md
+            gh release create "$TAG" dist/*.apk --verify-tag "${prerelease[@]}" --title "Yomikku $TAG" --notes-file notes.md
           else
             echo "No '## [$TAG]' section in CHANGELOG.md; generating notes." >&2
-            gh release create "$TAG" dist/*.apk --verify-tag "${prerelease[@]}" --title "Komikku $TAG" --generate-notes
+            gh release create "$TAG" dist/*.apk --verify-tag "${prerelease[@]}" --title "Yomikku $TAG" --generate-notes
           fi
 
       - name: Upload mapping
