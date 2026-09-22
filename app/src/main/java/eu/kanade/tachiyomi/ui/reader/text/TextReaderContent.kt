@@ -313,7 +313,8 @@ private fun TextPageContent(page: TextPage, style: ReaderTextStyle, modifier: Mo
             AsyncImage(
                 model = image.block.url,
                 contentDescription = image.block.description,
-                contentScale = ContentScale.Fit,
+                // Inside: a small image, like an icon, stays its own size instead of filling the page.
+                contentScale = ContentScale.Inside,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -349,12 +350,14 @@ private fun BlockContent(block: TextBlock, style: ReaderTextStyle, modifier: Mod
             modifier = modifier.fillMaxWidth(),
         )
         is TextBlock.Image -> if (style.showImages) {
-            AsyncImage(
-                model = block.url,
-                contentDescription = block.description,
-                contentScale = ContentScale.FillWidth,
-                modifier = modifier.fillMaxWidth(),
-            )
+            // Scaled down to the column width but never up, so a small image stays its own size.
+            Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                AsyncImage(
+                    model = block.url,
+                    contentDescription = block.description,
+                    contentScale = ContentScale.Fit,
+                )
+            }
         }
         is TextBlock.Rule -> HorizontalDivider(
             modifier = modifier
