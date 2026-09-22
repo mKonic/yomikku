@@ -27,7 +27,7 @@ data class NetworkLegacyExtension(
 
     fun toAvailableExtension(store: ExtensionStore, storeBaseUrl: String): Extension.Available {
         return Extension.Available(
-            name = name.substringAfter("Tachiyomi: "),
+            name = name.substringAfter("Yomikku: "),
             pkgName = pkg,
             apkUrl = "$storeBaseUrl/apk/$apk",
             iconUrl = "$storeBaseUrl/icon/$pkg.png",
