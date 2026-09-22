@@ -736,8 +736,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun Intent.isAddExtensionStoreIntent(): Boolean {
-        return (scheme == "tachiyomi" && data?.host == "add-repo") ||
-            (scheme == "mihon" && data?.host == "extension-store")
+        return scheme == "yomikku" && (data?.host == "add-repo" || data?.host == "extension-store")
     }
 
     companion object {

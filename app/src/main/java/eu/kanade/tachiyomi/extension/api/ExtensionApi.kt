@@ -6,7 +6,9 @@ import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.LoadResult
 import eu.kanade.tachiyomi.extension.util.ExtensionLoader
+import mihon.domain.extension.interactor.AddExtensionStore
 import mihon.domain.extension.interactor.UpdateExtensionStores
+import mihon.domain.extension.model.YOMIKKU_STORE_URL
 import mihon.domain.extension.repository.ExtensionStoreRepository
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
@@ -23,6 +25,7 @@ internal class ExtensionApi {
 
     private val preferenceStore: PreferenceStore by injectLazy()
     private val updateExtensionStores: UpdateExtensionStores by injectLazy()
+    private val addExtensionStore: AddExtensionStore by injectLazy()
     private val extensionManager: ExtensionManager by injectLazy()
 
     // SY -->
@@ -33,11 +36,25 @@ internal class ExtensionApi {
         preferenceStore.getLong(Preference.appStateKey("last_ext_check"), 0)
     }
 
+    private val yomikkuStoreAdded: Preference<Boolean> by lazy {
+        preferenceStore.getBoolean(Preference.appStateKey("yomikku_store_added"), false)
+    }
+
+    /**
+     * Adds the yomikku store the first time extensions are looked up. Only once: a user who removes it keeps it
+     * removed. A failed fetch, like being offline, leaves it to the next lookup.
+     */
+    private suspend fun addYomikkuStoreOnce() {
+        if (yomikkuStoreAdded.get()) return
+        addExtensionStore(YOMIKKU_STORE_URL).onSuccess { yomikkuStoreAdded.set(true) }
+    }
+
     suspend fun findExtensions(): List<Extension.Available> {
         // KMK -->
         val disabledRepos = sourcePreferences.disabledRepos().get()
         // KMK <--
         return withIOContext {
+            addYomikkuStoreOnce()
             repository.fetchExtensions(
                 // KMK -->
                 disabledRepos,

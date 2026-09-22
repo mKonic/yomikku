@@ -17,6 +17,9 @@ data class ExtensionStore(
 
 const val REPO_HELP = "https://github.com/mKonic/yomikku-extensions"
 
+// The store mKonic/yomikku-extensions publishes. Added once on first use so the app works out of the box.
+const val YOMIKKU_STORE_URL = "https://raw.githubusercontent.com/mKonic/yomikku-extensions/repo/index.min.json"
+
 // The key mKonic/yomikku-extensions signs its APKs with. Extensions it signed are trusted without asking.
 const val YOMIKKU_SIGNATURE = "34378863c3c0f4ce1afdbff10539450877733758f64832c07b8623e0f058dda8"
 const val REPO_SIGNATURE = "9add655a78e96c4ec7a53ef89dccb557cb5d767489fac5e785d671a5a75d4da2"

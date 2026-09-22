@@ -226,7 +226,7 @@ class AppUpdateDownloadJob(private val context: Context, workerParams: WorkerPar
             installParams.setSize(file.length())
             val sessionId = packageInstaller.createSession(installParams)
             val session = packageInstaller.openSession(sessionId)
-            session.openWrite("komikku.apk", 0, file.length()).use { packageInSession ->
+            session.openWrite("yomikku.apk", 0, file.length()).use { packageInSession ->
                 data.copyTo(packageInSession)
                 session.fsync(packageInSession)
             }

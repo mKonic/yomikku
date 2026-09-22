@@ -37,15 +37,15 @@ import java.util.concurrent.atomic.AtomicLong
  * ended) and a power cut (the journal is synced as it goes, see [StressJournal]).
  *
  * From adb:
- * `am start -n <package>/eu.kanade.tachiyomi.ui.main.MainActivity -a komikku.stress.START --es mode eternal`
- * with optional `--es scenarios screens,library --ez network true --ei rounds 3`; `komikku.stress.STOP` ends a run.
+ * `am start -n <package>/eu.kanade.tachiyomi.ui.main.MainActivity -a yomikku.stress.START --es mode eternal`
+ * with optional `--es scenarios screens,library --ez network true --ei rounds 3`; `yomikku.stress.STOP` ends a run.
  * Journals are in the app's external files folder under `stress/<run id>/`.
  */
 object StressRunner {
 
-    const val ACTION_START = "komikku.stress.START"
-    const val ACTION_RESUME = "komikku.stress.RESUME"
-    const val ACTION_STOP = "komikku.stress.STOP"
+    const val ACTION_START = "yomikku.stress.START"
+    const val ACTION_RESUME = "yomikku.stress.RESUME"
+    const val ACTION_STOP = "yomikku.stress.STOP"
     const val EXTRA_SCENARIOS = "scenarios"
     const val EXTRA_MODE = "mode"
     const val EXTRA_NETWORK = "network"
