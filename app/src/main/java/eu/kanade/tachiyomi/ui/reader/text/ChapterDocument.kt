@@ -121,6 +121,10 @@ object ChapterParser {
         // Whether the last character appended was whitespace, so runs collapse across text nodes.
         private var pendingSpace = false
 
+        // Inline spans still open. A block inside an inline element (<a><div>...</div></a>) ends the paragraph
+        // mid-span, so each new paragraph reopens them and closing one always has a match in the current builder.
+        private val openSpans = mutableListOf<Any>()
+
         fun build(): ChapterDocument {
             flush()
             return ChapterDocument(blocks.toList())
@@ -134,6 +138,7 @@ object ChapterParser {
         private fun flush() {
             val text = current.toAnnotatedString()
             current = AnnotatedString.Builder()
+            openSpans.forEach { current.pushSpan(it) }
             pendingSpace = false
             val trimmed = text.trimmed()
             if (trimmed.isNotEmpty()) addParagraph(trimmed, currentKind)
@@ -152,6 +157,9 @@ object ChapterParser {
         }
 
         private fun walkElement(element: Element) {
+            // What a browser never shows: hover tooltips (footnote plugins print their notes this way) and
+            // hidden elements.
+            if (element.isHidden()) return
             val tag = element.normalName()
             when (tag) {
                 in IGNORED -> Unit
@@ -190,12 +198,24 @@ object ChapterParser {
                 else -> {
                     val style = inlineStyle(element)
                     val link = if (tag == "a") element.absUrl("href").takeIf { it.startsWith("http") } else null
-                    if (link != null) current.pushLink(LinkAnnotation.Url(link))
-                    if (style != null) current.pushStyle(style)
+                    val spans = listOfNotNull(link?.let { LinkAnnotation.Url(it) }, style)
+                    spans.forEach { span ->
+                        openSpans += span
+                        current.pushSpan(span)
+                    }
                     walkBlock(element)
-                    if (style != null) current.pop()
-                    if (link != null) current.pop()
+                    repeat(spans.size) {
+                        openSpans.removeAt(openSpans.lastIndex)
+                        current.pop()
+                    }
                 }
+            }
+        }
+
+        private fun AnnotatedString.Builder.pushSpan(span: Any) {
+            when (span) {
+                is LinkAnnotation -> pushLink(span)
+                is SpanStyle -> pushStyle(span)
             }
         }
 
@@ -237,6 +257,9 @@ object ChapterParser {
         else -> element.styleOrNull()
     }
 
+    private fun Element.isHidden(): Boolean =
+        attr("role") == "tooltip" || hasAttr("hidden") || HIDDEN.containsMatchIn(attr("style").lowercase())
+
     /** The few inline CSS properties that carry meaning in novel text; everything else is the site's look. */
     private fun Element.styleOrNull(): SpanStyle? {
         val style = attr("style").lowercase()
@@ -260,6 +283,7 @@ object ChapterParser {
 
     private val BOLD = Regex("font-weight\\s*:\\s*(bold|[6-9]00)")
     private val ITALIC = Regex("font-style\\s*:\\s*italic")
+    private val HIDDEN = Regex("(display\\s*:\\s*none|visibility\\s*:\\s*hidden)")
 
     private val IGNORED = setOf(
         "script", "style", "noscript", "iframe", "object", "embed", "form", "button", "input", "select", "textarea",
