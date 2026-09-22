@@ -101,12 +101,12 @@ data class MigrateSourceSearchScreen(
                         onChangeCategoryClick = bulkFavoriteScreenModel::addFavorite,
                         onSelectAll = {
                             mangaList.itemSnapshotList.items
-                                .map { it.value.first }
+                                .map { it.value }
                                 .forEach { bulkFavoriteScreenModel.select(it) }
                         },
                         onReverseSelection = {
                             mangaList.itemSnapshotList.items
-                                .map { it.value.first }
+                                .map { it.value }
                                 .let { bulkFavoriteScreenModel.reverseSelection(it) }
                         },
                     )
@@ -163,7 +163,6 @@ data class MigrateSourceSearchScreen(
                 mangaList = mangaList,
                 columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 // SY -->
-                ehentaiBrowseDisplayMode = screenModel.ehentaiBrowseDisplayMode,
                 // SY <--
                 displayMode = screenModel.displayMode,
                 snackbarHostState = snackbarHostState,
@@ -219,8 +218,6 @@ data class MigrateSourceSearchScreen(
                     shouldShowSavingButton = false,
                     // KMK <--
                     onSavedSearchPress = {},
-                    openMangaDexRandom = null,
-                    openMangaDexFollows = null,
                     // SY <--
                 )
             }

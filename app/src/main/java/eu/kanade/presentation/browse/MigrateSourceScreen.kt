@@ -35,8 +35,6 @@ import eu.kanade.presentation.components.SOURCE_SEARCH_BOX_HEIGHT
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.migration.sources.MigrateSourceScreenModel
 import eu.kanade.tachiyomi.util.system.copyToClipboard
-import exh.source.ExhPreferences
-import exh.source.eHentaiSourceIds
 import kotlinx.collections.immutable.ImmutableList
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.ArrowDownward
@@ -120,7 +118,6 @@ private fun MigrateSourceList(
     // KMK -->
     val lazyListState = rememberLazyListState()
     var filterObsoleteSource by rememberSaveable { mutableStateOf(false) }
-    val isHentaiEnabled = remember { Injekt.get<ExhPreferences>().isHentaiEnabled().get() }
 
     BackHandler(enabled = !state.searchQuery.isNullOrBlank()) {
         onChangeSearchQuery("")
@@ -194,8 +191,7 @@ private fun MigrateSourceList(
                         .filter {
                             !filterObsoleteSource ||
                                 (
-                                    it.first.installedExtension?.isObsolete != false &&
-                                        (!isHentaiEnabled || it.first.id !in eHentaiSourceIds)
+                                    it.first.installedExtension?.isObsolete != false
                                     )
                         },
                     // KMK <--

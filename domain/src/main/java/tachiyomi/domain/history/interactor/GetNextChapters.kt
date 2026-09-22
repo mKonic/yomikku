@@ -1,9 +1,6 @@
 package tachiyomi.domain.history.interactor
 
-import exh.source.MERGED_SOURCE_ID
-import exh.source.isEhBasedManga
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
-import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.service.getChapterSort
 import tachiyomi.domain.history.repository.HistoryRepository
@@ -12,9 +9,6 @@ import kotlin.math.max
 
 class GetNextChapters(
     private val getChaptersByMangaId: GetChaptersByMangaId,
-    // SY -->
-    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
-    // SY <--
     private val getManga: GetManga,
     private val historyRepository: HistoryRepository,
 ) {
@@ -26,29 +20,6 @@ class GetNextChapters(
 
     suspend fun await(mangaId: Long, onlyUnread: Boolean = true): List<Chapter> {
         val manga = getManga.await(mangaId) ?: return emptyList()
-
-        // SY -->
-        if (manga.source == MERGED_SOURCE_ID) {
-            val chapters = getMergedChaptersByMangaId.await(mangaId, applyFilter = true)
-                .sortedWith(getChapterSort(manga, sortDescending = false))
-
-            return if (onlyUnread) {
-                chapters.filterNot { it.read }
-            } else {
-                chapters
-            }
-        }
-        if (manga.isEhBasedManga()) {
-            val chapters = getChaptersByMangaId.await(mangaId, applyFilter = true)
-                .sortedWith(getChapterSort(manga, sortDescending = false))
-
-            return if (onlyUnread) {
-                chapters.takeLast(1).takeUnless { it.firstOrNull()?.read == true }.orEmpty()
-            } else {
-                chapters
-            }
-        }
-        // SY <--
 
         val chapters = getChaptersByMangaId.await(mangaId, applyFilter = true)
             .sortedWith(getChapterSort(manga, sortDescending = false))

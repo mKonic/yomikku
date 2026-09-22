@@ -7,10 +7,6 @@ SET source = :newId
 WHERE source = :oldId;
 
 -- KMK -->
-migrateMergedSource:
-UPDATE merged
-SET manga_source = :newId
-WHERE manga_source = :oldId;
 
 migrateSourceSavedSearch:
 UPDATE saved_search
@@ -26,10 +22,6 @@ WHERE source = :oldId;
 getChaptersByMangaIds:
 SELECT * FROM chapters WHERE manga_id IN :mangaIds;
 
-migrateAllNhentaiToOtherLang:
-UPDATE mangas
-SET source = :nh
-WHERE favorite = 1 AND source IN :sources;
 
 resetReaderViewerForAllManga:
 UPDATE mangas

@@ -18,9 +18,6 @@ import androidx.paging.compose.LazyPagingItems
 import eu.kanade.presentation.library.components.CommonMangaItemDefaults
 import eu.kanade.presentation.library.components.MangaComfortableGridItem
 import eu.kanade.tachiyomi.R
-import exh.metadata.metadata.MangaDexSearchMetadata
-import exh.metadata.metadata.RaisedSearchMetadata
-import exh.metadata.metadata.RankedSearchMetadata
 import kotlinx.coroutines.flow.StateFlow
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
@@ -30,7 +27,7 @@ import tachiyomi.presentation.core.util.plus
 
 @Composable
 fun BrowseSourceComfortableGrid(
-    mangaList: LazyPagingItems<StateFlow</* SY --> */Pair<Manga, RaisedSearchMetadata?>/* SY <-- */>>,
+    mangaList: LazyPagingItems<StateFlow<Manga>>,
     columns: GridCells,
     contentPadding: PaddingValues,
     onMangaClick: (Manga) -> Unit,
@@ -53,17 +50,10 @@ fun BrowseSourceComfortableGrid(
         }
 
         items(count = mangaList.itemCount) { index ->
-            // SY -->
-            val pair by mangaList[index]?.collectAsState() ?: return@items
-            val manga = pair.first
-            val metadata = pair.second
-            // SY <--
+            val manga by mangaList[index]?.collectAsState() ?: return@items
 
             BrowseSourceComfortableGridItem(
                 manga = manga,
-                // SY -->
-                metadata = metadata,
-                // SY <--
                 onClick = { onMangaClick(manga) },
                 onLongClick = { onMangaLongClick(manga) },
                 // KMK -->
@@ -84,9 +74,6 @@ fun BrowseSourceComfortableGrid(
 @Composable
 internal fun BrowseSourceComfortableGridItem(
     manga: Manga,
-    // SY -->
-    metadata: RaisedSearchMetadata?,
-    // SY <--
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = onClick,
     // KMK -->
@@ -112,42 +99,6 @@ internal fun BrowseSourceComfortableGridItem(
         coverBadgeStart = {
             InLibraryBadge(enabled = manga.favorite)
         },
-        // SY -->
-        coverBadgeEnd = {
-            if (metadata is MangaDexSearchMetadata) {
-                metadata.followStatus?.let { followStatus ->
-                    val text = LocalResources.current
-                        .let { resources ->
-                            remember(resources, followStatus) {
-                                resources.getStringArray(R.array.md_follows_options)
-                                    .getOrNull(followStatus)
-                            }
-                        }
-                        ?: return@let
-                    Badge(
-                        text = text,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        textColor = MaterialTheme.colorScheme.onTertiary,
-                    )
-                }
-                metadata.relation?.let {
-                    Badge(
-                        text = stringResource(it.res),
-                        color = MaterialTheme.colorScheme.tertiary,
-                        textColor = MaterialTheme.colorScheme.onTertiary,
-                    )
-                }
-            } else if (metadata is RankedSearchMetadata) {
-                metadata.rank?.let {
-                    Badge(
-                        text = "+$it",
-                        color = MaterialTheme.colorScheme.tertiary,
-                        textColor = MaterialTheme.colorScheme.onTertiary,
-                    )
-                }
-            }
-        },
-        // SY <--
         onLongClick = onLongClick,
         onClick = onClick,
     )

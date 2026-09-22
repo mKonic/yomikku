@@ -72,7 +72,6 @@ import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import eu.kanade.tachiyomi.util.system.toast
 import exh.debug.SettingsDebugScreen
 import exh.log.EHLogLevel
-import exh.pref.DelegateSourcePreferences
 import exh.source.ExhPreferences
 import exh.util.toAnnotatedString
 import kotlinx.collections.immutable.persistentListOf
@@ -803,37 +802,10 @@ object SettingsAdvancedScreen : SearchableSettings {
         val navigator = LocalNavigator.currentOrThrow
         val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
         val exhPreferences = remember { Injekt.get<ExhPreferences>() }
-        val delegateSourcePreferences = remember { Injekt.get<DelegateSourcePreferences>() }
         val securityPreferences = remember { Injekt.get<SecurityPreferences>() }
         return Preference.PreferenceGroup(
             title = stringResource(SYMR.strings.developer_tools),
             preferenceItems = persistentListOf(
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = exhPreferences.isHentaiEnabled(),
-                    title = stringResource(SYMR.strings.toggle_hentai_features),
-                    subtitle = stringResource(SYMR.strings.toggle_hentai_features_summary),
-                    onValueChanged = {
-                        true
-                    },
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.enableSourceBlacklist(),
-                    title = stringResource(SYMR.strings.enable_source_blacklist),
-                    subtitle = stringResource(
-                        SYMR.strings.enable_source_blacklist_summary,
-                        stringResource(MR.strings.app_name),
-                    ),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = delegateSourcePreferences.delegateSources(),
-                    title = stringResource(SYMR.strings.toggle_delegated_sources),
-                    subtitle = stringResource(
-                        SYMR.strings.toggle_delegated_sources_summary,
-                        stringResource(MR.strings.app_name),
-                        AndroidSourceManager.DELEGATED_SOURCES.map { it.sourceName }.distinct()
-                            .joinToString(),
-                    ),
-                ),
                 Preference.PreferenceItem.ListPreference(
                     // KMK -->
                     preference = exhPreferences.logLevel(isDebugBuildType),

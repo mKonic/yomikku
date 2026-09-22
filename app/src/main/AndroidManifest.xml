@@ -222,10 +222,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="exh.ui.login.EhLoginActivity"
-            android:label="EHentaiLogin"
-            android:exported="false"/>
 
         <service
             android:name=".data.connections.discord.DiscordRPCService"
@@ -293,106 +289,7 @@
             android:name="android.webkit.WebView.MetricsOptOut"
             android:value="true" />
 
-        <!-- EH -->
-        <activity
-            android:name="exh.ui.intercept.InterceptActivity"
-            android:theme="@style/Theme.Tachiyomi"
-            android:exported="true">
-            <!-- E-Hentai -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
 
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="https" />
-                <data android:scheme="http" />
-
-                <data android:host="e-hentai.org" />
-                <data android:host="www.e-hentai.org" />
-                <data android:host="g.e-hentai.org" />
-
-                <data android:pathPattern="/g/..*" />
-            </intent-filter>
-            <!-- ExHentai -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="https" />
-                <data android:scheme="http" />
-
-                <data android:host="exhentai.org" />
-                <data android:host="www.exhentai.org" />
-
-                <data android:pathPattern="/g/..*" />
-            </intent-filter>
-            <!-- NHentai -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="https" />
-                <data android:scheme="http" />
-
-                <data android:host="nhentai.net" />
-                <data android:host="www.nhentai.net" />
-
-                <data android:pathPattern="/g/..*" />
-            </intent-filter>
-            <!-- Pururin -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="https" />
-                <data android:scheme="http" />
-
-                <data android:host="pururin.me" />
-
-                <data android:pathPattern="/gallery/..*" />
-            </intent-filter>
-            <!-- Mangadex -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="https" />
-
-                <data android:host="mangadex.org" />
-                <data android:host="mangadex.cc" />
-                <data android:host="www.mangadex.org" />
-                <data android:host="www.mangadex.cc" />
-
-                <data android:pathPattern="/manga/..*" />
-                <data android:pathPattern="/title/..*" />
-                <data android:pathPattern="/chapter/..*" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name="exh.md.MangaDexLoginActivity"
-            android:label="MangaDexLogin"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="mangadex-auth"
-                    android:scheme="tachiyomisy" />
-            </intent-filter>
-        </activity>
 
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"

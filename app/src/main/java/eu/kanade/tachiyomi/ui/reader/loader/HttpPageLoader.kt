@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
-import exh.source.isEhBasedSource
 import exh.util.DataSaver
 import exh.util.DataSaver.Companion.getImage
 import kotlinx.coroutines.CancellationException
@@ -173,12 +172,6 @@ internal class HttpPageLoader(
         // Whatever the state: a page that downloaded fine can still fail to decode, and only a page
         // back in Queue gets loaded again.
         page.status = Page.State.Queue
-        // EXH -->
-        // Grab a new image URL on EXH sources
-        if (source.isEhBasedSource()) {
-            page.imageUrl = null
-        }
-
         if (readerPreferences.readerInstantRetry().get()) { // EXH <--
             boostPage(page)
         } else {

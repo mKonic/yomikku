@@ -43,7 +43,6 @@ interface SourceManager {
     // SY <--
 
     // KMK -->
-    suspend fun getMergedSources(mangaId: Long): List<Source>
     // KMK <--
 
     suspend fun getStubSources(): List<StubSource>

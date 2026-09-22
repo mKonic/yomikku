@@ -14,7 +14,6 @@ import eu.kanade.tachiyomi.data.LibraryUpdateStatus
 import eu.kanade.tachiyomi.data.SyncStatus
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.cache.CoverCache
-import eu.kanade.tachiyomi.data.cache.PagePreviewCache
 import eu.kanade.tachiyomi.data.connections.ConnectionsManager
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
@@ -27,7 +26,6 @@ import eu.kanade.tachiyomi.network.JavaScriptEngine
 import eu.kanade.tachiyomi.network.NetworkHelper
 import eu.kanade.tachiyomi.source.AndroidSourceManager
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
-import exh.eh.EHentaiUpdateHelper
 import io.requery.android.database.sqlite.RequerySQLiteOpenHelperFactory
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -157,7 +155,7 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { ChapterCache(app, get(), get()) }
         addSingletonFactory { CoverCache(app) }
 
-        addSingletonFactory { NetworkHelper(app, get(), get()) }
+        addSingletonFactory { NetworkHelper(app, get()) }
         addSingletonFactory { JavaScriptEngine(app) }
 
         addSingletonFactory<SourceManager> { AndroidSourceManager(app, get(), get()) }
@@ -177,12 +175,6 @@ class AppModule(val app: Application) : InjektModule {
         addSingletonFactory { LocalCoverManager(app, get()) }
         addSingletonFactory { StorageManager(app, get()) }
 
-        // SY -->
-        addSingletonFactory { EHentaiUpdateHelper(app) }
-
-        addSingletonFactory { PagePreviewCache(app) }
-        // SY <--
-
         // KMK -->
         addSingletonFactory { BackupRestoreStatus() }
         addSingletonFactory { SyncStatus() }
@@ -198,7 +190,7 @@ class AppModule(val app: Application) : InjektModule {
         // The outer post to the main executor is load-bearing and must stay: it defers this until
         // App.onCreate() has drained, and only by then have the SY and KMK modules registered the
         // preferences these singletons resolve. Warming directly on a background thread races
-        // module registration and dies on a missing DelegateSourcePreferences.
+        // module registration and dies on a missing preference class.
         //
         // What was wrong before is that the work then ran *on* the main thread, so opening the
         // database - loading libsqlite3x, running the WAL pragmas - and building the source and

@@ -3,25 +3,18 @@ package eu.kanade.tachiyomi.data.backup.restore.restorers
 import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupChapter
-import eu.kanade.tachiyomi.data.backup.models.BackupFlatMetadata
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
-import eu.kanade.tachiyomi.data.backup.models.BackupMergedMangaReference
 import eu.kanade.tachiyomi.data.backup.models.BackupTracking
-import exh.EXHMigrations
-import exh.source.MERGED_SOURCE_ID
 import tachiyomi.data.DatabaseHandler
 import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.UpdateStrategyColumnAdapter
 import tachiyomi.data.manga.MangaMapper
-import tachiyomi.data.manga.MergedMangaMapper
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.interactor.FetchInterval
-import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetMangaByUrlAndSourceId
-import tachiyomi.domain.manga.interactor.InsertFlatMetadata
 import tachiyomi.domain.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
@@ -48,8 +41,6 @@ class MangaRestorer(
     fetchInterval: FetchInterval = Injekt.get(),
     // SY -->
     private val setCustomMangaInfo: SetCustomMangaInfo = Injekt.get(),
-    private val insertFlatMetadata: InsertFlatMetadata = Injekt.get(),
-    private val getFlatMetadataById: GetFlatMetadataById = Injekt.get(),
     // SY <--
 ) {
     private var now = ZonedDateTime.now()
@@ -70,9 +61,6 @@ class MangaRestorer(
         handler.await(inTransaction = true) {
             val dbManga = findExistingManga(backupManga)
             var manga = backupManga.getMangaImpl()
-            // SY -->
-            manga = EXHMigrations.migrateBackupEntry(manga)
-            // SY <--
             val restoredManga = if (dbManga == null) {
                 restoreNewManga(manga)
             } else {
@@ -88,8 +76,6 @@ class MangaRestorer(
                 tracks = backupManga.tracking,
                 excludedScanlators = backupManga.excludedScanlators,
                 // SY -->
-                mergedMangaReferences = backupManga.mergedMangaReferences,
-                flatMetadata = backupManga.flatMetadata,
                 customManga = backupManga.getCustomMangaInfo(),
                 // SY <--
             )
@@ -333,8 +319,6 @@ class MangaRestorer(
         tracks: List<BackupTracking>,
         excludedScanlators: List<String>,
         // SY -->
-        mergedMangaReferences: List<BackupMergedMangaReference>,
-        flatMetadata: BackupFlatMetadata?,
         customManga: CustomMangaInfo?,
         // SY <--
     ): Manga {
@@ -345,8 +329,6 @@ class MangaRestorer(
         restoreExcludedScanlators(manga, excludedScanlators)
         updateManga.awaitUpdateFetchInterval(manga, now, currentFetchWindow)
         // SY -->
-        restoreMergedMangaReferencesForManga(manga.id, mergedMangaReferences)
-        flatMetadata?.let { restoreFlatMetadata(manga.id, it) }
         restoreEditedInfo(customManga?.copy(id = manga.id))
         // SY <--
 
@@ -489,73 +471,6 @@ class MangaRestorer(
     }
 
     // SY -->
-    /**
-     * Restore the categories from Json
-     *
-     * @param mergeMangaId the merge manga for the references
-     * @param backupMergedMangaReferences the list of backup manga references for the merged manga
-     */
-    private suspend fun restoreMergedMangaReferencesForManga(
-        mergeMangaId: Long,
-        backupMergedMangaReferences: List<BackupMergedMangaReference>,
-    ) {
-        // Get merged manga references from file and from db
-        val dbMergedMangaReferences = handler.awaitList {
-            mergedQueries.selectAll(MergedMangaMapper::map)
-        }
-
-        // Iterate over them
-        backupMergedMangaReferences
-            // KMK -->
-            .map { EXHMigrations.migrateBackupMergedMangaReference(it) }
-            // KMK <--
-            .forEach { backupMergedMangaReference ->
-                // If the backupMergedMangaReference isn't in the db,
-                // remove the id and insert a new backupMergedMangaReference
-                // Store the inserted id in the backupMergedMangaReference
-                if (dbMergedMangaReferences.none {
-                        backupMergedMangaReference.mergeUrl == it.mergeUrl &&
-                            backupMergedMangaReference.mangaUrl == it.mangaUrl
-                    }
-                ) {
-                    // Let the db assign the id
-                    // KMK -->
-                    val mergedManga = handler.awaitList {
-                        // KMK <--
-                        mangasQueries.getMangaByUrlAndSource(
-                            backupMergedMangaReference.mangaUrl,
-                            backupMergedMangaReference.mangaSourceId,
-                            MangaMapper::mapManga,
-                        )
-                        // KMK -->
-                    }.firstOrNull()
-                        // KMK <--
-                        ?: return@forEach
-                    backupMergedMangaReference.getMergedMangaReference().run {
-                        handler.await {
-                            mergedQueries.insert(
-                                infoManga = isInfoManga,
-                                getChapterUpdates = getChapterUpdates,
-                                chapterSortMode = chapterSortMode.toLong(),
-                                chapterPriority = chapterPriority.toLong(),
-                                downloadChapters = downloadChapters,
-                                mergeId = mergeMangaId,
-                                mergeUrl = mergeUrl,
-                                mangaId = mergedManga.id,
-                                mangaUrl = mangaUrl,
-                                mangaSource = mangaSourceId,
-                            )
-                        }
-                    }
-                }
-            }
-    }
-
-    private suspend fun restoreFlatMetadata(mangaId: Long, backupFlatMetadata: BackupFlatMetadata) {
-        if (getFlatMetadataById.await(mangaId) == null) {
-            insertFlatMetadata.await(backupFlatMetadata.getFlatMetadata(mangaId))
-        }
-    }
 
     private fun restoreEditedInfo(mangaJson: CustomMangaInfo?) {
         mangaJson ?: return

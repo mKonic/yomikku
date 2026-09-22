@@ -44,7 +44,6 @@ import eu.kanade.presentation.browse.components.SavedSearchDeleteDialog
 import eu.kanade.presentation.category.components.ChangeCategoryDialog
 import eu.kanade.presentation.components.BulkSelectionToolbar
 import eu.kanade.presentation.manga.DuplicateMangaDialog
-import eu.kanade.presentation.more.settings.screen.SettingsEhScreen
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.ConfigurableSource
@@ -57,12 +56,6 @@ import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
-import exh.md.follows.MangaDexFollowsScreen
-import exh.source.ExhPreferences
-import exh.source.anyIs
-import exh.source.isEhBasedSource
-import exh.source.isMdBasedSource
-import exh.ui.smartsearch.SmartSearchScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -177,9 +170,7 @@ data class BrowseSourceScreen(
         // KMK -->
         val mangaList = screenModel.mangaPagerFlowFlow.collectAsLazyPagingItems()
 
-        val isHentaiEnabled: Boolean = Injekt.get<ExhPreferences>().isHentaiEnabled().get()
-        val isConfigurableSource = screenModel.source.anyIs<ConfigurableSource>() ||
-            (screenModel.source.isEhBasedSource() && isHentaiEnabled)
+        val isConfigurableSource = screenModel.source is ConfigurableSource
         // KMK <--
 
         Scaffold(
@@ -198,12 +189,12 @@ data class BrowseSourceScreen(
                             onChangeCategoryClick = bulkFavoriteScreenModel::addFavorite,
                             onSelectAll = {
                                 mangaList.itemSnapshotList.items
-                                    .map { it.value.first }
+                                    .map { it.value }
                                     .forEach { bulkFavoriteScreenModel.select(it) }
                             },
                             onReverseSelection = {
                                 mangaList.itemSnapshotList.items
-                                    .map { it.value.first }
+                                    .map { it.value }
                                     .let { bulkFavoriteScreenModel.reverseSelection(it) }
                             },
                         )
@@ -213,12 +204,7 @@ data class BrowseSourceScreen(
                             searchQuery = state.toolbarQuery,
                             onSearchQueryChange = screenModel::setToolbarQuery,
                             source = screenModel.source,
-                            displayMode = screenModel.displayMode
-                                // KMK -->
-                                .takeIf {
-                                    !screenModel.source.isEhBasedSource() || !screenModel.ehentaiBrowseDisplayMode
-                                },
-                            // KMK <--
+                            displayMode = screenModel.displayMode,
                             onDisplayModeChange = { screenModel.displayMode = it },
                             navigateUp = navigateUp,
                             onWebViewClick = onWebViewClick,
@@ -226,13 +212,7 @@ data class BrowseSourceScreen(
                             // KMK -->
                             onToggleIncognito = screenModel::toggleIncognitoMode,
                             onSettingsClick = {
-                                when {
-                                    screenModel.source.isEhBasedSource() && isHentaiEnabled ->
-                                        navigator.push(SettingsEhScreen)
-                                    screenModel.source.anyIs<ConfigurableSource>() ->
-                                        navigator.push(SourcePreferencesScreen(sourceId))
-                                    else -> {}
-                                }
+                                navigator.push(SourcePreferencesScreen(sourceId))
                             }.takeIf { isConfigurableSource },
                             // KMK <--
                             onSearch = screenModel::search,
@@ -345,7 +325,6 @@ data class BrowseSourceScreen(
                 mangaList = mangaList,
                 columns = screenModel.getColumnsPreference(LocalConfiguration.current.orientation),
                 // SY -->
-                ehentaiBrowseDisplayMode = screenModel.ehentaiBrowseDisplayMode,
                 // SY <--
                 displayMode = screenModel.displayMode,
                 snackbarHostState = snackbarHostState,
@@ -419,30 +398,6 @@ data class BrowseSourceScreen(
                     // KMK -->
                     onSavedSearchPressDesc = stringResource(KMR.strings.saved_searches_delete),
                     // KMK <--
-                    openMangaDexRandom = if (screenModel.source.isMdBasedSource()) {
-                        {
-                            screenModel.onMangaDexRandom {
-                                navigator.replace(
-                                    BrowseSourceScreen(
-                                        sourceId,
-                                        "id:$it",
-                                    ),
-                                )
-                            }
-                        }
-                    } else {
-                        null
-                    },
-                    openMangaDexFollows = if (screenModel.source.isMdBasedSource()) {
-                        {
-                            // KMK -->
-                            // navigator.replace(MangaDexFollowsScreen(sourceId))
-                            navigator.push(MangaDexFollowsScreen(sourceId))
-                            // KMK <--
-                        }
-                    } else {
-                        null
-                    },
                     // SY <--
                 )
             }

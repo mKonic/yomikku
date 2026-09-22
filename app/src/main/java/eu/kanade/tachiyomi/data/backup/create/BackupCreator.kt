@@ -31,7 +31,6 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.backup.service.BackupPreferences
 import tachiyomi.domain.manga.interactor.GetFavorites
-import tachiyomi.domain.manga.interactor.GetMergedManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.repository.MangaRepository
 import tachiyomi.i18n.MR
@@ -62,7 +61,6 @@ class BackupCreator(
     // KMK <--
     // SY -->
     private val savedSearchBackupCreator: SavedSearchBackupCreator = SavedSearchBackupCreator(),
-    private val getMergedManga: GetMergedManga = Injekt.get(),
     // SY <--
 ) {
 
@@ -91,10 +89,7 @@ class BackupCreator(
             }
 
             val nonFavoriteManga = if (options.readEntries) mangaRepository.getReadMangaNotInLibrary() else emptyList()
-            // SY -->
-            val mergedManga = getMergedManga.await()
-            // SY <--
-            val mangas = getFavorites.await() + nonFavoriteManga /* SY --> */ + mergedManga /* SY <-- */
+            val mangas = getFavorites.await() + nonFavoriteManga
 
             // KMK --> written an entry at a time, so a large library never sits in memory whole (mihonapp/mihon#3850)
             val rest = Backup(

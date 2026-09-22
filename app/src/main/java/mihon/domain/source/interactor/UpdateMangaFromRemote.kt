@@ -8,8 +8,6 @@ import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.online.all.EHentai
-import eu.kanade.tachiyomi.source.online.all.MergedSource
 import logcat.LogPriority
 import mihon.domain.source.models.RemoteMangaUpdate
 import tachiyomi.core.common.util.lang.withIOContext
@@ -90,42 +88,24 @@ class UpdateMangaFromRemote(
             val chapters = chapterRepository.getChapterByMangaId(manga.id)
                 .sortedBy { it.sourceOrder }
             val update = withIOContext {
-                // SY -->
-                if (source is EHentai) {
-                    source.getMangaUpdate(
-                        manga = manga.toSManga(),
-                        chapters = chapters.map(Chapter::toSChapter),
-                        fetchDetails = fetchDetails,
-                        fetchChapters = fetchChapters,
-                        throttleFunc = throttleFunc,
-                    )
-                } else {
-                    // SY <--
-                    source.getMangaUpdate(
-                        manga = manga.toSManga(),
-                        chapters = chapters.map(Chapter::toSChapter),
-                        fetchDetails = fetchDetails,
-                        fetchChapters = fetchChapters,
-                    )
-                }
+                source.getMangaUpdate(
+                    manga = manga.toSManga(),
+                    chapters = chapters.map(Chapter::toSChapter),
+                    fetchDetails = fetchDetails,
+                    fetchChapters = fetchChapters,
+                )
             }
             // KMK -->
             val updateResult = withIOContext {
                 // KMK <--
                 awaitUpdateFromSource(manga, update.manga, manualFetch)
-                // SY -->
-                val newChapters = if (source is MergedSource) {
-                    source.fetchChaptersAndSync(manga, downloadChapters = manualFetch)
-                } else {
-                    // SY <--
-                    syncChaptersWithSource.await(
-                        rawSourceChapters = update.chapters,
-                        manga = manga,
-                        source = source,
-                        manualFetch = manualFetch,
-                        fetchWindow = fetchWindow,
-                    )
-                }
+                val newChapters = syncChaptersWithSource.await(
+                    rawSourceChapters = update.chapters,
+                    manga = manga,
+                    source = source,
+                    manualFetch = manualFetch,
+                    fetchWindow = fetchWindow,
+                )
                 val updatedManga = mangaRepository.getMangaById(manga.id)
                 // KMK -->
                 RemoteMangaUpdate(manga = updatedManga, newChapters = newChapters)

@@ -27,15 +27,9 @@ import eu.kanade.presentation.util.ioCoroutineScope
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.online.MetadataSource
-import eu.kanade.tachiyomi.source.online.all.MangaDex
 import eu.kanade.tachiyomi.util.removeCovers
-import exh.metadata.metadata.RaisedSearchMetadata
-import exh.source.EH_PACKAGE
 import exh.source.ExhPreferences
 import exh.source.LOCAL_SOURCE_PACKAGE
-import exh.source.getMainSource
-import exh.source.isEhBasedSource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -69,7 +63,6 @@ import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
-import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaWithChapterCount
@@ -120,7 +113,6 @@ open class BrowseSourceScreenModel(
     // SY -->
     exhPreferences: ExhPreferences = Injekt.get(),
     uiPreferences: UiPreferences = Injekt.get(),
-    private val getFlatMetadataById: GetFlatMetadataById = Injekt.get(),
     private val deleteSavedSearchById: DeleteSavedSearchById = Injekt.get(),
     private val insertSavedSearch: InsertSavedSearch = Injekt.get(),
     private val getExhSavedSearch: GetExhSavedSearch = Injekt.get(),
@@ -132,7 +124,6 @@ open class BrowseSourceScreenModel(
     var source = sourceManager.peekOrStub(sourceId)
 
     // SY -->
-    val ehentaiBrowseDisplayMode by exhPreferences.enhancedEHentaiView().asState(screenModelScope)
 
     val startExpanded by uiPreferences.expandFilters().asState(screenModelScope)
 
@@ -206,7 +197,6 @@ open class BrowseSourceScreenModel(
         val packageName = when {
             source is StubSource -> null
             source.isLocal() -> LOCAL_SOURCE_PACKAGE
-            source.isEhBasedSource() -> EH_PACKAGE
             else -> extensionManager.getExtensionPackage(sourceId)
         }
         packageName?.let {
@@ -227,15 +217,12 @@ open class BrowseSourceScreenModel(
                 createSourcePagingSource(listing.query ?: "", listing.filters)
                 // SY <--
             }.flow.map { pagingData ->
-                pagingData.map { (manga, metadata) ->
+                pagingData.map { manga ->
                     getManga.subscribe(manga.url, manga.source)
                         .map { it ?: manga }
-                        // SY -->
-                        .combineMetadata(metadata)
-                        // SY <--
                         .stateIn(ioCoroutineScope)
                 }
-                    .filter { !hideInLibraryItems || !it.value.first.favorite }
+                    .filter { !hideInLibraryItems || !it.value.favorite }
             }
                 .cachedIn(ioCoroutineScope)
         }
@@ -252,19 +239,6 @@ open class BrowseSourceScreenModel(
     }
 
     // SY -->
-    open fun Flow<Manga>.combineMetadata(metadata: RaisedSearchMetadata?): Flow<Pair<Manga, RaisedSearchMetadata?>> {
-        val metadataSource = source.getMainSource<MetadataSource<*, *>>()
-        return flatMapLatest { manga ->
-            if (metadataSource != null) {
-                getFlatMetadataById.subscribe(manga.id)
-                    .map { flatMetadata ->
-                        manga to (flatMetadata?.raise(metadataSource.metaClass) ?: metadata)
-                    }
-            } else {
-                flowOf(manga to null)
-            }
-        }
-    }
     // SY <--
 
     fun resetFilters() {
@@ -637,12 +611,5 @@ open class BrowseSourceScreenModel(
         }
     }
 
-    fun onMangaDexRandom(onRandomFound: (String) -> Unit) {
-        screenModelScope.launchIO {
-            val random = source.getMainSource<MangaDex>()?.fetchRandomMangaUrl()
-                ?: return@launchIO
-            onRandomFound(random)
-        }
-    }
     // EXH <--
 }

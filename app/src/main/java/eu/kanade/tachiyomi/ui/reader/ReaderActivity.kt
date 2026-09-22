@@ -111,7 +111,6 @@ import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.util.view.setComposeContent
-import exh.source.isEhBasedSource
 import exh.util.defaultReaderType
 import exh.util.mangaType
 import kotlinx.collections.immutable.persistentSetOf
@@ -876,14 +875,6 @@ class ReaderActivity : BaseActivity() {
                     page.status = Page.State.Queue
                 } else {
                     return@forEachIndexed
-                }
-
-                // If we are using EHentai/ExHentai, get a new image URL
-                viewModel.manga?.let { m ->
-                    val src = sourceManager.get(m.source)
-                    if (src?.isEhBasedSource() == true) {
-                        page.imageUrl = null
-                    }
                 }
 
                 val loader = page.chapter.pageLoader

@@ -5,7 +5,6 @@ import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import mihon.core.archive.archiveReader
@@ -14,7 +13,6 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.manga.model.Manga
-import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.source.model.StubSource
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
@@ -33,8 +31,6 @@ class ChapterLoader(
     // SY -->
     private val sourceManager: SourceManager,
     private val readerPrefs: ReaderPreferences,
-    private val mergedReferences: List<MergedMangaReference>,
-    private val mergedManga: Map<Long, Manga>?,
     // SY <--
 ) {
 
@@ -103,41 +99,6 @@ class ChapterLoader(
             skipCache = true,
         )
         return when {
-            // SY -->
-            source is MergedSource -> {
-                val mangaReference = mergedReferences.firstOrNull {
-                    it.mangaId == chapter.chapter.manga_id
-                } ?: error("Merge reference null")
-                val source = sourceManager.get(mangaReference.mangaSourceId)
-                    ?: error("Source ${mangaReference.mangaSourceId} was null")
-                val manga = mergedManga?.get(chapter.chapter.manga_id) ?: error("Manga for merged chapter was null")
-                val isMergedMangaDownloaded = downloadManager.isChapterDownloaded(
-                    chapterName = chapter.chapter.name,
-                    chapterScanlator = chapter.chapter.scanlator,
-                    chapterUrl = chapter.chapter.url,
-                    mangaTitle = manga.ogTitle,
-                    sourceId = manga.source,
-                    skipCache = true,
-                )
-                when {
-                    isMergedMangaDownloaded -> DownloadPageLoader(
-                        chapter = chapter,
-                        manga = manga,
-                        source = source,
-                        downloadManager = downloadManager,
-                        downloadProvider = downloadProvider,
-                    )
-                    source is HttpSource -> HttpPageLoader(chapter, source)
-                    source is LocalSource -> source.getFormat(chapter.chapter).let { format ->
-                        when (format) {
-                            is Format.Directory -> DirectoryPageLoader(format.file)
-                            is Format.Archive -> ArchivePageLoader(format.file.archiveReader(context))
-                            is Format.Epub -> EpubPageLoader(format.file.epubReader(context))
-                        }
-                    }
-                    else -> error(context.stringResource(MR.strings.loader_not_implemented_error))
-                }
-            }
             // SY <--
             isDownloaded -> DownloadPageLoader(
                 chapter,

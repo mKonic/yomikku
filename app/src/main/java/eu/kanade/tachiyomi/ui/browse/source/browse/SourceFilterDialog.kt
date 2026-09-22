@@ -55,8 +55,6 @@ fun SourceFilterDialog(
     onSavedSearchPressDesc: String,
     shouldShowSavingButton: Boolean = true,
     // KMK <--
-    openMangaDexRandom: (() -> Unit)?,
-    openMangaDexFollows: (() -> Unit)?,
     // SY <--
 ) {
     val updateFilters = { onUpdate(filters) }
@@ -103,15 +101,6 @@ fun SourceFilterDialog(
                     }
                 }
                 HorizontalDivider()
-            }
-
-            if (openMangaDexRandom != null && openMangaDexFollows != null) {
-                item {
-                    MangaDexFilterHeader(
-                        openMangaDexRandom = openMangaDexRandom,
-                        openMangaDexFollows = openMangaDexFollows,
-                    )
-                }
             }
 
             item {

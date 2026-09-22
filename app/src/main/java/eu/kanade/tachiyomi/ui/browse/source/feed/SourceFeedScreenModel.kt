@@ -19,13 +19,8 @@ import eu.kanade.presentation.browse.SourceFeedUI
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.online.all.MangaDex
 import eu.kanade.tachiyomi.ui.browse.feed.MaxFeedItems
-import exh.source.EH_PACKAGE
 import exh.source.LOCAL_SOURCE_PACKAGE
-import exh.source.getMainSource
-import exh.source.isEhBasedSource
-import exh.source.mangaDexSourceIds
 import exh.util.nullIfBlank
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -91,8 +86,6 @@ open class SourceFeedScreenModel(
 
     var source = sourceManager.peekOrStub(sourceId)
 
-    val sourceIsMangaDex = sourceId in mangaDexSourceIds
-
     private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
 
     val startExpanded by uiPreferences.expandFilters().asState(screenModelScope)
@@ -133,7 +126,6 @@ open class SourceFeedScreenModel(
         val packageName = when {
             source is StubSource -> null
             source.isLocal() -> LOCAL_SOURCE_PACKAGE
-            source.isEhBasedSource() -> EH_PACKAGE
             else -> extensionManager.getExtensionPackage(sourceId)
         }
         packageName?.let {
@@ -350,14 +342,6 @@ open class SourceFeedScreenModel(
                 return@launchIO
             }
             openAddFeed(search.id, search.name)
-        }
-    }
-
-    fun onMangaDexRandom(onRandomFound: (String) -> Unit) {
-        screenModelScope.launchIO {
-            val random = source.getMainSource<MangaDex>()?.fetchRandomMangaUrl()
-                ?: return@launchIO
-            onRandomFound(random)
         }
     }
 

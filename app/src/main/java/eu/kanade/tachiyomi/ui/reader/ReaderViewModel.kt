@@ -30,8 +30,6 @@ import eu.kanade.tachiyomi.data.saver.Location
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
-import eu.kanade.tachiyomi.source.online.MetadataSource
-import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.reader.chapter.ReaderChapterItem
 import eu.kanade.tachiyomi.ui.reader.loader.ChapterLoader
 import eu.kanade.tachiyomi.ui.reader.loader.DownloadPageLoader
@@ -54,10 +52,6 @@ import eu.kanade.tachiyomi.util.lang.byteSize
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.DiskUtil.MAX_FILE_NAME_BYTES
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
-import exh.metadata.metadata.RaisedSearchMetadata
-import exh.source.MERGED_SOURCE_ID
-import exh.source.getMainSource
-import exh.source.isEhBasedManga
 import exh.util.defaultReaderType
 import exh.util.mangaType
 import kotlinx.coroutines.CancellationException
@@ -87,7 +81,6 @@ import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
-import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
@@ -97,10 +90,7 @@ import tachiyomi.domain.history.interactor.GetNextChapters
 import tachiyomi.domain.history.interactor.UpsertHistory
 import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.library.service.LibraryPreferences
-import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
-import tachiyomi.domain.manga.interactor.GetMergedMangaById
-import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.isLocal
@@ -135,10 +125,6 @@ class ReaderViewModel @JvmOverloads constructor(
     // SY -->
     private val syncPreferences: SyncPreferences = Injekt.get(),
     private val uiPreferences: UiPreferences = Injekt.get(),
-    private val getFlatMetadataById: GetFlatMetadataById = Injekt.get(),
-    private val getMergedMangaById: GetMergedMangaById = Injekt.get(),
-    private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
-    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId = Injekt.get(),
     // SY <--
 ) : ViewModel() {
 
@@ -206,13 +192,7 @@ class ReaderViewModel @JvmOverloads constructor(
      */
     private fun downloadChapter(chapter: Chapter) {
         viewModelScope.launch {
-            val manga = manga?.let {
-                if (it.source == MERGED_SOURCE_ID) {
-                    state.value.mergedManga?.get(chapter.mangaId) ?: return@launch
-                } else {
-                    it
-                }
-            } ?: return@launch
+            val manga = manga ?: return@launch
             downloadManager.downloadChapters(manga, listOf(chapter))
             downloadManager.startDownloads()
         }
@@ -229,11 +209,7 @@ class ReaderViewModel @JvmOverloads constructor(
     private fun deleteChapter(chapter: Chapter) {
         viewModelScope.launchNonCancellable {
             try {
-                val manga = if (manga?.source == MERGED_SOURCE_ID) {
-                    state.value.mergedManga?.get(chapter.mangaId) ?: return@launchNonCancellable
-                } else {
-                    manga ?: return@launchNonCancellable
-                }
+                val manga = manga ?: return@launchNonCancellable
                 val source = sourceManager.get(manga.source) ?: return@launchNonCancellable
                 downloadManager.deleteChapters(
                     listOf(chapter),
@@ -291,21 +267,10 @@ class ReaderViewModel @JvmOverloads constructor(
      */
     private suspend fun loadChapterLists() {
         val manga = manga!!
-        // KMK -->
-        unfilteredChapterList = if (manga.source == MERGED_SOURCE_ID) {
-            getMergedChaptersByMangaId.await(manga.id, dedupe = false, applyFilter = false)
-        } else {
-            getChaptersByMangaId.await(manga.id, applyFilter = false)
-        }
+        unfilteredChapterList = getChaptersByMangaId.await(manga.id, applyFilter = false)
         // KMK <--
 
-        // SY -->
-        val (chapters, mangaMap) = if (manga.source == MERGED_SOURCE_ID) {
-            getMergedChaptersByMangaId.await(manga.id, applyFilter = true) to
-                state.value.mergedManga
-        } else {
-            getChaptersByMangaId.await(manga.id, applyFilter = true) to null
-        }
+        val (chapters, mangaMap) = getChaptersByMangaId.await(manga.id, applyFilter = true) to null
         fun isChapterDownloaded(chapter: Chapter): Boolean {
             val chapterManga = mangaMap?.get(chapter.mangaId) ?: manga
             return downloadManager.isChapterDownloaded(
@@ -471,22 +436,6 @@ class ReaderViewModel @JvmOverloads constructor(
                     // SY -->
                     sourceManager.isInitialized.first { it }
                     val source = sourceManager.getOrStub(manga.source)
-                    val metadataSource = source.getMainSource<MetadataSource<*, *>>()
-                    val metadata = if (metadataSource != null) {
-                        getFlatMetadataById.await(mangaId)?.raise(metadataSource.metaClass)
-                    } else {
-                        null
-                    }
-                    val mergedReferences = if (source is MergedSource) {
-                        getMergedReferencesById.await(manga.id)
-                    } else {
-                        emptyList()
-                    }
-                    val mergedManga = if (source is MergedSource) {
-                        getMergedMangaById.await(manga.id).associateBy { it.id }
-                    } else {
-                        null
-                    }
                     val relativeTime = uiPreferences.relativeTime().get()
                     val autoScrollFreq = readerPreferences.autoscrollInterval().get()
                     // SY <--
@@ -501,8 +450,6 @@ class ReaderViewModel @JvmOverloads constructor(
                         it.copy(
                             manga = manga,
                             // SY -->
-                            meta = metadata,
-                            mergedManga = mergedManga,
                             dateRelativeTime = relativeTime,
                             ehAutoscrollFreq = if (autoScrollFreq == -1f) {
                                 ""
@@ -530,8 +477,6 @@ class ReaderViewModel @JvmOverloads constructor(
                         // SY -->
                         sourceManager = sourceManager,
                         readerPrefs = readerPreferences,
-                        mergedReferences = mergedReferences,
-                        mergedManga = mergedManga,
                         // SY <--
                     )
 
@@ -914,18 +859,6 @@ class ReaderViewModel @JvmOverloads constructor(
 
     private suspend fun updateChapterProgressOnComplete(readerChapter: ReaderChapter) {
         readerChapter.chapter.read = true
-        // SY -->
-        if (manga?.isEhBasedManga() == true) {
-            viewModelScope.launchNonCancellable {
-                val chapterUpdates = unfilteredChapterList
-                    .filter { it.sourceOrder > readerChapter.chapter.source_order }
-                    .map { chapter ->
-                        ChapterUpdate(id = chapter.id, read = true)
-                    }
-                updateChapter.awaitAll(chapterUpdates)
-            }
-        }
-        // SY <--
 
         updateTrackChapterRead(readerChapter)
         deleteChapterIfNeeded(readerChapter)
@@ -1018,13 +951,7 @@ class ReaderViewModel @JvmOverloads constructor(
 
     fun getChapterUrl(): String? {
         val sChapter = getCurrentChapter()?.chapter ?: return null
-        val source = if (manga?.source == MERGED_SOURCE_ID) {
-            state.value.mergedManga?.get(sChapter.manga_id)?.source?.let { sourceId ->
-                sourceManager.peekOrStub(sourceId) as? HttpSource
-            }
-        } else {
-            getSource()
-        } ?: return null
+        val source = getSource() ?: return null
 
         return try {
             source.getChapterUrl(sChapter)
@@ -1583,7 +1510,6 @@ class ReaderViewModel @JvmOverloads constructor(
         // SY -->
         /** for display page number in double-page mode */
         val currentPageText: String = "",
-        val meta: RaisedSearchMetadata? = null,
         val mergedManga: Map<Long, Manga>? = null,
         val ehUtilsVisible: Boolean = false,
         val lastShiftDoubleState: Boolean? = null,

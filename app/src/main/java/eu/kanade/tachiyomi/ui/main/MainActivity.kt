@@ -63,7 +63,6 @@ import eu.kanade.presentation.components.IndexingBannerBackgroundColor
 import eu.kanade.presentation.components.RestoringBannerBackgroundColor
 import eu.kanade.presentation.components.SyncingBannerBackgroundColor
 import eu.kanade.presentation.components.UpdatingBannerBackgroundColor
-import eu.kanade.presentation.more.settings.screen.ConfigureExhDialog
 import eu.kanade.presentation.more.settings.screen.about.AboutScreen.Companion.getReleaseNotes
 import eu.kanade.presentation.more.settings.screen.about.WhatsNewDialog
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
@@ -106,7 +105,6 @@ import eu.kanade.tachiyomi.util.system.isReleaseBuildType
 import eu.kanade.tachiyomi.util.system.updaterEnabled
 import eu.kanade.tachiyomi.util.view.setComposeContent
 import exh.debug.DebugToggles
-import exh.eh.EHentaiUpdateWorker
 import exh.log.DebugModeOverlay
 import exh.source.ExhPreferences
 import kotlinx.coroutines.Dispatchers
@@ -285,20 +283,6 @@ class MainActivity : BaseActivity() {
 
                         // Reset Incognito Mode on relaunch
                         preferences.incognitoMode().set(false)
-
-                        // SY -->
-                        initWhenIdle {
-                            // Upload settings
-                            if (exhPreferences.enableExhentai().get() &&
-                                exhPreferences.exhShowSettingsUploadWarning().get()
-                            ) {
-                                runExhConfigureDialog = true
-                            }
-                            // Scheduler uploader job if required
-
-                            EHentaiUpdateWorker.scheduleBackground(this@MainActivity)
-                        }
-                        // SY <--
                     }
                 }
                 LaunchedEffect(navigator.lastItem) {
@@ -467,10 +451,6 @@ class MainActivity : BaseActivity() {
             // KMK -->
             previewLastVersion.set(previewCurrentVersion)
             // KMK <--
-
-            // SY -->
-            ConfigureExhDialog(run = runExhConfigureDialog, onRunning = { runExhConfigureDialog = false })
-            // SY <--
         }
 
         val startTime = System.currentTimeMillis()

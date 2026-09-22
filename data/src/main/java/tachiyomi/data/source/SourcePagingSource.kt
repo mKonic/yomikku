@@ -4,10 +4,7 @@ import androidx.paging.PagingState
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.MetadataMangasPage
 import exh.log.xLogE
-import exh.metadata.metadata.RaisedSearchMetadata
-import exh.source.isEhBasedSource
 import mihon.domain.manga.model.toDomainManga
 import tachiyomi.core.common.util.QuerySanitizer.sanitize
 import tachiyomi.core.common.util.lang.withIOContext
@@ -64,7 +61,7 @@ abstract class BaseSourcePagingSource(
 
     override suspend fun load(
         params: LoadParams<Long>,
-    ): LoadResult<Long, /*SY --> */ Pair<Manga, RaisedSearchMetadata?>/*SY <-- */> {
+    ): LoadResult<Long, Manga> {
         val page = params.key ?: 1
 
         return try {
@@ -93,37 +90,15 @@ abstract class BaseSourcePagingSource(
         // KMK <--
         params: LoadParams<Long>,
         mangasPage: MangasPage,
-    ): LoadResult.Page<Long, /*SY --> */ Pair<Manga, RaisedSearchMetadata?>/*SY <-- */> {
+    ): LoadResult.Page<Long, Manga> {
         val page = params.key ?: 1
 
-        // SY -->
-        val metadata = if (mangasPage is MetadataMangasPage) {
-            mangasPage.mangasMetadata
-        } else {
-            emptyList()
-        }
-        // SY <--
-
         val manga = mangasPage.mangas
-            // SY -->
-            .mapIndexed { index, sManga -> sManga.toDomainManga(source.id) to metadata.getOrNull(index) }
-            .filter { seenManga.add(it.first.url) }
-            // KMK -->
-            .let { pairs -> networkToLocalManga(pairs.map { it.first }).zip(pairs.map { it.second }) }
-        // KMK <--
-        // SY <--
+            .map { it.toDomainManga(source.id) }
+            .filter { seenManga.add(it.url) }
+            .let { networkToLocalManga(it) }
 
-        // KMK -->
-        // E-Hentai paginates by an opaque key carried on the page itself rather than by a
-        // sequential page number, which is why it used to need its own paging source.
-        val nextKey = if (source.isEhBasedSource() && mangasPage is MetadataMangasPage) {
-            mangasPage.nextKey
-        } else if (mangasPage.hasNextPage) {
-            page + 1
-        } else {
-            null
-        }
-        // KMK <--
+        val nextKey = if (mangasPage.hasNextPage) page + 1 else null
 
         return LoadResult.Page(
             data = manga,
@@ -134,7 +109,7 @@ abstract class BaseSourcePagingSource(
     // SY <--
 
     override fun getRefreshKey(
-        state: PagingState<Long, /*SY --> */ Pair<Manga, RaisedSearchMetadata?>/*SY <-- */>,
+        state: PagingState<Long, Manga>,
     ): Long? {
         return state.anchorPosition?.let { anchorPosition ->
             val anchorPage = state.closestPageToPosition(anchorPosition)

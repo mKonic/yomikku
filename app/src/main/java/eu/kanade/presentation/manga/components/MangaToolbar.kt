@@ -56,9 +56,6 @@ fun MangaToolbar(
     onClearManga: () -> Unit,
     onOpenMangaFolder: (() -> Unit)?,
     // KMK <--
-    onClickRecommend: (() -> Unit)?,
-    onClickMerge: (() -> Unit)?,
-    onClickMergedSettings: (() -> Unit)?,
     // SY <--
 
     // For action mode
@@ -191,14 +188,6 @@ fun MangaToolbar(
                         ),
                     )
                     // SY -->
-                    if (onClickMerge != null) {
-                        add(
-                            AppBar.OverflowAction(
-                                title = stringResource(SYMR.strings.merge),
-                                onClick = onClickMerge,
-                            ),
-                        )
-                    }
                     if (onClickEditInfo != null) {
                         add(
                             AppBar.OverflowAction(
@@ -217,22 +206,6 @@ fun MangaToolbar(
                         )
                     }
                     // KMK <--
-                    if (onClickRecommend != null) {
-                        add(
-                            AppBar.OverflowAction(
-                                title = stringResource(SYMR.strings.az_recommends),
-                                onClick = onClickRecommend,
-                            ),
-                        )
-                    }
-                    if (onClickMergedSettings != null) {
-                        add(
-                            AppBar.OverflowAction(
-                                title = stringResource(SYMR.strings.merge_settings),
-                                onClick = onClickMergedSettings,
-                            ),
-                        )
-                    }
                     // SY <--
                     // KMK -->
                     if (onOpenMangaFolder != null) {

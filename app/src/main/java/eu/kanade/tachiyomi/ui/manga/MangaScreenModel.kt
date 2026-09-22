@@ -29,11 +29,8 @@ import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.chapter.interactor.GetAvailableScanlators
 import eu.kanade.domain.chapter.interactor.SetReadStatus
 import eu.kanade.domain.manga.interactor.GetExcludedScanlators
-import eu.kanade.domain.manga.interactor.GetPagePreviews
 import eu.kanade.domain.manga.interactor.SetExcludedScanlators
-import eu.kanade.domain.manga.interactor.SmartSearchMerge
 import eu.kanade.domain.manga.interactor.UpdateManga
-import eu.kanade.domain.manga.model.PagePreview
 import eu.kanade.domain.manga.model.chaptersFiltered
 import eu.kanade.domain.manga.model.downloadedFilter
 import eu.kanade.domain.manga.model.toSManga
@@ -55,13 +52,9 @@ import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
-import eu.kanade.tachiyomi.data.track.mdlist.MdList
-import eu.kanade.tachiyomi.source.PagePreviewSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.online.MetadataSource
-import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.ui.manga.RelatedManga.Companion.isLoading
 import eu.kanade.tachiyomi.ui.manga.RelatedManga.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.manga.RelatedManga.Companion.sorted
@@ -70,17 +63,8 @@ import eu.kanade.tachiyomi.util.chapter.getNextUnread
 import eu.kanade.tachiyomi.util.removeCovers
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.toast
-import exh.debug.DebugToggles
-import exh.eh.EHentaiUpdateHelper
 import exh.log.xLogD
 import exh.log.xLogE
-import exh.md.utils.FollowStatus
-import exh.metadata.metadata.RaisedSearchMetadata
-import exh.metadata.metadata.base.FlatMetadata
-import exh.source.MERGED_SOURCE_ID
-import exh.source.getMainSource
-import exh.source.isEhBasedManga
-import exh.source.mangaDexSourceIds
 import exh.util.nullIfEmpty
 import exh.util.trimOrNull
 import kotlinx.collections.immutable.ImmutableList
@@ -120,7 +104,6 @@ import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.interactor.SetMangaCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.chapter.interactor.DeleteChapters
-import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.SetMangaDefaultChapterFlags
 import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
@@ -133,24 +116,17 @@ import tachiyomi.domain.libraryUpdateError.interactor.InsertLibraryUpdateErrors
 import tachiyomi.domain.libraryUpdateError.model.LibraryUpdateError
 import tachiyomi.domain.libraryUpdateErrorMessage.interactor.InsertLibraryUpdateErrorMessages
 import tachiyomi.domain.libraryUpdateErrorMessage.model.LibraryUpdateErrorMessage
-import tachiyomi.domain.manga.interactor.DeleteMergeById
 import tachiyomi.domain.manga.interactor.GetDuplicateLibraryManga
-import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.interactor.GetMangaWithChapters
-import tachiyomi.domain.manga.interactor.GetMergedMangaById
-import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.manga.interactor.SetCustomMangaInfo
 import tachiyomi.domain.manga.interactor.SetMangaChapterFlags
-import tachiyomi.domain.manga.interactor.UpdateMergedSettings
 import tachiyomi.domain.manga.model.CustomMangaInfo
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaCover
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.model.MangaWithChapterCount
-import tachiyomi.domain.manga.model.MergeMangaSettingsUpdate
-import tachiyomi.domain.manga.model.MergedMangaReference
 import tachiyomi.domain.manga.model.applyFilter
 import tachiyomi.domain.manga.model.asMangaCover
 import tachiyomi.domain.manga.repository.MangaRepository
@@ -194,17 +170,9 @@ class MangaScreenModel(
     // SY -->
     private val sourceManager: SourceManager = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
-    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId = Injekt.get(),
-    private val getMergedMangaById: GetMergedMangaById = Injekt.get(),
-    private val getMergedReferencesById: GetMergedReferencesById = Injekt.get(),
     // KMK -->
-    private val smartSearchMerge: SmartSearchMerge = Injekt.get(),
     // KMK <--
-    private val updateMergedSettings: UpdateMergedSettings = Injekt.get(),
     private val networkToLocalManga: NetworkToLocalManga = Injekt.get(),
-    private val deleteMergeById: DeleteMergeById = Injekt.get(),
-    private val getFlatMetadata: GetFlatMetadataById = Injekt.get(),
-    private val getPagePreviews: GetPagePreviews = Injekt.get(),
     private val insertTrack: InsertTrack = Injekt.get(),
     private val setCustomMangaInfo: SetCustomMangaInfo = Injekt.get(),
     // SY <--
@@ -273,27 +241,6 @@ class MangaScreenModel(
     internal val autoOpenTrack: Boolean
         get() = successState?.hasLoggedInTrackers == true && trackPreferences.trackOnAddingToLibrary().get()
 
-    // EXH -->
-    private val updateHelper: EHentaiUpdateHelper by injectLazy()
-
-    val redirectFlow: MutableSharedFlow<EXHRedirect> = MutableSharedFlow()
-
-    data class EXHRedirect(val mangaId: Long)
-    // EXH <--
-
-    // SY -->
-    private data class CombineState(
-        val manga: Manga,
-        val chapters: List<Chapter>,
-        val flatMetadata: FlatMetadata?,
-        val mergedData: MergedMangaData? = null,
-        val pagePreviewsState: PagePreviewState = PagePreviewState.Loading,
-    ) {
-        constructor(pair: Pair<Manga, List<Chapter>>, flatMetadata: FlatMetadata?) :
-            this(pair.first, pair.second, flatMetadata)
-    }
-    // SY <--
-
     /**
      * Helper function to update the UI state only if it's currently in success state
      */
@@ -318,82 +265,15 @@ class MangaScreenModel(
     init {
         screenModelScope.launchIO {
             getMangaAndChapters.subscribe(mangaId, applyFilter = true).distinctUntilChanged()
-                // SY -->
-                .combine(
-                    getMergedChaptersByMangaId.subscribe(mangaId, true, applyFilter = true)
-                        .distinctUntilChanged(),
-                ) { (manga, chapters), mergedChapters ->
-                    if (manga.source == MERGED_SOURCE_ID) {
-                        manga to mergedChapters
-                    } else {
-                        manga to chapters
-                    }
-                }
-                .onEach { (manga, chapters) ->
-                    if (chapters.isNotEmpty() &&
-                        manga.isEhBasedManga() &&
-                        DebugToggles.ENABLE_EXH_ROOT_REDIRECT.enabled
-                    ) {
-                        // Check for gallery in library and accept manga with lowest id
-                        // Find chapters sharing same root
-                        launchIO {
-                            try {
-                                val (acceptedChain) = updateHelper.findAcceptedRootAndDiscardOthers(manga.source, chapters)
-                                // Redirect if we are not the accepted root
-                                if (manga.id != acceptedChain.manga.id && acceptedChain.manga.favorite) {
-                                    // Update if any of our chapters are not in accepted manga's chapters
-                                    xLogD("Found accepted manga %s", manga.url)
-                                    redirectFlow.emit(
-                                        EXHRedirect(acceptedChain.manga.id),
-                                    )
-                                }
-                            } catch (e: Exception) {
-                                logcat(LogPriority.ERROR, e) { "Error loading accepted chapter chain" }
-                            }
-                        }
-                    }
-                }
-                .combine(
-                    getFlatMetadata.subscribe(mangaId)
-                        .distinctUntilChanged(),
-                ) { pair, flatMetadata ->
-                    CombineState(pair, flatMetadata)
-                }
-                .combine(
-                    combine(
-                        getMergedMangaById.subscribe(mangaId)
-                            .distinctUntilChanged(),
-                        getMergedReferencesById.subscribe(mangaId)
-                            .distinctUntilChanged(),
-                    ) { manga, references ->
-                        if (manga.isNotEmpty()) {
-                            MergedMangaData(
-                                references,
-                                manga.associateBy { it.id },
-                                references.map { it.mangaSourceId }.distinct()
-                                    .map { sourceManager.getOrStub(it) },
-                            )
-                        } else {
-                            null
-                        }
-                    },
-                ) { state, mergedData ->
-                    state.copy(mergedData = mergedData)
-                }
                 .combine(downloadCache.changes) { state, _ -> state }
                 .combine(downloadManager.queueState) { state, _ -> state }
-                // SY <--
                 .flowWithLifecycle(lifecycle)
-                .collectLatest { (manga, chapters /* SY --> */, flatMetadata, mergedData /* SY <-- */) ->
-                    val chapterItems = chapters.toChapterListItems(manga /* SY --> */, mergedData /* SY <-- */)
+                .collectLatest { (manga, chapters) ->
+                    val chapterItems = chapters.toChapterListItems(manga)
                     updateSuccessState {
                         it.copy(
                             manga = manga,
                             chapters = chapterItems,
-                            // SY -->
-                            meta = raiseMetadata(flatMetadata, it.source),
-                            mergedData = mergedData,
-                            // SY <--
                         )
                     }
                 }
@@ -414,20 +294,6 @@ class MangaScreenModel(
             getAvailableScanlators.subscribe(mangaId)
                 .flowWithLifecycle(lifecycle)
                 .distinctUntilChanged()
-                // SY -->
-                .combine(
-                    state.map { (it as? State.Success)?.manga }
-                        .distinctUntilChangedBy { it?.source }
-                        .flatMapConcat {
-                            if (it?.source == MERGED_SOURCE_ID) {
-                                getAvailableScanlators.subscribeMerge(mangaId)
-                            } else {
-                                flowOf(emptySet())
-                            }
-                        },
-                ) { mangaScanlators, mergeScanlators ->
-                    mangaScanlators + mergeScanlators
-                } // SY <--
                 .collectLatest { availableScanlators ->
                     updateSuccessState {
                         it.copy(availableScanlators = availableScanlators.toImmutableSet())
@@ -440,23 +306,8 @@ class MangaScreenModel(
         screenModelScope.launchIO {
             val manga = getMangaAndChapters.awaitManga(mangaId)
 
-            // SY -->
-            val mergedData = getMergedReferencesById.await(mangaId).takeIf { it.isNotEmpty() }?.let { references ->
-                MergedMangaData(
-                    references,
-                    getMergedMangaById.await(mangaId).associateBy { it.id },
-                    references.map { it.mangaSourceId }.distinct()
-                        .map { sourceManager.getOrStub(it) },
-                )
-            }
-            val chapters = if (manga.source == MERGED_SOURCE_ID) {
-                getMergedChaptersByMangaId.await(mangaId, applyFilter = true)
-            } else {
-                getMangaAndChapters.awaitChapters(mangaId, applyFilter = true)
-            }
-                .toChapterListItems(manga, mergedData)
-            val meta = getFlatMetadata.await(mangaId)
-            // SY <--
+            val chapters = getMangaAndChapters.awaitChapters(mangaId, applyFilter = true)
+                .toChapterListItems(manga)
 
             val needRefreshInfo = !manga.initialized
             val needRefreshChapter = chapters.isEmpty()
@@ -471,32 +322,13 @@ class MangaScreenModel(
                     source = source,
                     isFromSource = isFromSource,
                     chapters = chapters,
-                    // SY -->
-                    availableScanlators = if (manga.source == MERGED_SOURCE_ID) {
-                        getAvailableScanlators.awaitMerge(mangaId)
-                    } else {
-                        getAvailableScanlators.await(mangaId)
-                    }.toImmutableSet(),
-                    // SY <--
+                    availableScanlators = getAvailableScanlators.await(mangaId).toImmutableSet(),
                     excludedScanlators = getExcludedScanlators.await(mangaId).toImmutableSet(),
                     isRefreshingData = needRefreshInfo || needRefreshChapter,
                     dialog = null,
                     hideMissingChapters = libraryPreferences.hideMissingChapters().get(),
                     // SY -->
                     showRecommendationsInOverflow = uiPreferences.recommendsInOverflow().get(),
-                    showMergeInOverflow = uiPreferences.mergeInOverflow().get(),
-                    showMergeWithAnother = smartSearched,
-                    mergedData = mergedData,
-                    meta = raiseMetadata(meta, source),
-                    pagePreviewsState = if (source.getMainSource() is PagePreviewSource) {
-                        getPagePreviews(manga, source)
-                        PagePreviewState.Loading
-                    } else {
-                        PagePreviewState.Unused
-                    },
-                    alwaysShowReadingProgress =
-                    readerPreferences.preserveReadingPosition().get() && manga.isEhBasedManga(),
-                    previewsRowCount = uiPreferences.previewsRowCount().get(),
                     // SY <--
                 )
             }
@@ -671,14 +503,6 @@ class MangaScreenModel(
     // KMK <--
 
     // SY -->
-    private fun raiseMetadata(flatMetadata: FlatMetadata?, source: Source): RaisedSearchMetadata? {
-        return if (flatMetadata != null) {
-            val metaClass = source.getMainSource<MetadataSource<*, *>>()?.metaClass
-            if (metaClass != null) flatMetadata.raise(metaClass) else null
-        } else {
-            null
-        }
-    }
 
     fun updateMangaInfo(
         title: String?,
@@ -761,35 +585,8 @@ class MangaScreenModel(
         }
     }
 
-    suspend fun smartSearchMerge(manga: Manga, originalMangaId: Long): Manga {
-        return smartSearchMerge.smartSearchMerge(manga, originalMangaId)
-    }
     // KMK <--
 
-    fun updateMergeSettings(mergedMangaReferences: List<MergedMangaReference>) {
-        screenModelScope.launchNonCancellable {
-            if (mergedMangaReferences.isNotEmpty()) {
-                updateMergedSettings.awaitAll(
-                    mergedMangaReferences.map {
-                        MergeMangaSettingsUpdate(
-                            id = it.id,
-                            isInfoManga = it.isInfoManga,
-                            getChapterUpdates = it.getChapterUpdates,
-                            chapterPriority = it.chapterPriority,
-                            downloadChapters = it.downloadChapters,
-                            chapterSortMode = it.chapterSortMode,
-                        )
-                    },
-                )
-            }
-        }
-    }
-
-    fun deleteMerge(reference: MergedMangaReference) {
-        screenModelScope.launchNonCancellable {
-            deleteMergeById.await(reference.id)
-        }
-    }
     // SY <--
 
     // Manga info - start
@@ -929,15 +726,7 @@ class MangaScreenModel(
      */
     private suspend fun deleteDownloads() {
         val state = successState ?: return
-        // SY -->
-        if (state.source is MergedSource) {
-            val mergedManga = state.mergedData?.manga?.map { it.value to sourceManager.getOrStub(it.value.source) }
-            mergedManga?.forEach { (manga, source) ->
-                downloadManager.deleteManga(manga, source)
-            }
-        } else {
-            /* SY <-- */ downloadManager.deleteManga(state.manga, state.source)
-        }
+        downloadManager.deleteManga(state.manga, state.source)
     }
 
     /**
@@ -1018,20 +807,9 @@ class MangaScreenModel(
     // Chapters list - start
 
     private fun observeDownloads() {
-        // SY -->
-        val isMergedSource = source is MergedSource
-        val mergedIds = if (isMergedSource) successState?.mergedData?.manga?.keys.orEmpty() else emptySet()
-        // SY <--
         screenModelScope.launchIO {
             downloadManager.statusFlow()
-                .filter {
-                    /* SY --> */ if (isMergedSource) {
-                        it.manga.id in mergedIds
-                    } else {
-                        /* SY <-- */ it.manga.id ==
-                            successState?.manga?.id
-                    }
-                }
+                .filter { it.manga.id == successState?.manga?.id }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .flowWithLifecycle(lifecycle)
                 .collect {
@@ -1043,14 +821,7 @@ class MangaScreenModel(
 
         screenModelScope.launchIO {
             downloadManager.progressFlow()
-                .filter {
-                    /* SY --> */ if (isMergedSource) {
-                        it.manga.id in mergedIds
-                    } else {
-                        /* SY <-- */ it.manga.id ==
-                            successState?.manga?.id
-                    }
-                }
+                .filter { it.manga.id == successState?.manga?.id }
                 .catch { error -> logcat(LogPriority.ERROR, error) }
                 .flowWithLifecycle(lifecycle)
                 .collect {
@@ -1077,14 +848,8 @@ class MangaScreenModel(
 
     private fun List<Chapter>.toChapterListItems(
         manga: Manga,
-        // SY -->
-        mergedData: MergedMangaData?,
-        // SY <--
     ): List<ChapterList.Item> {
         val isLocal = manga.isLocal()
-        // SY -->
-        val isExhManga = manga.isEhBasedManga()
-        // SY <--
         return map { chapter ->
             val activeDownload = if (isLocal) {
                 null
@@ -1092,11 +857,6 @@ class MangaScreenModel(
                 downloadManager.getQueuedDownloadOrNull(chapter.id)
             }
 
-            // SY -->
-            @Suppress("NAME_SHADOWING")
-            val manga = mergedData?.manga?.get(chapter.mangaId) ?: manga
-            val source = mergedData?.sources?.find { manga.source == it.id }?.takeIf { mergedData.sources.size > 2 }
-            // SY <--
             val downloaded = if (manga.isLocal()) {
                 true
             } else {
@@ -1121,30 +881,10 @@ class MangaScreenModel(
                 downloadState = downloadState,
                 downloadProgress = activeDownload?.progress ?: 0,
                 selected = chapter.id in selectedChapterIds,
-                // SY -->
-                sourceName = source?.getNameForMangaInfo(),
-                showScanlator = !isExhManga,
-                // SY <--
             )
         }
     }
 
-    // SY -->
-    private fun getPagePreviews(manga: Manga, source: Source) {
-        screenModelScope.launchIO {
-            when (val result = getPagePreviews.await(manga, source, 1)) {
-                is GetPagePreviews.Result.Error -> updateSuccessState {
-                    it.copy(pagePreviewsState = PagePreviewState.Error(result.error))
-                }
-                is GetPagePreviews.Result.Success -> updateSuccessState {
-                    it.copy(pagePreviewsState = PagePreviewState.Success(result.pagePreviews))
-                }
-                GetPagePreviews.Result.Unused -> updateSuccessState {
-                    it.copy(pagePreviewsState = PagePreviewState.Unused)
-                }
-            }
-        }
-    }
     // SY <--
 
     // KMK -->
@@ -1163,7 +903,7 @@ class MangaScreenModel(
      */
     internal suspend fun fetchRelatedMangasFromSource(onDemand: Boolean = false, onFinish: (() -> Unit)? = null) {
         val expandRelatedMangas = uiPreferences.expandRelatedMangas().get()
-        if ((!onDemand && !expandRelatedMangas) || manga?.source == MERGED_SOURCE_ID) return
+        if (!onDemand && !expandRelatedMangas) return
 
         // start fetching related mangas
         setRelatedMangasFetchedStatus(false)
@@ -1276,11 +1016,6 @@ class MangaScreenModel(
     private fun getUnreadChaptersSorted(): List<Chapter> {
         val manga = successState?.manga ?: return emptyList()
         val chaptersSorted = getUnreadChapters().sortedWith(getChapterSort(manga))
-            // SY -->
-            .let {
-                if (manga.isEhBasedManga()) it.reversed() else it
-            }
-        // SY <--
         return if (manga.sortDescending()) chaptersSorted.reversed() else chaptersSorted
     }
 
@@ -1453,16 +1188,9 @@ class MangaScreenModel(
     private fun downloadChapters(chapters: List<Chapter>) {
         // SY -->
         val state = successState ?: return
-        if (state.source is MergedSource) {
-            chapters.groupBy { it.mangaId }.forEach { map ->
-                val manga = state.mergedData?.manga?.get(map.key) ?: return@forEach
-                downloadManager.downloadChapters(manga, map.value)
-            }
-        } else {
-            // SY <--
-            val manga = state.manga
-            downloadManager.downloadChapters(manga, chapters)
-        }
+        val manga = state.manga
+        downloadManager.downloadChapters(manga, chapters)
+
         toggleAllSelection(false)
     }
 
@@ -1489,47 +1217,24 @@ class MangaScreenModel(
         screenModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
-                    // KMK -->
-                    if (state.source.id == MERGED_SOURCE_ID) {
-                        chapters.groupBy { it.mangaId }.forEach { map ->
-                            val manga = state.mergedData?.manga?.get(map.key) ?: return@forEach
-                            val source = state.mergedData.sources.find { it.id != MERGED_SOURCE_ID && manga.source == it.id } ?: return@forEach
-                            downloadManager.deleteChapters(
-                                map.value,
-                                manga,
-                                source,
-                                ignoreCategoryExclusion = true,
-                            )
-                            if (source.isLocal()) {
-                                // Refresh chapters state for Local source
-                                fetchAllFromSource(
-                                    manualFetch = false,
-                                    fetchDetails = false,
-                                    fetchChapters = true,
-                                )
-                            }
-                        }
-                    } else {
-                        // KMK <--
-                        downloadManager.deleteChapters(
-                            chapters,
-                            state.manga,
-                            state.source,
-                            // KMK -->
-                            ignoreCategoryExclusion = true,
-                            // KMK <--
-                        )
+                    downloadManager.deleteChapters(
+                        chapters,
+                        state.manga,
+                        state.source,
                         // KMK -->
-                        if (state.source.isLocal()) {
-                            // Refresh chapters state for Local source
-                            fetchAllFromSource(
-                                manualFetch = false,
-                                fetchDetails = false,
-                                fetchChapters = true,
-                            )
-                        }
+                        ignoreCategoryExclusion = true,
                         // KMK <--
+                    )
+                    // KMK -->
+                    if (state.source.isLocal()) {
+                        // Refresh chapters state for Local source
+                        fetchAllFromSource(
+                            manualFetch = false,
+                            fetchDetails = false,
+                            fetchChapters = true,
+                        )
                     }
+                    // KMK <--
                 }
             } catch (e: Throwable) {
                 logcat(LogPriority.ERROR, e)
@@ -1554,39 +1259,18 @@ class MangaScreenModel(
         screenModelScope.launchNonCancellable {
             try {
                 successState?.let { state ->
-                    if (state.source.id == MERGED_SOURCE_ID) {
-                        state.mergedData?.manga
-                            ?.forEach { (_, manga) ->
-                                val source = state.mergedData.sources.find { it.id != MERGED_SOURCE_ID && manga.source == it.id } ?: return@forEach
-
-                                downloadManager.deleteManga(
-                                    manga = manga,
-                                    source = source,
-                                    removeQueued = true,
-                                )
-                                if (source.isLocal()) {
-                                    // Refresh chapters state for Local source
-                                    fetchAllFromSource(
-                                        manualFetch = false,
-                                        fetchDetails = false,
-                                        fetchChapters = true,
-                                    )
-                                }
-                            }
-                    } else {
-                        downloadManager.deleteManga(
-                            manga = state.manga,
-                            source = state.source,
-                            removeQueued = true,
+                    downloadManager.deleteManga(
+                        manga = state.manga,
+                        source = state.source,
+                        removeQueued = true,
+                    )
+                    if (state.source.isLocal()) {
+                        // Refresh chapters state for Local source
+                        fetchAllFromSource(
+                            manualFetch = false,
+                            fetchDetails = false,
+                            fetchChapters = true,
                         )
-                        if (state.source.isLocal()) {
-                            // Refresh chapters state for Local source
-                            fetchAllFromSource(
-                                manualFetch = false,
-                                fetchDetails = false,
-                                fetchChapters = true,
-                            )
-                        }
                     }
                 }
             } catch (e: Throwable) {
@@ -1612,7 +1296,7 @@ class MangaScreenModel(
             val manga = successState?.manga ?: return@launchNonCancellable
             val chaptersToDownload = filterChaptersForDownload.await(manga, chapters)
 
-            if (chaptersToDownload.isNotEmpty() /* SY --> */ && !manga.isEhBasedManga() /* SY <-- */) {
+            if (chaptersToDownload.isNotEmpty()) {
                 downloadChapters(chaptersToDownload)
             }
         }
@@ -1817,47 +1501,14 @@ class MangaScreenModel(
                 // Show only if the service supports this manga's source
                 // KMK -->
                 val supportedTrackers = source?.let { source ->
-                    val sources = if (source is MergedSource) {
-                        state.mergedData?.sources ?: emptyList()
-                    } else {
-                        listOf(source)
-                    }
-                    loggedInTrackers.filter { (it as? EnhancedTracker)?.accept(sources) ?: true }
+                    loggedInTrackers.filter { (it as? EnhancedTracker)?.accept(listOf(source)) ?: true }
                 } ?: loggedInTrackers.filterNot { it is EnhancedTracker }
                 // KMK <--
                 val supportedTrackerIds = supportedTrackers.map { it.id }.toHashSet()
                 val supportedTrackerTracks = mangaTracks.filter { it.trackerId in supportedTrackerIds }
                 supportedTrackerTracks to supportedTrackers
             }
-                // SY -->
-                .map { (tracks, supportedTrackers) ->
-                    val supportedTrackerTracks = if (manga.source in mangaDexSourceIds ||
-                        state.mergedData?.manga?.values.orEmpty().any {
-                            it.source in mangaDexSourceIds
-                        }
-                    ) {
-                        val mdTrack = supportedTrackers.firstOrNull { it is MdList }
-                        when {
-                            mdTrack == null -> {
-                                tracks
-                            }
-                            // KMK: auto track MangaDex
-                            mdTrack.id !in tracks.map { it.trackerId } -> {
-                                createMdListTrack()?.let { tracks + it } ?: tracks
-                            }
-                            else -> tracks
-                        }
-                    } else {
-                        tracks
-                    }
-                    supportedTrackerTracks
-                        .filter {
-                            it.trackerId != trackerManager.mdList.id ||
-                                it.status != FollowStatus.UNFOLLOWED.long
-                        }
-                        .size to supportedTrackers.isNotEmpty()
-                }
-                // SY <--
+                .map { (tracks, supportedTrackers) -> tracks.size to supportedTrackers.isNotEmpty() }
                 .flowWithLifecycle(lifecycle)
                 .distinctUntilChanged()
                 .collectLatest { (trackingCount, hasLoggedInTrackers) ->
@@ -1872,28 +1523,6 @@ class MangaScreenModel(
     }
 
     // SY -->
-    private suspend fun createMdListTrack(): Track? {
-        try {
-            val state = successState!!
-            val mdManga = state.manga.takeIf { it.source in mangaDexSourceIds }
-                ?: state.mergedData?.manga?.values?.find { it.source in mangaDexSourceIds }
-                ?: throw IllegalArgumentException("Entry does not belong to MangaDex")
-            val track = trackerManager.mdList.createInitialTracker(state.manga, mdManga)
-                .toDomainTrack(false)
-                ?: throw IllegalStateException("Could not create initial track")
-            insertTrack.await(track)
-            /* KMK -->
-            return TrackItem(
-                getTracks.await(mangaId).first { it.trackerId == trackerManager.mdList.id },
-                 trackerManager.mdList,
-             )
-            KMK <-- */
-            return getTracks.await(mangaId).first { it.trackerId == trackerManager.mdList.id }
-        } catch (e: Exception) {
-            xLogE("Failed to create MangaDex track", e)
-            return null
-        }
-    }
     // SY <--
 
     // Track sheet - end
@@ -1910,7 +1539,6 @@ class MangaScreenModel(
 
         // SY -->
         data class EditMangaInfo(val manga: Manga) : Dialog
-        data class EditMergedSettings(val mergedData: MergedMangaData) : Dialog
         // SY <--
 
         // KMK -->
@@ -1965,17 +1593,6 @@ class MangaScreenModel(
         }
     }
 
-    fun showEditMergedSettingsDialog() {
-        val mergedData = successState?.mergedData ?: return
-        mutableState.update { state ->
-            when (state) {
-                State.Loading -> state
-                is State.Success -> {
-                    state.copy(dialog = Dialog.EditMergedSettings(mergedData))
-                }
-            }
-        }
-    }
     // SY <--
 
     // KMK -->
@@ -2004,14 +1621,7 @@ class MangaScreenModel(
             val hideMissingChapters: Boolean = false,
 
             // SY -->
-            val meta: RaisedSearchMetadata?,
-            val mergedData: MergedMangaData?,
             val showRecommendationsInOverflow: Boolean,
-            val showMergeInOverflow: Boolean,
-            val showMergeWithAnother: Boolean,
-            val pagePreviewsState: PagePreviewState,
-            val alwaysShowReadingProgress: Boolean,
-            val previewsRowCount: Int,
             // SY <--
             // KMK -->
             /**
@@ -2120,14 +1730,6 @@ class MangaScreenModel(
     }
 }
 
-// SY -->
-data class MergedMangaData(
-    val references: List<MergedMangaReference>,
-    val manga: Map<Long, Manga>,
-    val sources: List<Source>,
-)
-// SY <--
-
 @Immutable
 sealed class ChapterList {
     @Immutable
@@ -2142,24 +1744,11 @@ sealed class ChapterList {
         val downloadState: Download.State,
         val downloadProgress: Int,
         val selected: Boolean = false,
-        // SY -->
-        val sourceName: String?,
-        val showScanlator: Boolean,
-        // SY <--
     ) : ChapterList() {
         val id = chapter.id
         val isDownloaded = downloadState == Download.State.DOWNLOADED
     }
 }
-
-// SY -->
-sealed interface PagePreviewState {
-    data object Unused : PagePreviewState
-    data object Loading : PagePreviewState
-    data class Success(val pagePreviews: List<PagePreview>) : PagePreviewState
-    data class Error(val error: Throwable) : PagePreviewState
-}
-// SY <--
 
 // KMK -->
 sealed interface RelatedManga {

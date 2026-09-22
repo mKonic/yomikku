@@ -20,7 +20,6 @@ import eu.kanade.tachiyomi.data.backup.restore.restorers.SavedSearchRestorer
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.notification.Notifications
 import eu.kanade.tachiyomi.util.system.createFileInCacheDir
-import exh.source.MERGED_SOURCE_ID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
@@ -212,34 +211,26 @@ class BackupRestorer(
         // writes that each committed on their own; nesting them under one transaction is supported
         // by design (see withTransaction) and turns a large restore from thousands of commits into
         // a handful. Shape adapted from mihonapp/mihon#3667.
-        // The entries stream from the file, so they cannot be sorted; merged entries point at the entries they merge,
-        // so they get a second pass once those exist.
-        var restoredBefore = 0
-        for (merged in listOf(false, true)) {
-            var restoredInPass = 0
-            chunkedRestore(
-                items = decoder.decodeManga(uri).filter { (it.source == MERGED_SOURCE_ID) == merged },
-                chunkSize = MANGA_RESTORE_CHUNK_SIZE,
-                inTransaction = { block -> handler.await(inTransaction = true) { block() } },
-                restore = { mangaRestorer.restore(it, backupCategories) },
-                onError = { manga, e ->
-                    val sourceName = sourceMapping[manga.source] ?: manga.source.toString()
-                    errors.add(Date() to "${manga.title} [$sourceName]: ${e.message}")
-                },
-                onChunkFailed = { e ->
-                    logcat(LogPriority.WARN, e) { "Restoring a chunk failed, retrying entry by entry" }
-                },
-                onChunkRestored = { restored, last ->
-                    restoredInPass = restored
-                    restoreProgress = restoredBefore + restored
-                    with(notifier) {
-                        showRestoreProgress(last.title, restoreProgress, restoreAmount, isSync)
-                            .show(Notifications.ID_RESTORE_PROGRESS)
-                    }
-                },
-            )
-            restoredBefore += restoredInPass
-        }
+        chunkedRestore(
+            items = decoder.decodeManga(uri),
+            chunkSize = MANGA_RESTORE_CHUNK_SIZE,
+            inTransaction = { block -> handler.await(inTransaction = true) { block() } },
+            restore = { mangaRestorer.restore(it, backupCategories) },
+            onError = { manga, e ->
+                val sourceName = sourceMapping[manga.source] ?: manga.source.toString()
+                errors.add(Date() to "${manga.title} [$sourceName]: ${e.message}")
+            },
+            onChunkFailed = { e ->
+                logcat(LogPriority.WARN, e) { "Restoring a chunk failed, retrying entry by entry" }
+            },
+            onChunkRestored = { restored, last ->
+                restoreProgress = restored
+                with(notifier) {
+                    showRestoreProgress(last.title, restoreProgress, restoreAmount, isSync)
+                        .show(Notifications.ID_RESTORE_PROGRESS)
+                }
+            },
+        )
         // KMK <--
     }
 

@@ -48,8 +48,7 @@ class BackupManga(
     @ProtoNumber(112) var memo: ByteArray = JsonObjectEmptyBytes,
 
     // SY specific values
-    @ProtoNumber(600) var mergedMangaReferences: List<BackupMergedMangaReference> = emptyList(),
-    @ProtoNumber(601) var flatMetadata: BackupFlatMetadata? = null,
+    // 600 and 601 held SY's merged manga references and gallery metadata.
     @ProtoNumber(602) var customStatus: Int = 0,
     @ProtoNumber(603) var customThumbnailUrl: String? = null,
 

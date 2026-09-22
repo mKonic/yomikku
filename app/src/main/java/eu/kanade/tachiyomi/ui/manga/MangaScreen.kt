@@ -56,7 +56,6 @@ import eu.kanade.presentation.manga.components.DeleteChaptersDialog
 import eu.kanade.presentation.manga.components.MangaCoverDialog
 import eu.kanade.presentation.manga.components.ScanlatorFilterDialog
 import eu.kanade.presentation.manga.components.SetIntervalDialog
-import eu.kanade.presentation.more.settings.screen.SettingsEhScreen
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.Screen
@@ -74,7 +73,6 @@ import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.category.CategoryScreen
 import eu.kanade.tachiyomi.ui.home.HomeScreen
-import eu.kanade.tachiyomi.ui.manga.merged.EditMergedSettingsDialog
 import eu.kanade.tachiyomi.ui.manga.notes.MangaNotesScreen
 import eu.kanade.tachiyomi.ui.manga.track.TrackInfoDialogHomeScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
@@ -83,14 +81,7 @@ import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
-import exh.pagepreview.PagePreviewScreen
-import exh.recs.RecommendsScreen
 import exh.source.ExhPreferences
-import exh.source.MERGED_SOURCE_ID
-import exh.source.anyIs
-import exh.source.getMainSource
-import exh.source.isEhBasedSource
-import exh.ui.metadata.MetadataViewScreen
 import exh.ui.smartsearch.SmartSearchScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -244,27 +235,12 @@ class MangaScreen(
             }
         }
 
-        // SY -->
-        LaunchedEffect(Unit) {
-            screenModel.redirectFlow
-                .take(1)
-                .onEach {
-                    navigator.replace(
-                        MangaScreen(it.mangaId),
-                    )
-                }
-                .launchIn(this)
-        }
-        // SY <--
-
         // KMK -->
         val coverRatio = remember { mutableFloatStateOf(1f) }
         val hazeState = remember { HazeState() }
         val fullCoverBackground = MaterialTheme.colorScheme.surfaceTint.blend(MaterialTheme.colorScheme.surface)
 
-        val isHentaiEnabled: Boolean = Injekt.get<ExhPreferences>().isHentaiEnabled().get()
-        val isConfigurableSource = successState.source.anyIs<ConfigurableSource>() ||
-            (successState.source.isEhBasedSource() && isHentaiEnabled)
+        val isConfigurableSource = successState.source is ConfigurableSource
         // KMK <--
 
         MangaScreen(
@@ -283,45 +259,20 @@ class MangaScreen(
             },
             // SY -->
             onWebViewClicked = {
-                if (successState.mergedData == null) {
-                    openMangaInWebView(
-                        navigator,
-                        screenModel.manga,
-                        screenModel.source,
-                    )
-                } else {
-                    mergedMangaAction(
-                        context,
-                        navigator,
-                        successState.mergedData,
-                        // KMK -->
-                        action = { _, nav, manga, source -> openMangaInWebView(nav, manga, source) },
-                        titleRes = MR.strings.action_open_in_web_view,
-                        // KMK <--
-                    )
-                }
+                openMangaInWebView(
+                    navigator,
+                    screenModel.manga,
+                    screenModel.source,
+                )
             }.takeIf { isHttpSource },
             // SY <--
             onWebViewLongClicked = {
+                copyMangaUrl(
+                    context,
+                    screenModel.manga,
+                    screenModel.source,
+                )
                 // KMK -->
-                if (successState.mergedData == null) {
-                    // KMK <--
-                    copyMangaUrl(
-                        context,
-                        screenModel.manga,
-                        screenModel.source,
-                    )
-                    // KMK -->
-                } else {
-                    mergedMangaAction(
-                        context,
-                        navigator,
-                        successState.mergedData,
-                        action = { ctx, _, manga, source -> copyMangaUrl(ctx, manga, source) },
-                        titleRes = MR.strings.action_copy_link,
-                    )
-                    // KMK <--
-                }
             }.takeIf { isHttpSource },
             onTrackingClicked = {
                 if (!successState.hasLoggedInTrackers) {
@@ -342,21 +293,8 @@ class MangaScreen(
             // KMK <--
             onCoverClicked = screenModel::showCoverDialog,
             onShareClicked = {
+                shareManga(context, screenModel.manga, screenModel.source)
                 // KMK -->
-                if (successState.mergedData == null) {
-                    // KMK <--
-                    shareManga(context, screenModel.manga, screenModel.source)
-                    // KMK -->
-                } else {
-                    mergedMangaAction(
-                        context,
-                        navigator,
-                        successState.mergedData,
-                        action = { ctx, _, manga, source -> shareManga(ctx, manga, source) },
-                        titleRes = MR.strings.action_share,
-                    )
-                    // KMK <--
-                }
             }.takeIf { isHttpSource },
             onDownloadActionClicked = screenModel::runDownloadAction.takeIf { !successState.source.isLocalOrStub() },
             onEditCategoryClicked = screenModel::showChangeCategoryDialog.takeIf { successState.manga.favorite },
@@ -367,29 +305,7 @@ class MangaScreen(
                 navigator.push(MigrationConfigScreen(successState.manga.id))
             }.takeIf { successState.manga.favorite },
             // SY -->
-            previewsRowCount = successState.previewsRowCount,
-            onMetadataViewerClicked = {
-                openMetadataViewer(
-                    navigator,
-                    successState.manga,
-                    // KMK -->
-                    successState.seedColor,
-                    // KMK <--
-                )
-            },
             onEditInfoClicked = screenModel::showEditMangaInfoDialog,
-            onRecommendClicked = {
-                openRecommends(navigator, screenModel.source?.getMainSource(), successState.manga)
-            },
-            onMergedSettingsClicked = screenModel::showEditMergedSettingsDialog,
-            onMergeClicked = { openSmartSearch(navigator, successState.manga) },
-            onMergeWithAnotherClicked = {
-                mergeWithAnother(navigator, context, successState.manga, screenModel::smartSearchMerge)
-            },
-            onOpenPagePreview = { page ->
-                openPagePreview(context, successState.chapters.minByOrNull { it.chapter.sourceOrder }?.chapter, page)
-            },
-            onMorePreviewsClicked = { openMorePagePreviews(navigator, successState.manga) },
             // SY <--
             onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
             onMultiBookmarkClicked = screenModel::bookmarkChapters,
@@ -403,27 +319,11 @@ class MangaScreen(
             // KMK -->
             getMangaState = { screenModel.getManga(initialManga = it) },
             onClickSourceSettingsClicked = {
-                when {
-                    successState.source.isEhBasedSource() && isHentaiEnabled ->
-                        navigator.push(SettingsEhScreen)
-                    successState.source.anyIs<ConfigurableSource>() ->
-                        navigator.push(SourcePreferencesScreen(successState.source.id))
-                    else -> {}
-                }
+                navigator.push(SourcePreferencesScreen(successState.source.id))
             }.takeIf { isConfigurableSource },
             onClearManga = { screenModel.showClearMangaDialog() },
             onOpenMangaFolder = {
-                if (successState.mergedData == null) {
-                    screenModel.openMangaFolder(screenModel.source, screenModel.manga)
-                } else {
-                    mergedMangaAction(
-                        context,
-                        navigator,
-                        successState.mergedData,
-                        action = { _, _, manga, source -> screenModel.openMangaFolder(source, manga) },
-                        titleRes = KMR.strings.action_open_folder,
-                    )
-                }
+                screenModel.openMangaFolder(screenModel.source, screenModel.manga)
             }
                 .takeIf { successState.source !is StubSource },
             onRelatedMangasScreenClick = {
@@ -436,20 +336,8 @@ class MangaScreen(
             onRelatedMangaLongClick = { bulkFavoriteScreenModel.addRemoveManga(it, haptic) },
             onSourceClick = {
                 if (successState.source !is StubSource) {
-                    // KMK -->
-                    if (successState.mergedData == null) {
-                        screenModel.source?.let { browseSource(navigator, it, screenModel.useNewSourceNavigation) }
-                    } else {
-                        mergedMangaAction(
-                            context,
-                            navigator,
-                            successState.mergedData,
-                            action = { _, nav, _, source ->
-                                source?.let { browseSource(nav, it, screenModel.useNewSourceNavigation) }
-                            },
-                            titleRes = MR.strings.browse,
-                        )
-                    }
+                    screenModel.source?.let { browseSource(navigator, it, screenModel.useNewSourceNavigation) }
+
                     // KMK <--
                 } else {
                     navigator.push(ExtensionsScreen(searchSource = successState.source.name))
@@ -620,19 +508,6 @@ class MangaScreen(
                 )
             }
 
-            is MangaScreenModel.Dialog.EditMergedSettings -> {
-                EditMergedSettingsDialog(
-                    mergedData = dialog.mergedData,
-                    onDismissRequest = screenModel::dismissDialog,
-                    onDeleteClick = screenModel::deleteMerge,
-                    onPositiveClick = screenModel::updateMergeSettings,
-                    // KMK -->
-                    onOpenEntryClick = { merge ->
-                        merge.mangaId?.let { navigator.push(MangaScreen(it)) }
-                    },
-                    // KMK <--
-                )
-            }
             // SY <--
             // KMK -->
             is MangaScreenModel.Dialog.ClearManga -> {
@@ -800,50 +675,6 @@ class MangaScreen(
     }
 
     // SY -->
-    private fun openMetadataViewer(
-        navigator: Navigator,
-        manga: Manga,
-        // KMK -->
-        seedColor: Color?,
-        // KMK <--
-    ) {
-        navigator.push(MetadataViewScreen(manga.id, manga.source, seedColor?.toArgb()))
-    }
-
-    private fun mergedMangaAction(
-        context: Context,
-        navigator: Navigator,
-        mergedMangaData: MergedMangaData,
-        // KMK -->
-        action: (Context, Navigator, Manga, HttpSource?) -> Unit,
-        titleRes: StringResource,
-        // KMK <--
-    ) {
-        val sourceManager: SourceManager = Injekt.get()
-        // KMK -->
-        val mergedMangaAndSources = mergedMangaData.manga.values
-            .filterNot { it.source == MERGED_SOURCE_ID }
-            .map { manga -> manga to sourceManager.peekOrStub(manga.source) }
-        // KMK <--
-        MaterialAlertDialogBuilder(context)
-            .setTitle(titleRes.getString(context))
-            .setSingleChoiceItems(
-                Array(mergedMangaAndSources.size) { index ->
-                    // KMK -->
-                    mergedMangaAndSources[index].second.toString()
-                    // KMK <--
-                },
-                -1,
-            ) { dialog, index ->
-                dialog.dismiss()
-                // KMK -->
-                val (manga, source) = mergedMangaAndSources[index]
-                action(context, navigator, manga, source as? HttpSource)
-                // KMK <--
-            }
-            .setNegativeButton(MR.strings.action_cancel.getString(context), null)
-            .show()
-    }
 
     // KMK -->
     private fun browseSource(navigator: Navigator, source: Source, useNewSourceNavigation: Boolean) {
@@ -874,14 +705,6 @@ class MangaScreen(
     }
     // KMK <--
 
-    private fun openMorePagePreviews(navigator: Navigator, manga: Manga) {
-        navigator.push(PagePreviewScreen(manga.id))
-    }
-
-    private fun openPagePreview(context: Context, chapter: Chapter?, page: Int) {
-        chapter ?: return
-        context.startActivity(ReaderActivity.newIntent(context, chapter.mangaId, chapter.id, page))
-    }
     // SY <--
 
     // EXH -->
@@ -894,44 +717,8 @@ class MangaScreen(
         navigator.push(SourcesScreen(smartSearchConfig))
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
-    private fun mergeWithAnother(
-        navigator: Navigator,
-        context: Context,
-        manga: Manga,
-        smartSearchMerge: suspend (Manga, Long) -> Manga,
-    ) {
-        launchUI {
-            try {
-                val mergedManga = withNonCancellableContext {
-                    smartSearchMerge(manga, smartSearchConfig?.origMangaId!!)
-                }
-
-                navigator.popUntil { it is SourcesScreen }
-                navigator.pop()
-                // KMK -->
-                if (navigator.lastItem !is MangaScreen) {
-                    navigator push MangaScreen(mergedManga.id)
-                } else {
-                    // KMK <--
-                    navigator replace MangaScreen(mergedManga.id)
-                }
-                context.toast(SYMR.strings.entry_merged)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-
-                context.toast(context.stringResource(SYMR.strings.failed_merge, e.message.orEmpty()))
-            }
-        }
-    }
     // EXH <--
 
     // AZ -->
-    private fun openRecommends(navigator: Navigator, source: Source?, manga: Manga) {
-        source ?: return
-        RecommendsScreen.Args.SingleSourceManga(manga.id, source.id)
-            .let(::RecommendsScreen)
-            .let(navigator::push)
-    }
     // AZ <--
 }

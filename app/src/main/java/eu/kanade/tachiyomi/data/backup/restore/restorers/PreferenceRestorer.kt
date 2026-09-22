@@ -15,7 +15,6 @@ import eu.kanade.tachiyomi.data.backup.models.StringSetPreferenceValue
 import eu.kanade.tachiyomi.data.library.LibraryUpdateJob
 import eu.kanade.tachiyomi.data.updater.AppUpdateJob
 import eu.kanade.tachiyomi.source.sourcePreferences
-import exh.EXHMigrations
 import exh.log.xLogE
 import tachiyomi.core.common.preference.AndroidPreferenceStore
 import tachiyomi.core.common.preference.PreferenceStore
@@ -163,7 +162,6 @@ class PreferenceRestorer(
     ) {
         if (value.isEmpty()) return
 
-        val valueToSet = EXHMigrations.migrateSourceIds(value)
-        preferenceStore.getStringSet(key).set(valueToSet)
+        preferenceStore.getStringSet(key).set(value)
     }
 }

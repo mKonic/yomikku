@@ -32,9 +32,6 @@ import eu.kanade.presentation.library.DeleteLibraryMangaDialog
 import eu.kanade.presentation.library.LibrarySettingsDialog
 import eu.kanade.presentation.library.components.LibraryContent
 import eu.kanade.presentation.library.components.LibraryToolbar
-import eu.kanade.presentation.library.components.SyncFavoritesConfirmDialog
-import eu.kanade.presentation.library.components.SyncFavoritesProgressDialog
-import eu.kanade.presentation.library.components.SyncFavoritesWarningDialog
 import eu.kanade.presentation.manga.components.LibraryBottomActionMenu
 import eu.kanade.presentation.more.onboarding.GETTING_STARTED_URL
 import eu.kanade.presentation.util.Tab
@@ -52,12 +49,6 @@ import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.util.system.toast
-import exh.favorites.FavoritesSyncStatus
-import exh.recs.RecommendsScreen
-import exh.recs.batch.RecommendationSearchBottomSheetDialog
-import exh.recs.batch.RecommendationSearchProgressDialog
-import exh.recs.batch.SearchStatus
-import exh.source.MERGED_SOURCE_ID
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.channels.Channel
@@ -181,7 +172,6 @@ data object LibraryTab : Tab {
                         }
                     },
                     // SY -->
-                    onClickSyncExh = screenModel::openFavoritesSyncDialog.takeIf { state.showSyncExh },
                     isSyncEnabled = state.isSyncEnabled,
                     // SY <--
                     searchQuery = state.searchQuery,
@@ -207,7 +197,6 @@ data object LibraryTab : Tab {
                         val selection = state
                             // KMK -->
                             .selectedManga
-                            .filterNot { it.source == MERGED_SOURCE_ID }
                             .map { it.id }
                         // KMK <--
                         screenModel.clearSelection()
@@ -220,44 +209,6 @@ data object LibraryTab : Tab {
                         }
                     },
                     // KMK -->
-                    onMergeClicked = {
-                        if (state.selection.size == 1) {
-                            val manga = state.selectedManga.first()
-                            // Invoke merging for this manga
-                            screenModel.clearSelection()
-                            val smartSearchConfig = SourcesScreen.SmartSearchConfig(manga.title, manga.id)
-                            navigator.push(SourcesScreen(smartSearchConfig))
-                        } else if (state.selection.isNotEmpty()) {
-                            // Invoke multiple merge
-                            val selectedManga = state.selectedManga
-                            screenModel.clearSelection()
-                            scope.launchIO {
-                                val mergingMangas = selectedManga.filterNot { it.source == MERGED_SOURCE_ID }
-                                val mergedMangaId = screenModel.smartSearchMerge(selectedManga.toPersistentList())
-                                snackbarHostState.showSnackbar(context.stringResource(SYMR.strings.entry_merged))
-                                if (mergedMangaId != null) {
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = context.stringResource(KMR.strings.action_remove_merged),
-                                        actionLabel = context.stringResource(MR.strings.action_remove),
-                                        withDismissAction = true,
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        screenModel.removeMangas(
-                                            mangas = mergingMangas,
-                                            deleteFromLibrary = true,
-                                            deleteChapters = false,
-                                        )
-                                    }
-                                    navigator.push(MangaScreen(mergedMangaId))
-                                } else {
-                                    snackbarHostState.showSnackbar(context.stringResource(SYMR.strings.merged_references_invalid))
-                                }
-                            }
-                        } else {
-                            screenModel.clearSelection()
-                            context.toast(SYMR.strings.no_valid_entry)
-                        }
-                    },
                     onSelectionUpdateClicked = {
                         val started = screenModel.updateSelectedManga()
                         scope.launch {
@@ -274,9 +225,6 @@ data object LibraryTab : Tab {
                     },
                     // KMK <--
                     // SY -->
-                    onClickCleanTitles = screenModel::cleanTitles.takeIf { state.showCleanTitles },
-                    onClickCollectRecommendations = screenModel::showRecommendationSearchDialog.takeIf { state.selection.size > 1 },
-                    onClickAddToMangaDex = screenModel::syncMangaToDex.takeIf { state.showAddToMangadex },
                     onClickResetInfo = screenModel::resetInfo.takeIf { state.showResetInfo },
                     // SY <--
                 )
@@ -387,52 +335,8 @@ data object LibraryTab : Tab {
                     },
                 )
             }
-            // SY -->
-            LibraryScreenModel.Dialog.SyncFavoritesWarning -> {
-                SyncFavoritesWarningDialog(
-                    onDismissRequest = onDismissRequest,
-                    onAccept = {
-                        onDismissRequest()
-                        screenModel.onAcceptSyncWarning()
-                    },
-                )
-            }
-            LibraryScreenModel.Dialog.SyncFavoritesConfirm -> {
-                SyncFavoritesConfirmDialog(
-                    onDismissRequest = onDismissRequest,
-                    onAccept = {
-                        onDismissRequest()
-                        screenModel.runSync()
-                    },
-                )
-            }
-            is LibraryScreenModel.Dialog.RecommendationSearchSheet -> {
-                RecommendationSearchBottomSheetDialog(
-                    onDismissRequest = onDismissRequest,
-                    onSearchRequest = {
-                        onDismissRequest()
-                        screenModel.clearSelection()
-                        screenModel.runRecommendationSearch(dialog.manga)
-                    },
-                )
-            }
-            // SY <--
             null -> {}
         }
-
-        // SY -->
-        SyncFavoritesProgressDialog(
-            status = screenModel.favoritesSync.status.collectAsState().value,
-            setStatusIdle = { screenModel.favoritesSync.status.value = FavoritesSyncStatus.Idle },
-            openManga = { navigator.push(MangaScreen(it)) },
-        )
-
-        RecommendationSearchProgressDialog(
-            status = screenModel.recommendationSearch.status.collectAsState().value,
-            setStatusIdle = { screenModel.recommendationSearch.status.value = SearchStatus.Idle },
-            setStatusCancelling = { screenModel.recommendationSearch.status.value = SearchStatus.Cancelling },
-        )
-        // SY <--
 
         BackHandler(enabled = state.selectionMode || state.searchQuery != null) {
             when {
@@ -456,30 +360,6 @@ data object LibraryTab : Tab {
                 // <-- AM (DISCORD)
             }
         }
-
-        // SY -->
-        val recSearchState by screenModel.recommendationSearch.status.collectAsState()
-        LaunchedEffect(recSearchState) {
-            when (val current = recSearchState) {
-                is SearchStatus.Finished.WithResults -> {
-                    RecommendsScreen.Args.MergedSourceMangas(current.results)
-                        .let(::RecommendsScreen)
-                        .let(navigator::push)
-
-                    screenModel.recommendationSearch.status.value = SearchStatus.Idle
-                }
-                is SearchStatus.Finished.WithoutResults -> {
-                    context.toast(SYMR.strings.rec_no_results)
-                    screenModel.recommendationSearch.status.value = SearchStatus.Idle
-                }
-                is SearchStatus.Cancelling -> {
-                    screenModel.cancelRecommendationSearch()
-                    screenModel.recommendationSearch.status.value = SearchStatus.Idle
-                }
-                else -> {}
-            }
-        }
-        // SY <--
 
         LaunchedEffect(Unit) {
             launch { queryEvent.receiveAsFlow().collect(screenModel::search) }

@@ -38,8 +38,6 @@ import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.browse.source.SourcesScreenModel
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreenModel.Listing
 import eu.kanade.tachiyomi.util.system.LocaleHelper
-import exh.source.EH_SOURCE_ID
-import exh.source.EXH_SOURCE_ID
 import kotlinx.collections.immutable.ImmutableList
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.PushPin
@@ -315,7 +313,7 @@ fun SourceOptionsDialog(
                 // KMK -->
                 if (onClickSettings != null &&
                     source.installedExtension !== null &&
-                    source.id !in listOf(LocalSource.ID, EH_SOURCE_ID, EXH_SOURCE_ID)
+                    source.id != LocalSource.ID
                 ) {
                     Text(
                         text = stringResource(MR.strings.label_extension_info),

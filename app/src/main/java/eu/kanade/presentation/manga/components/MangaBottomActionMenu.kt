@@ -265,13 +265,9 @@ fun LibraryBottomActionMenu(
     onDeleteClicked: () -> Unit,
     onMigrateClicked: () -> Unit,
     // KMK -->
-    onMergeClicked: () -> Unit,
     onSelectionUpdateClicked: () -> Unit,
     // KMK <--
     // SY -->
-    onClickCleanTitles: (() -> Unit)?,
-    onClickCollectRecommendations: (() -> Unit)?,
-    onClickAddToMangaDex: (() -> Unit)?,
     onClickResetInfo: (() -> Unit)?,
     // SY <--
     modifier: Modifier = Modifier,
@@ -401,28 +397,6 @@ fun LibraryBottomActionMenu(
                             onClick = onDeleteClicked,
                         )
                         // KMK -->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(SYMR.strings.merge)) },
-                            onClick = onMergeClicked,
-                        )
-                        if (onClickCleanTitles != null) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(SYMR.strings.action_clean_titles)) },
-                                onClick = onClickCleanTitles,
-                            )
-                        }
-                        if (onClickCollectRecommendations != null) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(SYMR.strings.rec_search_short)) },
-                                onClick = onClickCollectRecommendations,
-                            )
-                        }
-                        if (onClickAddToMangaDex != null) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(SYMR.strings.mangadex_add_to_follows)) },
-                                onClick = onClickAddToMangaDex,
-                            )
-                        }
                         if (onClickResetInfo != null) {
                             DropdownMenuItem(
                                 text = { Text(text = stringResource(SYMR.strings.reset_info)) },

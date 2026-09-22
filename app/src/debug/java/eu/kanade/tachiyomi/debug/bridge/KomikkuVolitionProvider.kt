@@ -14,9 +14,7 @@ import eu.kanade.presentation.more.settings.screen.SettingsBrowseScreen
 import eu.kanade.presentation.more.settings.screen.SettingsConnectionScreen
 import eu.kanade.presentation.more.settings.screen.SettingsDataScreen
 import eu.kanade.presentation.more.settings.screen.SettingsDownloadScreen
-import eu.kanade.presentation.more.settings.screen.SettingsEhScreen
 import eu.kanade.presentation.more.settings.screen.SettingsLibraryScreen
-import eu.kanade.presentation.more.settings.screen.SettingsMangadexScreen
 import eu.kanade.presentation.more.settings.screen.SettingsReaderScreen
 import eu.kanade.presentation.more.settings.screen.SettingsSecurityScreen
 import eu.kanade.presentation.more.settings.screen.SettingsTrackingScreen
@@ -75,8 +73,6 @@ class KomikkuVolitionProvider : ContentProvider() {
             screen("settings_data") { SettingsDataScreen }
             screen("settings_security") { SettingsSecurityScreen }
             screen("settings_advanced") { SettingsAdvancedScreen }
-            screen("settings_eh") { SettingsEhScreen }
-            screen("settings_mangadex") { SettingsMangadexScreen }
             screen("about") { AboutScreen() }
             screen("debug_info") { DebugInfoScreen() }
             screen("download_queue") { DownloadQueueScreen }

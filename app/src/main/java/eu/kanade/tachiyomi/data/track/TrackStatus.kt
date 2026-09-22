@@ -4,11 +4,9 @@ import dev.icerock.moko.resources.StringResource
 import eu.kanade.tachiyomi.data.track.anilist.Anilist
 import eu.kanade.tachiyomi.data.track.bangumi.Bangumi
 import eu.kanade.tachiyomi.data.track.kitsu.Kitsu
-import eu.kanade.tachiyomi.data.track.komga.Komga
 import eu.kanade.tachiyomi.data.track.mangaupdates.MangaUpdates
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeList
 import eu.kanade.tachiyomi.data.track.shikimori.Shikimori
-import exh.md.utils.FollowStatus
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.sy.SYMR
 
@@ -25,17 +23,6 @@ enum class TrackStatus(val int: Int, val res: StringResource) {
     companion object {
         fun parseTrackerStatus(trackerManager: TrackerManager, tracker: Long, status: Long): TrackStatus? {
             return when (tracker) {
-                trackerManager.mdList.id -> {
-                    when (FollowStatus.fromLong(status)) {
-                        FollowStatus.UNFOLLOWED -> null
-                        FollowStatus.READING -> READING
-                        FollowStatus.COMPLETED -> COMPLETED
-                        FollowStatus.ON_HOLD -> PAUSED
-                        FollowStatus.PLAN_TO_READ -> PLAN_TO_READ
-                        FollowStatus.DROPPED -> DROPPED
-                        FollowStatus.RE_READING -> REPEATING
-                    }
-                }
                 trackerManager.myAnimeList.id -> {
                     when (status) {
                         MyAnimeList.READING -> READING
@@ -87,14 +74,6 @@ enum class TrackStatus(val int: Int, val res: StringResource) {
                         Bangumi.PLAN_TO_READ -> PLAN_TO_READ
                         Bangumi.DROPPED -> DROPPED
                         else -> READING
-                    }
-                }
-                trackerManager.komga.id -> {
-                    when (status) {
-                        Komga.READING -> READING
-                        Komga.COMPLETED -> COMPLETED
-                        Komga.UNREAD -> null
-                        else -> null
                     }
                 }
                 trackerManager.mangaUpdates.id -> {

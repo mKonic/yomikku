@@ -29,8 +29,6 @@ import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.more.DownloadQueueState
 import eu.kanade.tachiyomi.util.system.openInBrowser
-import exh.pref.DelegateSourcePreferences
-import exh.source.ExhPreferences
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.Help
 import mihon.icons.materialsymbols.automirroredrounded.Label
@@ -74,7 +72,6 @@ fun MoreScreen(
     onClickDataAndStorage: () -> Unit,
     onClickSettings: () -> Unit,
     onClickAbout: () -> Unit,
-    onClickBatchAdd: () -> Unit,
     onClickUpdates: () -> Unit,
     onClickHistory: () -> Unit,
     // KMK -->
@@ -82,10 +79,6 @@ fun MoreScreen(
     // KMK <--
 ) {
     val uriHandler = LocalUriHandler.current
-    // SY -->
-    val exhPreferences = remember { Injekt.get<ExhPreferences>() }
-    val delegateSourcePreferences = remember { Injekt.get<DelegateSourcePreferences>() }
-    // SY <--
 
     Scaffold { contentPadding ->
         ScrollbarLazyColumn(
@@ -201,18 +194,6 @@ fun MoreScreen(
                     onPreferenceClick = onClickDataAndStorage,
                 )
             }
-            // SY -->
-            if (exhPreferences.isHentaiEnabled().get() || delegateSourcePreferences.delegateSources().get()) {
-                item {
-                    TextPreferenceWidget(
-                        title = stringResource(SYMR.strings.eh_batch_add),
-                        icon = MaterialSymbols.Rounded.PlaylistAdd,
-                        onPreferenceClick = onClickBatchAdd,
-                    )
-                }
-            }
-            // SY <--
-
             item { HorizontalDivider() }
 
             item {

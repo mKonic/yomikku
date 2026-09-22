@@ -242,7 +242,6 @@ fun MangaActionRow(
     onEditIntervalClicked: (() -> Unit)?,
     onEditCategory: (() -> Unit)?,
     // SY -->
-    onMergeClicked: (() -> Unit)?,
     // SY <--
     // KMK -->
     status: Long,
@@ -336,16 +335,6 @@ fun MangaActionRow(
                 onLongClick = onWebViewLongClicked,
             )
         }
-        // SY -->
-        if (onMergeClicked != null) {
-            MangaActionButton(
-                title = stringResource(SYMR.strings.merge),
-                icon = MaterialSymbols.Rounded.CallMerge,
-                color = MaterialTheme.colorScheme.primary, // KMK: defaultActionButtonColor
-                onClick = onMergeClicked,
-            )
-        }
-        // SY <--
     }
 }
 
@@ -359,7 +348,6 @@ fun ExpandableMangaDescription(
     onCopyTagToClipboard: (tag: String) -> Unit,
     onEditNotes: () -> Unit,
     // SY -->
-    searchMetadataChips: SearchMetadataChips?,
     doSearch: (query: String, global: Boolean) -> Unit,
     // SY <--
     modifier: Modifier = Modifier,
@@ -425,37 +413,22 @@ fun ExpandableMangaDescription(
                     )
                 }
                 if (expanded) {
-                    // SY -->
-                    if (searchMetadataChips != null) {
-                        NamespaceTags(
-                            tags = searchMetadataChips,
-                            onClick = {
-                                tagSelected = it
-                                showMenu = true
-                            },
-                            // KMK -->
-                            pureDarkMode = pureDarkMode,
-                            // KMK <--
-                        )
-                    } else {
-                        // SY <--
-                        FlowRow(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
-                        ) {
-                            tags.forEach {
-                                TagsChip(
-                                    modifier = DefaultTagChipModifier,
-                                    text = it,
-                                    onClick = {
-                                        tagSelected = it
-                                        showMenu = true
-                                    },
-                                    // KMK -->
-                                    pureDarkMode = pureDarkMode,
-                                    // KMK <--
-                                )
-                            }
+                    FlowRow(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.extraSmall),
+                    ) {
+                        tags.forEach {
+                            TagsChip(
+                                modifier = DefaultTagChipModifier,
+                                text = it,
+                                onClick = {
+                                    tagSelected = it
+                                    showMenu = true
+                                },
+                                // KMK -->
+                                pureDarkMode = pureDarkMode,
+                                // KMK <--
+                            )
                         }
                     }
                 } else {

@@ -20,8 +20,6 @@ import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.ui.reader.chapter.ReaderChapterItem
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderSettingsScreenModel
 import eu.kanade.tachiyomi.util.lang.toRelativeString
-import exh.metadata.MetadataUtil
-import exh.source.isEhBasedManga
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -93,17 +91,10 @@ fun ChapterListDialog(
                     date = chapterItem.chapter.dateUpload
                         .takeIf { it > 0L }
                         ?.let {
-                            // SY -->
-                            if (manga?.isEhBasedManga() == true) {
-                                MetadataUtil.EX_DATE_FORMAT
-                                    .format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault()))
-                            } else {
-                                LocalDate.ofInstant(
-                                    Instant.ofEpochMilli(it),
-                                    ZoneId.systemDefault(),
-                                ).toRelativeString(context, dateRelativeTime, chapterItem.dateFormat)
-                            }
-                            // SY <--
+                            LocalDate.ofInstant(
+                                Instant.ofEpochMilli(it),
+                                ZoneId.systemDefault(),
+                            ).toRelativeString(context, dateRelativeTime, chapterItem.dateFormat)
                         },
                     readProgress = null,
                     scanlator = chapterItem.chapter.scanlator,

@@ -57,16 +57,11 @@ import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.model.TrackSearch
-import eu.kanade.tachiyomi.source.online.MetadataSource
-import eu.kanade.tachiyomi.source.online.all.MergedSource
 import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import eu.kanade.tachiyomi.util.system.copyToClipboard
 import eu.kanade.tachiyomi.util.system.openInBrowser
 import eu.kanade.tachiyomi.util.system.toast
-import exh.metadata.metadata.base.TrackerIdMetadata
-import exh.source.MERGED_SOURCE_ID
-import exh.source.getMainSource
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
@@ -83,9 +78,7 @@ import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.manga.interactor.GetFlatMetadataById
 import tachiyomi.domain.manga.interactor.GetManga
-import tachiyomi.domain.manga.interactor.GetMergedReferencesById
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.domain.track.interactor.DeleteTrack
@@ -239,9 +232,7 @@ data class TrackInfoDialogHomeScreen(
         // KMK <--
     ) : StateScreenModel<Model.State>(State()) {
         // KMK -->
-        private val getFlatMetadataById: GetFlatMetadataById by injectLazy()
         private val getMangaById: GetManga by injectLazy()
-        private val getMergedReferencesById: GetMergedReferencesById by injectLazy()
         // KMK <--
 
         init {
@@ -260,16 +251,7 @@ data class TrackInfoDialogHomeScreen(
 
         // KMK -->
         private suspend fun getMangaForTracking(item: TrackItem): Manga? {
-            if (sourceId != MERGED_SOURCE_ID) {
-                return getMangaById.await(mangaId)
-            }
-            item.tracker as EnhancedTracker
-            val references = getMergedReferencesById.await(mangaId)
-            return references.distinctBy { it.mangaSourceId }.firstNotNullOfOrNull { ref ->
-                sourceManager.get(ref.mangaSourceId)
-                    ?.takeIf(item.tracker::accept)
-                    ?.let { ref.mangaId?.let { mangaId -> getMangaById.await(mangaId) } }
-            }
+            return getMangaById.await(mangaId)
         }
         // KMK <--
 
@@ -289,24 +271,6 @@ data class TrackInfoDialogHomeScreen(
         // SY -->
         fun newSearch(navigator: Navigator, item: TrackItem, mangaTitle: String) {
             screenModelScope.launchNonCancellable {
-                if (trackPreferences.resolveUsingSourceMetadata().get()) {
-                    // Check if the tracker id is contained in the metadata
-                    val result = getTrackerIdFromMetadata(item.tracker.id)
-                    if (result != null) {
-                        mutableState.update { it.copy(isLoading = true) }
-
-                        // Try to register tracking by id
-                        val success = registerTrackingById(item.tracker.id, result)
-
-                        mutableState.update { it.copy(isLoading = false) }
-
-                        if (success) {
-                            // Return on success
-                            return@launchNonCancellable
-                        }
-                    }
-                }
-
                 // Open search screen
                 navigator.push(
                     TrackerSearchScreen(
@@ -316,29 +280,6 @@ data class TrackInfoDialogHomeScreen(
                         serviceId = item.tracker.id,
                     ),
                 )
-            }
-        }
-
-        suspend fun getTrackerIdFromMetadata(trackerId: Long): String? {
-            try {
-                val metadataSource = sourceManager.get(sourceId)
-                    ?.getMainSource<MetadataSource<*, *>>() ?: return null
-
-                return getFlatMetadataById.await(mangaId)?.run {
-                    // Use 'raise' to dynamically obtain the specific metadata type and then attempt to cast
-                    raise(metadataSource.metaClass) as? TrackerIdMetadata
-                }?.let { metadata ->
-                    when (trackerId) {
-                        trackerManager.aniList.id -> metadata.anilistId
-                        trackerManager.kitsu.id -> metadata.kitsuId
-                        trackerManager.myAnimeList.id -> metadata.myAnimeListId
-                        trackerManager.mangaUpdates.id -> metadata.mangaUpdatesId
-                        else -> null
-                    }
-                }
-            } catch (e: Throwable) {
-                logcat(LogPriority.ERROR, e) { "Failed to get tracker ID from metadata" }
-                return null
             }
         }
 
@@ -394,11 +335,7 @@ data class TrackInfoDialogHomeScreen(
                 // Show only if the service supports this manga's source
                 // KMK -->
                 .let { trackers ->
-                    val sources = if (source is MergedSource) {
-                        sourceManager.getMergedSources(mangaId)
-                    } else {
-                        listOf(source)
-                    }
+                    val sources = listOf(source)
                     trackers.filter { (it.tracker as? EnhancedTracker)?.accept(sources) ?: true }
                 }
             // KMK <--

@@ -23,7 +23,6 @@ import eu.kanade.presentation.browse.components.BulkFavoriteDialogs
 import eu.kanade.presentation.browse.components.FeedActionsDialog
 import eu.kanade.presentation.browse.components.SourceFeedAddDialog
 import eu.kanade.presentation.browse.components.SourceFeedDeleteDialog
-import eu.kanade.presentation.more.settings.screen.SettingsEhScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
@@ -35,10 +34,7 @@ import eu.kanade.tachiyomi.ui.browse.source.browse.SourceFilterDialog
 import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.webview.WebViewScreen
 import eu.kanade.tachiyomi.util.system.toast
-import exh.md.follows.MangaDexFollowsScreen
 import exh.source.ExhPreferences
-import exh.source.anyIs
-import exh.source.isEhBasedSource
 import exh.util.nullIfBlank
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.interactor.GetRemoteManga
@@ -84,9 +80,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
         val bulkFavoriteState by bulkFavoriteScreenModel.state.collectAsState()
         val showingFeedOrderScreen = rememberSaveable { mutableStateOf(false) }
 
-        val isHentaiEnabled: Boolean = Injekt.get<ExhPreferences>().isHentaiEnabled().get()
-        val isConfigurableSource = screenModel.source.anyIs<ConfigurableSource>() ||
-            (screenModel.source.isEhBasedSource() && isHentaiEnabled)
+        val isConfigurableSource = screenModel.source is ConfigurableSource
 
         val haptic = LocalHapticFeedback.current
 
@@ -149,13 +143,7 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     }.takeIf { screenModel.source is HttpSource },
                     onToggleIncognito = screenModel::toggleIncognitoMode,
                     onSourceSettingClick = {
-                        when {
-                            screenModel.source.isEhBasedSource() && isHentaiEnabled ->
-                                navigator.push(SettingsEhScreen)
-                            screenModel.source.anyIs<ConfigurableSource>() ->
-                                navigator.push(SourcePreferencesScreen(screenModel.source.id))
-                            else -> {}
-                        }
+                        navigator.push(SourcePreferencesScreen(screenModel.source.id))
                     }.takeIf { isConfigurableSource },
                     onSortFeedClick = { showingFeedOrderScreen.value = true }
                         .takeIf {
@@ -253,33 +241,6 @@ class SourceFeedScreen(val sourceId: Long) : Screen() {
                     onSavedSearchPressDesc = stringResource(KMR.strings.saved_searches_add_feed),
                     shouldShowSavingButton = false,
                     // KMK <--
-                    openMangaDexRandom = if (screenModel.sourceIsMangaDex) {
-                        {
-                            screenModel.onMangaDexRandom {
-                                // KMK -->
-                                // navigator.replace(
-                                navigator.push(
-                                    // KMK <--
-                                    BrowseSourceScreen(
-                                        sourceId,
-                                        "id:$it",
-                                    ),
-                                )
-                            }
-                        }
-                    } else {
-                        null
-                    },
-                    openMangaDexFollows = if (screenModel.sourceIsMangaDex) {
-                        {
-                            // KMK -->
-                            // navigator.replace(MangaDexFollowsScreen(sourceId))
-                            navigator.push(MangaDexFollowsScreen(sourceId))
-                            // KMK <--
-                        }
-                    } else {
-                        null
-                    },
                 )
             }
             null -> Unit

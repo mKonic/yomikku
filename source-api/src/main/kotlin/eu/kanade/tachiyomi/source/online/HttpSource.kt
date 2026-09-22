@@ -14,8 +14,6 @@ import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import exh.log.maybeInjectEHLogger
-import exh.pref.DelegateSourcePreferences
-import exh.source.DelegatedHttpSource
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -39,16 +37,16 @@ abstract class HttpSource : CatalogueSource {
     // SY -->
     protected val network: NetworkHelper by lazy {
         val network = Injekt.get<NetworkHelper>()
-        object : NetworkHelper(Injekt.get<Application>(), Injekt.get(), network.delegateSourcePreferences) {
+        object : NetworkHelper(Injekt.get<Application>(), Injekt.get()) {
             override val client: OkHttpClient
-                get() = delegate?.networkHttpClient ?: network.client
+                get() = network.client
                     .newBuilder()
                     .maybeInjectEHLogger()
                     .build()
 
             @Deprecated("The regular client handles Cloudflare by default")
             override val cloudflareClient: OkHttpClient
-                get() = delegate?.networkHttpClient ?: client
+                get() = client
 
             override val cookieJar: AndroidCookieJar
                 get() = network.cookieJar
@@ -102,7 +100,7 @@ abstract class HttpSource : CatalogueSource {
      */
     open val client: OkHttpClient
         // SY -->
-        get() = delegate?.baseHttpClient ?: network.client
+        get() = network.client
     // SY <--
 
     /**
@@ -599,17 +597,4 @@ abstract class HttpSource : CatalogueSource {
      */
     @Deprecated("All modifications should be done when constructing the chapter")
     open fun prepareNewChapter(chapter: SChapter, manga: SManga) {}
-
-    // EXH -->
-    private var delegate: DelegatedHttpSource? = null
-        get() = if (Injekt.get<DelegateSourcePreferences>().delegateSources().get()) {
-            field
-        } else {
-            null
-        }
-
-    fun bindDelegate(delegate: DelegatedHttpSource) {
-        this.delegate = delegate
-    }
-    // EXH <--
 }

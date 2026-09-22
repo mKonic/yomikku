@@ -32,9 +32,6 @@ import eu.kanade.presentation.more.settings.screen.about.AboutScreen
 import eu.kanade.presentation.more.settings.widget.TextPreferenceWidget
 import eu.kanade.presentation.util.LocalBackPress
 import eu.kanade.presentation.util.Screen
-import exh.assets.EhAssets
-import exh.assets.ehassets.EhLogo
-import exh.assets.ehassets.MangadexLogo
 import kotlinx.collections.immutable.persistentListOf
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.automirroredrounded.ChromeReaderMode
@@ -249,18 +246,6 @@ object SettingsMainScreen : Screen() {
             screen = SettingsSecurityScreen,
         ),
         // SY -->
-        Item(
-            titleRes = SYMR.strings.pref_category_eh,
-            subtitleRes = SYMR.strings.pref_ehentai_summary,
-            icon = EhAssets.EhLogo,
-            screen = SettingsEhScreen,
-        ),
-        Item(
-            titleRes = SYMR.strings.pref_category_mangadex,
-            subtitleRes = SYMR.strings.pref_mangadex_summary,
-            icon = EhAssets.MangadexLogo,
-            screen = SettingsMangadexScreen,
-        ),
         // SY <--
         Item(
             titleRes = MR.strings.pref_category_advanced,

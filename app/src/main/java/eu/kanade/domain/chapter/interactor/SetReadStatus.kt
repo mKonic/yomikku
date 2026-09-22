@@ -6,11 +6,9 @@ import eu.kanade.tachiyomi.ui.library.LibraryScreenModel
 import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel
 import eu.kanade.tachiyomi.ui.updates.UpdatesScreenModel
-import exh.source.MERGED_SOURCE_ID
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withNonCancellableContext
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.chapter.interactor.GetMergedChaptersByMangaId
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.model.ChapterUpdate
 import tachiyomi.domain.chapter.repository.ChapterRepository
@@ -24,7 +22,6 @@ class SetReadStatus(
     private val mangaRepository: MangaRepository,
     private val chapterRepository: ChapterRepository,
     // SY -->
-    private val getMergedChaptersByMangaId: GetMergedChaptersByMangaId,
     // SY <--
 ) {
 
@@ -108,20 +105,8 @@ class SetReadStatus(
     }
 
     // SY -->
-    private suspend fun awaitMerged(mangaId: Long, read: Boolean) = withNonCancellableContext f@{
-        return@f await(
-            read = read,
-            chapters = getMergedChaptersByMangaId
-                .await(mangaId, dedupe = false)
-                .toTypedArray(),
-        )
-    }
 
-    suspend fun await(manga: Manga, read: Boolean) = if (manga.source == MERGED_SOURCE_ID) {
-        awaitMerged(manga.id, read)
-    } else {
-        await(manga.id, read)
-    }
+    suspend fun await(manga: Manga, read: Boolean) = await(manga.id, read)
     // SY <--
 
     sealed interface Result {

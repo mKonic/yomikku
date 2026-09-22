@@ -59,7 +59,6 @@ object StressRunner {
         BackupScenario,
         UpdateScenario,
         SearchScenario,
-        EhPreviewScenario,
         DownloadScenario,
         SettingsScenario,
         ConfigChurnScenario,
