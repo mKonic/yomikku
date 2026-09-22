@@ -78,6 +78,7 @@ import eu.kanade.presentation.manga.components.MangaToolbar
 import eu.kanade.presentation.manga.components.MissingChapterCountListItem
 import eu.kanade.presentation.manga.components.OutlinedButtonWithArrow
 import eu.kanade.presentation.manga.components.RelatedMangasRow
+import eu.kanade.presentation.reader.readPercent
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.Source
@@ -1182,8 +1183,8 @@ private fun LazyListScope.sharedChapterItems(
                         }
                         ?.let {
                             stringResource(
-                                MR.strings.chapter_progress,
-                                it + 1,
+                                KMR.strings.chapter_progress_percent,
+                                readPercent(it),
                             )
                         },
                     scanlator = item.chapter.scanlator.takeIf {

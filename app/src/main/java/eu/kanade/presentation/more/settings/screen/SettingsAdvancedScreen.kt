@@ -34,7 +34,6 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.extension.interactor.TrustExtension
 import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.advanced.ClearDatabaseScreen
@@ -197,11 +196,9 @@ object SettingsAdvancedScreen : SearchableSettings {
             // SY -->
             getDownloadsGroup(downloadPreferences = downloadPreferences),
             // SY <--
-            getReaderGroup(basePreferences = basePreferences),
             getExtensionsGroup(basePreferences = basePreferences),
             // SY -->
             // getDownloaderGroup(),
-            getDataSaverGroup(),
             getDeveloperToolsGroup(),
             // SY <--
         )
@@ -436,67 +433,6 @@ object SettingsAdvancedScreen : SearchableSettings {
     // <- SY
 
     @Composable
-    private fun getReaderGroup(
-        basePreferences: BasePreferences,
-    ): Preference.PreferenceGroup {
-        val context = LocalContext.current
-        // KMK: only SubsamplingScaleImageView applies an ICC profile, so the picker below did
-        // nothing once the GPU renderer was the one drawing. That renderer takes a colour table
-        // instead, on its own settings screen.
-        val webGpu by basePreferences.highQualityRenderer().collectAsState()
-        val chooseColorProfile = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument(),
-        ) { uri ->
-            uri?.let {
-                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(uri, flags)
-                basePreferences.displayProfile().set(uri.toString())
-            }
-        }
-        return Preference.PreferenceGroup(
-            title = stringResource(MR.strings.pref_category_reader),
-            preferenceItems = persistentListOf(
-                // KMK: the renderer switch moved to its own screen, beside the settings it governs.
-                Preference.PreferenceItem.ListPreference(
-                    preference = basePreferences.hardwareBitmapThreshold(),
-                    entries = GLUtil.CUSTOM_TEXTURE_LIMIT_OPTIONS
-                        .mapIndexed { index, option ->
-                            val display = if (index == 0) {
-                                stringResource(MR.strings.pref_hardware_bitmap_threshold_default, option)
-                            } else {
-                                option.toString()
-                            }
-                            option to display
-                        }
-                        .toMap()
-                        .toImmutableMap(),
-                    title = stringResource(MR.strings.pref_hardware_bitmap_threshold),
-                    subtitleProvider = { value, options ->
-                        stringResource(MR.strings.pref_hardware_bitmap_threshold_summary, options[value].orEmpty())
-                    },
-                    enabled = !ImageUtil.HARDWARE_BITMAP_UNSUPPORTED &&
-                        GLUtil.DEVICE_TEXTURE_LIMIT > GLUtil.SAFE_TEXTURE_LIMIT,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = basePreferences.alwaysDecodeLongStripWithSSIV(),
-                    title = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_2),
-                    subtitle = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_summary),
-                ),
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_display_profile),
-                    subtitle = basePreferences.displayProfile().get(),
-                    // KMK: enabled = false hides the row here, which is what this wants - the
-                    // entry is gone while the renderer that ignores it is the one drawing.
-                    enabled = !webGpu,
-                    onClick = {
-                        chooseColorProfile.launch(arrayOf("*/*"))
-                    },
-                ),
-            ),
-        )
-    }
-
-    @Composable
     private fun getExtensionsGroup(
         basePreferences: BasePreferences,
     ): Preference.PreferenceGroup {
@@ -714,83 +650,6 @@ object SettingsAdvancedScreen : SearchableSettings {
                     title = stringResource(SYMR.strings.clean_up_downloaded_chapters),
                     subtitle = stringResource(SYMR.strings.delete_unused_chapters),
                     onClick = { dialogOpen = true },
-                ),
-            ),
-        )
-    }
-
-    @Composable
-    private fun getDataSaverGroup(): Preference.PreferenceGroup {
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
-        val dataSaver by sourcePreferences.dataSaver().collectAsState()
-        return Preference.PreferenceGroup(
-            title = stringResource(SYMR.strings.data_saver),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.ListPreference(
-                    preference = sourcePreferences.dataSaver(),
-                    entries = persistentMapOf(
-                        DataSaver.NONE to stringResource(MR.strings.disabled),
-                        DataSaver.BANDWIDTH_HERO to stringResource(SYMR.strings.bandwidth_hero),
-                        DataSaver.WSRV_NL to stringResource(SYMR.strings.wsrv),
-                    ),
-                    title = stringResource(SYMR.strings.data_saver),
-                    subtitle = stringResource(SYMR.strings.data_saver_summary),
-                ),
-                Preference.PreferenceItem.EditTextPreference(
-                    preference = sourcePreferences.dataSaverServer(),
-                    title = stringResource(SYMR.strings.bandwidth_data_saver_server),
-                    subtitle = stringResource(SYMR.strings.data_saver_server_summary),
-                    enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverDownloader(),
-                    title = stringResource(SYMR.strings.data_saver_downloader),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverIgnoreJpeg(),
-                    title = stringResource(SYMR.strings.data_saver_ignore_jpeg),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverIgnoreGif(),
-                    title = stringResource(SYMR.strings.data_saver_ignore_gif),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    preference = sourcePreferences.dataSaverImageQuality(),
-                    entries = listOf(
-                        "10%",
-                        "20%",
-                        "40%",
-                        "50%",
-                        "70%",
-                        "80%",
-                        "90%",
-                        "95%",
-                    ).associateBy { it.trimEnd('%').toInt() }.toImmutableMap(),
-                    title = stringResource(SYMR.strings.data_saver_image_quality),
-                    subtitle = stringResource(SYMR.strings.data_saver_image_quality_summary),
-                    enabled = dataSaver != DataSaver.NONE,
-                ),
-                run {
-                    val dataSaverImageFormatJpeg by sourcePreferences.dataSaverImageFormatJpeg()
-                        .collectAsState()
-                    Preference.PreferenceItem.SwitchPreference(
-                        preference = sourcePreferences.dataSaverImageFormatJpeg(),
-                        title = stringResource(SYMR.strings.data_saver_image_format),
-                        subtitle = if (dataSaverImageFormatJpeg) {
-                            stringResource(SYMR.strings.data_saver_image_format_summary_on)
-                        } else {
-                            stringResource(SYMR.strings.data_saver_image_format_summary_off)
-                        },
-                        enabled = dataSaver != DataSaver.NONE,
-                    )
-                },
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = sourcePreferences.dataSaverColorBW(),
-                    title = stringResource(SYMR.strings.data_saver_color_bw),
-                    enabled = dataSaver == DataSaver.BANDWIDTH_HERO,
                 ),
             ),
         )

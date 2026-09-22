@@ -3,7 +3,6 @@ package tachiyomi.domain.source.model
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
@@ -32,7 +31,7 @@ class StubSource(
         fetchChapters: Boolean,
     ): SMangaUpdate = throw SourceNotInstalledException()
 
-    override suspend fun getPageList(chapter: SChapter): List<Page> =
+    override suspend fun getChapterText(chapter: SChapter): String =
         throw SourceNotInstalledException()
 
     // KMK -->

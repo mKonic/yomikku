@@ -20,6 +20,7 @@ import eu.kanade.presentation.components.AppBarTitle
 import eu.kanade.presentation.components.SearchToolbar
 import eu.kanade.presentation.components.relativeDateText
 import eu.kanade.presentation.history.components.HistoryItem
+import eu.kanade.presentation.reader.readPercent
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.tachiyomi.ui.history.HistoryScreenModel
@@ -33,6 +34,7 @@ import mihon.icons.materialsymbols.rounded.FlipToBack
 import mihon.icons.materialsymbols.rounded.SelectAll
 import tachiyomi.domain.history.model.HistoryWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.Scaffold
@@ -225,8 +227,8 @@ private fun HistoryScreenContent(
                             .takeIf { !value.read && it > 0L }
                             ?.let {
                                 stringResource(
-                                    MR.strings.chapter_progress,
-                                    it + 1,
+                                    KMR.strings.chapter_progress_percent,
+                                    readPercent(it),
                                 )
                             },
                         hasUnread = value.unreadCount > 0,

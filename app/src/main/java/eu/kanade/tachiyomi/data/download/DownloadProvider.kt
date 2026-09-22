@@ -221,8 +221,8 @@ class DownloadProvider(
         if (!chapterScanlator.isNullOrBlank()) {
             dirName = chapterScanlator + "_" + dirName
         }
-        // Subtract 7 bytes for hash and underscore, 4 bytes for .cbz
-        dirName = DiskUtil.buildValidFilename(dirName, DiskUtil.MAX_FILE_NAME_BYTES - 11, disallowNonAsciiFilenames)
+        // Subtract 7 bytes for hash and underscore, 5 bytes for .html
+        dirName = DiskUtil.buildValidFilename(dirName, DiskUtil.MAX_FILE_NAME_BYTES - 12, disallowNonAsciiFilenames)
         /* SY --> */ if (includeChapterUrlHash) /* SY <-- */ dirName += "_" + md5(chapterUrl).take(6)
         return dirName
     }
@@ -300,16 +300,13 @@ class DownloadProvider(
         val legacyChapterDirNames = getLegacyChapterDirNames(chapterName, chapterScanlator, chapterUrl)
 
         return buildList {
-            // Folder of images
-            add(chapterDirName)
-            // Archived chapters
-            add("$chapterDirName.cbz")
-
-            // any legacy names
-            legacyChapterDirNames.forEach {
-                add(it)
-                add("$it.cbz")
-            }
+            add("$chapterDirName.$CHAPTER_EXTENSION")
+            legacyChapterDirNames.forEach { add("$it.$CHAPTER_EXTENSION") }
         }
+    }
+
+    companion object {
+        /** Extension of a downloaded chapter: the chapter's text as one HTML file. */
+        const val CHAPTER_EXTENSION = "html"
     }
 }

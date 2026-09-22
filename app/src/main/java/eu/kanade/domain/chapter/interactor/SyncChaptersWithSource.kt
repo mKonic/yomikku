@@ -107,14 +107,6 @@ class SyncChaptersWithSource(
         for (sourceChapter in sourceChapters) {
             var chapter = sourceChapter
 
-            // Update metadata from source if necessary.
-            if (source is HttpSource) {
-                val sChapter = chapter.toSChapter()
-                @Suppress("DEPRECATION")
-                source.prepareNewChapter(sChapter, manga.toSManga())
-                chapter = chapter.copyFromSChapter(sChapter)
-            }
-
             // Recognize chapter number for the chapter.
             val chapterNumber = ChapterRecognition.parseChapterNumber(
                 manga.title,

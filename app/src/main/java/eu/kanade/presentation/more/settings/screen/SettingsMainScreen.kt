@@ -199,14 +199,6 @@ object SettingsMainScreen : Screen() {
             icon = MaterialSymbols.AutoMirroredRounded.ChromeReaderMode,
             screen = SettingsReaderScreen,
         ),
-        // KMK -->
-        Item(
-            titleRes = MR.strings.webgpu_viewer,
-            subtitleRes = MR.strings.pref_webgpu_summary,
-            icon = MaterialSymbols.Rounded.Image,
-            screen = SettingsWebGpuScreen,
-        ),
-        // KMK <--
         Item(
             titleRes = MR.strings.pref_category_downloads,
             subtitleRes = MR.strings.pref_downloads_summary,

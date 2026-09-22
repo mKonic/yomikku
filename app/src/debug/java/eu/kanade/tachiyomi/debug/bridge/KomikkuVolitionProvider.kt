@@ -18,7 +18,6 @@ import eu.kanade.presentation.more.settings.screen.SettingsLibraryScreen
 import eu.kanade.presentation.more.settings.screen.SettingsReaderScreen
 import eu.kanade.presentation.more.settings.screen.SettingsSecurityScreen
 import eu.kanade.presentation.more.settings.screen.SettingsTrackingScreen
-import eu.kanade.presentation.more.settings.screen.SettingsWebGpuScreen
 import eu.kanade.presentation.more.settings.screen.about.AboutScreen
 import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.more.settings.screen.debug.DebugInfoScreen
@@ -65,7 +64,6 @@ class KomikkuVolitionProvider : ContentProvider() {
             screen("settings_appearance") { SettingsAppearanceScreen }
             screen("settings_library") { SettingsLibraryScreen }
             screen("settings_reader") { SettingsReaderScreen }
-            screen("settings_webgpu", "webgpu") { SettingsWebGpuScreen }
             screen("settings_downloads") { SettingsDownloadScreen }
             screen("settings_tracking") { SettingsTrackingScreen }
             screen("settings_connection") { SettingsConnectionScreen }
@@ -129,10 +127,9 @@ class KomikkuVolitionProvider : ContentProvider() {
                 (Volition.currentActivity as? ReaderActivity)?.viewModel?.state?.value?.let { reader ->
                     mapOf(
                         "manga" to reader.manga?.title,
-                        "chapter" to reader.currentChapter?.chapter?.name,
-                        "page" to reader.currentPage,
-                        "pages" to reader.totalPages,
-                        "viewer" to reader.viewer?.javaClass?.simpleName,
+                        "chapter" to reader.chapter?.name,
+                        "progress" to reader.progress,
+                        "loading" to reader.isLoading,
                         "menuVisible" to reader.menuVisible,
                     )
                 }

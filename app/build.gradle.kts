@@ -24,14 +24,6 @@ if (Config.includeTelemetry) {
     }
 }
 
-// KMK: webgpuviewer resolves through an ivy repository over GitHub release assets, which carries no
-// POM for the plugin to read, so it would be the one bundled library missing from the licence list.
-aboutLibraries {
-    collect {
-        configPath = file("config")
-    }
-}
-
 android {
     namespace = "eu.kanade.tachiyomi"
 
@@ -142,7 +134,6 @@ android {
                 "libimagedecoder2",
                 "libquickjs",
                 "libsqlite3x",
-                "libssiv_crop",
             )
                 .map { "**/$it.so" }
         }
@@ -237,8 +228,7 @@ dependencies {
     implementation(compose.activity)
     implementation(compose.foundation)
     implementation(compose.material3.core)
-    // KMK --> high quality WebGPU renderer from Mihon
-    implementation(libs.webgpuviewer)
+    // KMK -->
     // Drives this build from adb by name - see eu.kanade.tachiyomi.debug.bridge. Debug only: the
     // provider it answers on travels with the artifact.
     debugImplementation(libs.volition)
@@ -312,16 +302,12 @@ dependencies {
     // Image loading
     implementation(platform(libs.coil.bom))
     implementation(libs.bundles.coil)
-    implementation(libs.subsamplingscaleimageview) {
-        exclude(module = "image-decoder")
-    }
     implementation(libs.image.decoder)
     implementation(libs.kim)
 
     // UI libraries
     implementation(libs.material)
     implementation(libs.flexible.adapter.core)
-    implementation(libs.photoview)
     implementation(libs.directionalviewpager) {
         exclude(group = "androidx.viewpager", module = "viewpager")
     }

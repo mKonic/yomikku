@@ -53,7 +53,6 @@ object StressRunner {
 
     val scenarios: List<StressScenario> = listOf(
         ScreenChurnScenario,
-        ReaderScenario,
         LibraryScenario,
         LocalSearchScenario,
         BackupScenario,

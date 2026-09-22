@@ -42,10 +42,6 @@ class DebugInfoScreen : Screen() {
                     ),
                     // KMK --> a development tool, so kept out of release builds
                     Preference.PreferenceItem.TextPreference(
-                        title = ReaderSoakTestScreen.TITLE,
-                        onClick = { navigator.push(ReaderSoakTestScreen()) },
-                    ).takeIf { BuildConfig.DEBUG || isPreviewBuildType },
-                    Preference.PreferenceItem.TextPreference(
                         title = StressTestScreen.TITLE,
                         onClick = { navigator.push(StressTestScreen()) },
                     ).takeIf { BuildConfig.DEBUG || isPreviewBuildType },

@@ -4,7 +4,6 @@ import android.content.Context
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.source.Source
-import eu.kanade.tachiyomi.source.model.Page
 import exh.log.xLogE
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -154,37 +153,6 @@ class DownloadManager(
             reorderQueue(this)
         }
         if (!DownloadJob.isRunning(context)) startDownloads()
-    }
-
-    /**
-     * Builds the page list of a downloaded chapter.
-     *
-     * @param source the source of the chapter.
-     * @param manga the manga of the chapter.
-     * @param chapter the downloaded chapter.
-     * @return the list of pages from the chapter.
-     */
-    fun buildPageList(source: Source, manga: Manga, chapter: Chapter): List<Page> {
-        val chapterDir = provider.findChapterDir(
-            chapter.name,
-            chapter.scanlator,
-            chapter.url,
-            // SY -->
-            manga.ogTitle,
-            // SY <--
-            source,
-        )
-        val files = chapterDir?.listFiles().orEmpty()
-            .filter { it.isFile && ImageUtil.isImage(it.name) { it.openInputStream() } }
-
-        if (files.isEmpty()) {
-            throw Exception(context.stringResource(MR.strings.page_list_empty_error))
-        }
-
-        return files.sortedBy { it.name }
-            .mapIndexed { i, file ->
-                Page(i, uri = file.uri).apply { status = Page.State.Ready }
-            }
     }
 
     /**
@@ -477,8 +445,8 @@ class DownloadManager(
             .firstOrNull() ?: return
 
         var newName = provider.getChapterDirName(newChapter.name, newChapter.scanlator, newChapter.url)
-        if (oldDownload.isFile && oldDownload.extension == "cbz") {
-            newName += ".cbz"
+        if (oldDownload.isFile && oldDownload.extension == DownloadProvider.CHAPTER_EXTENSION) {
+            newName += ".${DownloadProvider.CHAPTER_EXTENSION}"
         }
 
         if (oldDownload.name == newName) return

@@ -3,21 +3,15 @@ package eu.kanade.tachiyomi.data.download
 import android.content.Context
 import com.hippo.unifile.UniFile
 import eu.kanade.domain.chapter.model.toSChapter
-import eu.kanade.domain.manga.model.getComicInfo
-import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.model.Download
 import eu.kanade.tachiyomi.data.library.LibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
 import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.UnmeteredSource
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.storage.DiskUtil
-import eu.kanade.tachiyomi.util.storage.DiskUtil.NOMEDIA_FILE
 import eu.kanade.tachiyomi.util.storage.saveTo
-import exh.util.DataSaver
-import exh.util.DataSaver.Companion.getImage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -48,9 +42,6 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.LogPriority
-import mihon.core.archive.CbzCrypto
-import mihon.core.archive.ZipWriter
-import nl.adaptivity.xmlutil.serialization.XML
 import okhttp3.Response
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
@@ -60,14 +51,10 @@ import tachiyomi.core.common.util.lang.launchNow
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
-import tachiyomi.core.metadata.comicinfo.COMIC_INFO_FILE
-import tachiyomi.core.metadata.comicinfo.ComicInfo
-import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.source.service.SourceManager
-import tachiyomi.domain.track.interactor.GetTracks
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -88,12 +75,6 @@ class Downloader internal constructor(
     private val sourceManager: SourceManager = Injekt.get(),
     private val chapterCache: ChapterCache = Injekt.get(),
     private val downloadPreferences: DownloadPreferences = Injekt.get(),
-    private val xml: XML = Injekt.get(),
-    private val getCategories: GetCategories = Injekt.get(),
-    private val getTracks: GetTracks = Injekt.get(),
-    // SY -->
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
-    // SY <--
     // KMK --> injectable, so the downloader can be tested off a device
     /** Store for persisting downloads across restarts. */
     private val store: DownloadStore = DownloadStore(context),
@@ -403,93 +384,35 @@ class Downloader internal constructor(
             return
         }
 
-        val chapterDirname = provider.getChapterDirName(
+        val chapterFileName = provider.getChapterDirName(
             download.chapter.name,
             download.chapter.scanlator,
             download.chapter.url,
-        )
-        val tmpDir = mangaDir.createDirectory(chapterDirname + TMP_DIR_SUFFIX)!!
+        ) + "." + DownloadProvider.CHAPTER_EXTENSION
 
         try {
-            // If the page list already exists, start from the file
-            val pageList = download.pages ?: run {
-                // Otherwise, pull page list from network and add them to download object
-                val pages = download.source.getPageList(download.chapter.toSChapter())
-
-                if (pages.isEmpty()) {
-                    throw Exception(context.stringResource(MR.strings.page_list_empty_error))
-                }
-                // Don't trust index from source
-                val reIndexedPages = pages.mapIndexed { index, page -> Page(index, page.url, page.imageUrl, page.uri) }
-                download.pages = reIndexedPages
-                reIndexedPages
-            }
-
-            val dataSaver = if (sourcePreferences.dataSaverDownloader().get()) {
-                DataSaver(download.source, sourcePreferences)
-            } else {
-                DataSaver.NoOp
-            }
-
-            // Delete all temporary (unfinished) files
-            tmpDir.listFiles()
-                ?.filter { it.extension == "tmp" }
-                ?.forEach { it.delete() }
-
             download.status = Download.State.DOWNLOADING
+            download.progress = 0
 
-            // Start downloading images, consider we can have downloaded images already
-            pageList.asFlow().flatMapMerge(concurrency = downloadPreferences.parallelPageLimit().get()) { page ->
-                flow {
-                    // Fetch image URL if necessary
-                    if (page.imageUrl.isNullOrEmpty()) {
-                        page.status = Page.State.LoadPage
-                        try {
-                            page.imageUrl = download.source.getImageUrl(page)
-                        } catch (e: Throwable) {
-                            // A pause cancels this; recording it as a page error would fail the chapter.
-                            if (e is CancellationException) throw e
-                            page.status = Page.State.Error(e)
-                        }
-                    }
-
-                    withIOContext { getOrDownloadImage(page, download, tmpDir, dataSaver) }
-                    emit(page)
-                }
-                    .flowOn(Dispatchers.IO)
-            }
-                .collect {
-                    // Do when page is downloaded.
-                    notifier.onProgressChange(download)
-                }
-
-            // Do after download completes
-
-            if (!isDownloadSuccessful(download, tmpDir)) {
-                download.status = Download.State.ERROR
-                return
+            val text = chapterCache.getChapterText(download.chapter) ?: fetchChapterText(download)
+            if (text.isBlank()) {
+                throw Exception(context.stringResource(MR.strings.page_list_empty_error))
             }
 
-            createComicInfoFile(
-                tmpDir,
-                download.manga,
-                download.chapter,
-                download.source,
-            )
+            // Written beside the final name and renamed at the end, so an interrupted download never leaves a
+            // file the cache would take for a finished chapter.
+            mangaDir.findFile(chapterFileName + TMP_DIR_SUFFIX)?.delete()
+            val tmpFile = mangaDir.createFile(chapterFileName + TMP_DIR_SUFFIX)
+                ?: throw Exception("Failed to create a file for the downloaded chapter")
+            tmpFile.openOutputStream().bufferedWriter().use { it.write(text) }
+            tmpFile.renameToOrCopy(chapterFileName)
 
-            // Only rename the directory if it's downloaded
-            if (downloadPreferences.saveChaptersAsCBZ().get()) {
-                archiveChapter(mangaDir, chapterDirname, tmpDir)
-            } else {
-                val chapterDir = tmpDir.renameToOrCopy(chapterDirname)
-                DiskUtil.createNoMediaFile(chapterDir, context)
-            }
-            cache.addChapter(chapterDirname, mangaDir, download.manga)
+            cache.addChapter(chapterFileName, mangaDir, download.manga)
 
+            download.progress = 100
             download.status = Download.State.DOWNLOADED
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
-            // If the page list threw, it will resume here
             logcat(LogPriority.ERROR, error)
             download.status = Download.State.ERROR
             notifier.onError(error.message, download.chapter.name, download.manga.title, download.manga.id)
@@ -497,257 +420,16 @@ class Downloader internal constructor(
     }
 
     /**
-     * Gets the image from the filesystem if it exists or downloads it otherwise.
-     *
-     * @param page the page to download.
-     * @param download the download of the page.
-     * @param tmpDir the temporary directory of the download.
+     * Fetches the chapter text from the source, retrying 3 times with 2, 4 and 8 seconds between attempts.
      */
-    private suspend fun getOrDownloadImage(page: Page, download: Download, tmpDir: UniFile, dataSaver: DataSaver) {
-        // If the image URL is empty, do nothing
-        if (page.imageUrl == null) {
-            return
-        }
-
-        val digitCount = (download.pages?.size ?: 0).toString().length.coerceAtLeast(3)
-        val filename = "%0${digitCount}d".format(Locale.ENGLISH, page.number)
-        // KMK -->
-        // The partial file is deliberately left in place so the next attempt can resume from it.
-        val imageFile = tmpDir.listFiles()?.firstOrNull {
-            isDownloadedPageImage(it.name ?: return@firstOrNull false, filename)
-        }
-        // KMK <--
-
-        try {
-            // If the image is already downloaded, do nothing. Otherwise download from network
-            val file = when {
-                imageFile != null -> imageFile
-                chapterCache.isImageInCache(page.imageUrl!!) ->
-                    copyImageFromCache(chapterCache.getImageFile(page.imageUrl!!), tmpDir, filename)
-                else -> downloadImage(page, download.source, tmpDir, filename, dataSaver)
-            }
-
-            // When the page is ready, set page path, progress (just in case) and status
-            splitTallImageIfNeeded(page, tmpDir)
-
-            page.uri = file.uri
-            page.progress = 100
-            page.status = Page.State.Ready
-        } catch (e: Throwable) {
-            if (e is CancellationException) throw e
-            // Mark this page as error and allow to download the remaining
-            page.progress = 0
-            page.status = Page.State.Error(e)
-            notifier.onError(e.message, download.chapter.name, download.manga.title, download.manga.id)
-        }
-    }
-
-    /**
-     * Downloads the image from network to a file in tmpDir.
-     *
-     * @param page the page to download.
-     * @param source the source of the page.
-     * @param tmpDir the temporary directory of the download.
-     * @param filename the filename of the image.
-     */
-    private suspend fun downloadImage(
-        page: Page,
-        source: HttpSource,
-        tmpDir: UniFile,
-        filename: String,
-        dataSaver: DataSaver,
-    ): UniFile {
-        page.status = Page.State.DownloadImage
-        page.progress = 0
-        return flow {
-            // KMK -->
-            val file = tmpDir.findFile("$filename.tmp")
-                ?: tmpDir.createFile("$filename.tmp")!!
-
-            val completedFile = try {
-                source.getImage(page, dataSaver, file.length()).use { response ->
-                    // A 206 means the server honoured the range, so append to what is already
-                    // there. Anything else is the whole file again, so overwrite.
-                    response.body.source().saveTo(file.openOutputStream(response.code == HTTP_PARTIAL))
-                    val extension = getImageExtension(response, file)
-                    file.renameToOrCopy("$filename.$extension")
-                }
-            } catch (e: HttpException) {
-                // 416 means what is on disk is already at or past the end of the file, so it is
-                // no use to anyone. Every other failure keeps the partial file for the retry.
-                if (e.code == HTTP_RANGE_NOT_SATISFIABLE) {
-                    file.delete()
-                }
-                throw e
-            }
-            // KMK <--
-            emit(file)
-        }
-            // Retry 3 times, waiting 2, 4 and 8 seconds between attempts.
-            .retryWhen { _, attempt ->
-                if (attempt < 3) {
-                    delay((2L shl attempt.toInt()) * 1000)
-                    true
-                } else {
-                    false
-                }
+    private suspend fun fetchChapterText(download: Download): String {
+        return flow { emit(download.source.getChapterText(download.chapter.toSChapter())) }
+            .retryWhen { e, attempt ->
+                if (e is CancellationException || attempt >= 3) return@retryWhen false
+                delay((2L shl attempt.toInt()) * 1000)
+                true
             }
             .first()
-    }
-
-    /**
-     * Copies the image from cache to file in tmpDir.
-     *
-     * @param cacheFile the file from cache.
-     * @param tmpDir the temporary directory of the download.
-     * @param filename the filename of the image.
-     */
-    private fun copyImageFromCache(cacheFile: File, tmpDir: UniFile, filename: String): UniFile {
-        // KMK --> partial files now survive, so clear any before writing the cached copy
-        tmpDir.findFile("$filename.tmp")?.delete()
-        // KMK <--
-        val tmpFile = tmpDir.createFile("$filename.tmp")!!
-        cacheFile.inputStream().use { input ->
-            tmpFile.openOutputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-        val extension = ImageUtil.findImageType(cacheFile.inputStream()) ?: return tmpFile
-        val imageFile = tmpFile.renameToOrCopy("$filename.${extension.extension}")
-        cacheFile.delete()
-        return imageFile
-    }
-
-    // KMK -->
-    /**
-     * Whether [fileName] is the finished image for the page numbered [pagePrefix]. Partial `.tmp`
-     * files share the prefix but are not finished, so they must not match.
-     */
-    private fun isDownloadedPageImage(fileName: String, pagePrefix: String): Boolean {
-        return !fileName.endsWith(".tmp") &&
-            (fileName.startsWith("$pagePrefix.") || fileName.startsWith("${pagePrefix}__001"))
-    }
-    // KMK <--
-
-    /**
-     * Returns the extension of the downloaded image from the network response, or if it's null,
-     * analyze the file. If everything fails, assume it's a jpg.
-     *
-     * @param response the network response of the image.
-     * @param file the file where the image is already downloaded.
-     */
-    private fun getImageExtension(response: Response, file: UniFile): String {
-        val mime = response.body.contentType()?.run { if (type == "image") "image/$subtype" else null }
-        return ImageUtil.getExtensionFromMimeType(mime) { file.openInputStream() }
-    }
-
-    private fun splitTallImageIfNeeded(page: Page, tmpDir: UniFile) {
-        if (!downloadPreferences.splitTallImages().get()) return
-
-        try {
-            val filenamePrefix = "%03d".format(Locale.ENGLISH, page.number)
-            val imageFile = tmpDir.listFiles()?.firstOrNull { it.name.orEmpty().startsWith(filenamePrefix) }
-                ?: error(context.stringResource(MR.strings.download_notifier_split_page_not_found, page.number))
-
-            // If the original page was previously split, then skip
-            if (imageFile.name.orEmpty().startsWith("${filenamePrefix}__")) return
-
-            ImageUtil.splitTallImage(
-                tmpDir,
-                imageFile,
-                filenamePrefix,
-            )
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Failed to split downloaded image" }
-        }
-    }
-
-    /**
-     * Checks if the download was successful.
-     *
-     * @param download the download to check.
-     * @param tmpDir the directory where the download is currently stored.
-     */
-    private fun isDownloadSuccessful(
-        download: Download,
-        tmpDir: UniFile,
-    ): Boolean {
-        // Page list hasn't been initialized
-        val downloadPageCount = download.pages?.size ?: return false
-
-        // Ensure that all pages have been downloaded
-        if (download.downloadedImages != downloadPageCount) {
-            return false
-        }
-
-        // Ensure that the chapter folder has all the pages
-        val downloadedImagesCount = tmpDir.listFiles().orEmpty().count {
-            val fileName = it.name.orEmpty()
-            when {
-                fileName in listOf(COMIC_INFO_FILE, NOMEDIA_FILE) -> false
-                fileName.endsWith(".tmp") -> false
-                // Only count the first split page and not the others
-                fileName.contains("__") && !fileName.endsWith("__001.jpg") -> false
-                else -> true
-            }
-        }
-        return downloadedImagesCount == downloadPageCount
-    }
-
-    /**
-     * Archive the chapter pages as a CBZ.
-     */
-    private fun archiveChapter(
-        mangaDir: UniFile,
-        dirname: String,
-        tmpDir: UniFile,
-    ) {
-        // SY -->
-        val encrypt = CbzCrypto.getPasswordProtectDlPref() && CbzCrypto.isPasswordSet()
-        // SY <--
-
-        val zip = mangaDir.createFile("$dirname.cbz$TMP_DIR_SUFFIX")
-        if (zip?.isFile != true) throw Exception("Failed to create CBZ file for downloaded chapter")
-        ZipWriter(context, zip, /* SY --> */ encrypt /* SY <-- */).use { writer ->
-            tmpDir.listFiles()?.forEach { file ->
-                writer.write(file)
-            }
-        }
-        zip.renameToOrCopy("$dirname.cbz")
-        tmpDir.delete()
-    }
-
-    /**
-     * Creates a ComicInfo.xml file inside the given directory.
-     */
-    private suspend fun createComicInfoFile(
-        dir: UniFile,
-        manga: Manga,
-        chapter: Chapter,
-        source: HttpSource,
-    ) {
-        val categories = getCategories.await(manga.id).map { it.name.trim() }.takeUnless { it.isEmpty() }
-        val urls = getTracks.await(manga.id)
-            .mapNotNull { track ->
-                track.remoteUrl.takeUnless { url -> url.isBlank() }?.trim()
-            }
-            .plus(source.getChapterUrl(chapter.toSChapter()).trim())
-            .distinct()
-
-        val comicInfo = getComicInfo(
-            manga,
-            chapter,
-            urls,
-            categories,
-            source.name,
-        )
-
-        // Remove the old file
-        dir.findFile(COMIC_INFO_FILE)?.delete()
-        dir.createFile(COMIC_INFO_FILE)!!.openOutputStream().use {
-            val comicInfoString = xml.encodeToString(ComicInfo.serializer(), comicInfo)
-            it.write(comicInfoString.toByteArray())
-        }
     }
 
     /**
@@ -839,7 +521,3 @@ class Downloader internal constructor(
 
 // Arbitrary minimum required space to start a download: 200 MB
 private const val MIN_DISK_SPACE = 200L * 1024 * 1024
-
-// KMK -->
-private const val HTTP_RANGE_NOT_SATISFIABLE = 416
-// KMK <--

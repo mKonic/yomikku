@@ -12,7 +12,6 @@ import eu.kanade.presentation.more.settings.screen.SettingsLibraryScreen
 import eu.kanade.presentation.more.settings.screen.SettingsReaderScreen
 import eu.kanade.presentation.more.settings.screen.SettingsSecurityScreen
 import eu.kanade.presentation.more.settings.screen.SettingsTrackingScreen
-import eu.kanade.presentation.more.settings.screen.SettingsWebGpuScreen
 import eu.kanade.presentation.more.settings.screen.about.AboutScreen
 import eu.kanade.tachiyomi.ui.browse.source.globalsearch.GlobalSearchScreen
 import eu.kanade.tachiyomi.ui.download.DownloadQueueScreen
@@ -58,7 +57,6 @@ object ScreenChurnScenario : StressScenario {
             add("settings_appearance" to SettingsAppearanceScreen)
             add("settings_library" to SettingsLibraryScreen)
             add("settings_reader" to SettingsReaderScreen)
-            add("settings_webgpu" to SettingsWebGpuScreen)
             add("settings_downloads" to SettingsDownloadScreen)
             add("settings_tracking" to SettingsTrackingScreen)
             add("settings_connection" to SettingsConnectionScreen)

@@ -41,17 +41,10 @@ class DownloadHolder(private val view: View, val adapter: DownloadAdapter) :
         // Update the manga title
         binding.mangaFullTitle.text = download.manga.title
 
-        // Update the progress bar and the number of downloaded pages
-        val pages = download.pages
-        if (pages == null) {
-            binding.downloadProgress.progress = 0
-            binding.downloadProgress.max = 1
-            binding.downloadProgressText.text = ""
-        } else {
-            binding.downloadProgress.max = pages.size * 100
-            notifyProgress()
-            notifyDownloadedPages()
-        }
+        // Update the progress bar
+        binding.downloadProgress.max = 100
+        notifyProgress()
+        notifyDownloadedPages()
         // KMK -->
         binding.downloadProgress.setColors(adapter.colorScheme)
         // KMK <--
@@ -61,19 +54,14 @@ class DownloadHolder(private val view: View, val adapter: DownloadAdapter) :
      * Updates the progress bar of the download.
      */
     fun notifyProgress() {
-        val pages = download.pages ?: return
-        if (binding.downloadProgress.max == 1) {
-            binding.downloadProgress.max = pages.size * 100
-        }
-        binding.downloadProgress.setProgressCompat(download.totalProgress, true)
+        binding.downloadProgress.setProgressCompat(download.progress, true)
     }
 
     /**
      * Updates the text field of the number of downloaded pages.
      */
     fun notifyDownloadedPages() {
-        val pages = download.pages ?: return
-        binding.downloadProgressText.text = "${download.downloadedImages}/${pages.size}"
+        binding.downloadProgressText.text = "${download.progress}%"
     }
 
     override fun onItemReleased(position: Int) {

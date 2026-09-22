@@ -6,7 +6,6 @@ import eu.kanade.tachiyomi.data.backup.models.BackupHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.backupChapterMapper
 import eu.kanade.tachiyomi.data.backup.models.backupTrackMapper
-import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.map
@@ -123,7 +122,7 @@ private fun Manga.toBackupManga(/* SY --> */customMangaInfo: CustomMangaInfo?/* 
         favorite = this.favorite,
         source = this.source,
         dateAdded = this.dateAdded,
-        viewer = (this.viewerFlags.toInt() and ReadingMode.MASK),
+        viewer = 0,
         viewer_flags = this.viewerFlags.toInt(),
         chapterFlags = this.chapterFlags.toInt(),
         updateStrategy = this.updateStrategy,

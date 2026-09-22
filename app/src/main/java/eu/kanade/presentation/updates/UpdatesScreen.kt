@@ -53,7 +53,6 @@ fun UpdateScreen(
     snackbarHostState: SnackbarHostState,
     lastUpdated: Long,
     // SY -->
-    preserveReadingPosition: Boolean,
     // SY <--
     onClickCover: (UpdatesItem) -> Unit,
     onSelectAll: (Boolean) -> Unit,
@@ -156,7 +155,6 @@ fun UpdateScreen(
                             // KMK <--
                             selectionMode = state.selectionMode,
                             // SY -->
-                            preserveReadingPosition = preserveReadingPosition,
                             // SY <--
                             onUpdateSelected = onUpdateSelected,
                             onClickCover = onClickCover,

@@ -25,16 +25,15 @@ class GetEnabledSources(
             ) { a, b, c -> Triple(a, b, c) },
             // SY -->
             combine(
-                preferences.dataSaverExcludedSources().changes(),
                 preferences.sourcesTabSourcesInCategories().changes(),
                 preferences.sourcesTabCategoriesFilter().changes(),
-            ) { a, b, c -> Triple(a, b, c) },
+            ) { a, b -> a to b },
             // SY <--
             repository.getSources(),
         ) {
                 pinnedSourceIds,
                 (enabledLanguages, disabledSources, lastUsedSource),
-                (excludedFromDataSaver, sourcesInCategories, sourceCategoriesFilter),
+                (sourcesInCategories, sourceCategoriesFilter),
                 sources,
             ->
 
@@ -55,7 +54,6 @@ class GetEnabledSources(
                     // SY <--
                     val source = it.copy(
                         pin = flag,
-                        isExcludedFromDataSaver = it.id.toString() in excludedFromDataSaver,
                         categories = categories,
                     )
                     val toFlatten = mutableListOf(source)

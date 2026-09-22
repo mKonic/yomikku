@@ -96,7 +96,6 @@ import eu.kanade.tachiyomi.ui.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.more.NewUpdateScreen
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
 import eu.kanade.tachiyomi.ui.more.WhatsNewScreen
-import eu.kanade.tachiyomi.ui.reader.soak.ReaderSoakTest
 import eu.kanade.tachiyomi.util.system.dpToPx
 import eu.kanade.tachiyomi.util.system.isDebugBuildType
 import eu.kanade.tachiyomi.util.system.isNavigationBarNeedsScrim
@@ -683,22 +682,6 @@ class MainActivity : BaseActivity() {
             Constants.SHORTCUT_LIBRARY_UPDATE_ERRORS -> {
                 navigator.popUntilRoot()
                 HomeScreen.Tab.More(toDownloads = false, toLibraryUpdateErrors = true)
-            }
-            ReaderSoakTest.ACTION_START -> {
-                if (isDebugBuildType || isPreviewBuildType) {
-                    val chapters = intent.getIntExtra(ReaderSoakTest.EXTRA_CHAPTERS, 3)
-                    val rounds = intent.getIntExtra(ReaderSoakTest.EXTRA_ROUNDS, 5)
-                    lifecycleScope.launch {
-                        ReaderSoakTest.start(this@MainActivity, ReaderSoakTest.pickSeries(), chapters, rounds)
-                    }
-                }
-                null
-            }
-            ReaderSoakTest.ACTION_SEED_LOCAL -> {
-                if (isDebugBuildType || isPreviewBuildType) {
-                    lifecycleScope.launch { ReaderSoakTest.seedLocalSource(this@MainActivity) }
-                }
-                null
             }
             StressRunner.ACTION_START, StressRunner.ACTION_RESUME, StressRunner.ACTION_STOP -> {
                 handleStressAction(intent)

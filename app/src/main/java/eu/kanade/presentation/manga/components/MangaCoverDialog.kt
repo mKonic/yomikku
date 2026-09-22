@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpOffset
@@ -40,12 +41,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.updatePadding
-import ca.mpreg.webgpuviewer.renderer.GainmapInput
-import ca.mpreg.webgpuviewer.renderer.Image
-import ca.mpreg.webgpuviewer.viewer.ImagePage
-import ca.mpreg.webgpuviewer.viewer.ImageViewer
-import ca.mpreg.webgpuviewer.viewer.ImageViewerState
 import coil3.asDrawable
+import coil3.compose.AsyncImage
 import coil3.imageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -58,7 +55,6 @@ import eu.kanade.presentation.components.DropdownMenu
 import eu.kanade.presentation.manga.EditCoverAction
 import eu.kanade.tachiyomi.data.coil.RawImageDecoder
 import eu.kanade.tachiyomi.data.coil.newDecoder
-import eu.kanade.tachiyomi.ui.reader.viewer.ReaderPageImageView
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -90,7 +86,6 @@ fun MangaCoverDialog(
 ) {
     // KMK -->
     // Read once: switching renderers mid-dialog would tear down the view showing the cover.
-    val useHighQualityRenderer = remember { Injekt.get<BasePreferences>().highQualityRenderer().get() }
     val iconColor = contentColorFor(MaterialTheme.colorScheme.secondaryContainer)
     val dropdownBgColor = MaterialTheme.colorScheme.surfaceVariant
     // KMK <--
@@ -206,16 +201,6 @@ fun MangaCoverDialog(
                 }
             },
         ) { contentPadding ->
-            // KMK -->
-            if (useHighQualityRenderer) {
-                HighQualityCover(
-                    manga = manga,
-                    contentPadding = contentPadding,
-                    onDismissRequest = onDismissRequest,
-                )
-                return@Scaffold
-            }
-            // KMK <--
             val statusBarPaddingPx = with(LocalDensity.current) { contentPadding.calculateTopPadding().roundToPx() }
             val bottomPaddingPx = with(LocalDensity.current) { contentPadding.calculateBottomPadding().roundToPx() }
 
@@ -224,39 +209,17 @@ fun MangaCoverDialog(
                     .fillMaxSize()
                     .clickableNoIndication(onClick = onDismissRequest),
             ) {
-                AndroidView(
-                    factory = {
-                        ReaderPageImageView(it).apply {
-                            onViewClicked = onDismissRequest
-                            clipToPadding = false
-                            clipChildren = false
-                        }
-                    },
-                    update = { view ->
-                        val request = ImageRequest.Builder(view.context)
-                            .data(manga)
-                            .size(Size.ORIGINAL)
-                            .memoryCachePolicy(CachePolicy.DISABLED)
-                            .target { image ->
-                                val drawable = image.asDrawable(view.context.resources)
-
-                                // Copy bitmap in case it came from memory cache
-                                // Because SSIV needs to thoroughly read the image
-                                // KMK -->
-                                val src = (drawable as? BitmapDrawable)?.bitmap
-                                val config = src?.config?.takeIf { it != Bitmap.Config.HARDWARE } ?: Bitmap.Config.ARGB_8888
-                                // KMK <--
-                                val copy = src?.copy(config, false)
-                                    ?.toDrawable(view.context.resources)
-                                    ?: drawable
-                                view.setImage(copy, ReaderPageImageView.Config(zoomDuration = 500))
-                            }
-                            .build()
-                        view.context.imageLoader.enqueue(request)
-
-                        view.updatePadding(top = statusBarPaddingPx, bottom = bottomPaddingPx)
-                    },
-                    modifier = Modifier.fillMaxSize(),
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(manga)
+                        .size(Size.ORIGINAL)
+                        .memoryCachePolicy(CachePolicy.DISABLED)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(contentPadding),
                 )
             }
         }
@@ -275,85 +238,3 @@ private fun ActionsPill(content: @Composable () -> Unit) {
         content()
     }
 }
-
-// KMK -->
-/**
- * Draws the cover through the same WebGPU renderer the reader uses, so a cover opened at full size
- * is resampled the way its pages are rather than by the view hierarchy.
- */
-@Composable
-private fun HighQualityCover(
-    manga: Manga,
-    contentPadding: PaddingValues,
-    onDismissRequest: () -> Unit,
-) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val state = remember { ImageViewerState() }
-    var page by remember { mutableStateOf<ImagePage?>(null) }
-
-    val cutoutTopPx = with(density) { contentPadding.calculateTopPadding().toPx() }
-    SideEffect {
-        state.dpi = context.resources.displayMetrics.densityDpi / 100f
-        state.cutoutTopPx = cutoutTopPx
-        state.onTap = { onDismissRequest() }
-    }
-
-    LaunchedEffect(manga.id, manga.thumbnailUrl) {
-        val request = ImageRequest.Builder(context)
-            .data(manga)
-            .size(Size.ORIGINAL)
-            .memoryCachePolicy(CachePolicy.DISABLED)
-            .newDecoder(true)
-            .build()
-
-        val decoded = (context.imageLoader.execute(request) as? SuccessResult)
-            ?.let { it.image as? RawImageDecoder.RawImage }
-            ?.result
-            ?: return@LaunchedEffect
-
-        // The upload is the expensive half, and it is not the main thread's work.
-        page = withContext(Dispatchers.Default) {
-            ImagePage.ImageSingle(
-                Image(
-                    decoded.image,
-                    decoded.width,
-                    decoded.height,
-                    createMipMaps = true,
-                    backgroundColor = 0,
-                    hdr = decoded.isHdr,
-                    hdrHeadroom = decoded.hdrHeadroom,
-                    gainmap = decoded.gainmap?.let {
-                        GainmapInput(
-                            pixels = it.pixels,
-                            width = it.width,
-                            height = it.height,
-                            channels = it.channels,
-                            gamma = it.gamma,
-                            minContentBoost = it.minContentBoost,
-                            maxContentBoost = it.maxContentBoost,
-                            offsetSdr = it.offsetSdr,
-                            offsetHdr = it.offsetHdr,
-                        )
-                    },
-                ),
-            )
-        }
-    }
-
-    LaunchedEffect(page) {
-        val decodedPage = page ?: return@LaunchedEffect
-        state.fetchPage = { index -> decodedPage.takeIf { index == 0 } }
-        state.invalidate()
-    }
-
-    // The page owns a GPU allocation, so it has to be released with the dialog rather than left
-    // for the collector.
-    DisposableEffect(page) {
-        val decodedPage = page
-        onDispose { decodedPage?.destroy() }
-    }
-
-    ImageViewer(modifier = Modifier.fillMaxSize(), state = state)
-}
-// KMK <--

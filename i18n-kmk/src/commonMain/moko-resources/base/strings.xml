@@ -252,4 +252,31 @@
     <string name="pref_trust_all_extensions">Trust all extensions</string>
     <string name="pref_trust_all_extensions_summary">Load every extension without asking. Only turn this on if you decide what gets installed.</string>
     <string name="webgpu_device_lost">The WebGPU renderer stopped, so the standard reader took over</string>
+    <!-- Novel reader -->
+    <string name="reader_mode_scroll">Scroll</string>
+    <string name="reader_mode_paged">Paged</string>
+    <string name="reader_font_serif">Serif</string>
+    <string name="reader_font_sans_serif">Sans serif</string>
+    <string name="reader_font_monospace">Monospace</string>
+    <string name="reader_align_start">Left</string>
+    <string name="reader_align_justify">Justified</string>
+    <string name="reader_theme_app">App theme</string>
+    <string name="reader_theme_sepia">Sepia</string>
+    <string name="reader_theme_black">Black</string>
+    <string name="reader_end_of_chapter">End of chapter</string>
+    <string name="reader_settings_text">Text</string>
+    <string name="reader_settings_mode">Reading mode</string>
+    <string name="reader_settings_theme">Theme</string>
+    <string name="reader_settings_font">Font</string>
+    <string name="reader_settings_align">Alignment</string>
+    <string name="reader_settings_font_size">Font size</string>
+    <string name="reader_settings_line_height">Line height</string>
+    <string name="reader_settings_paragraph_spacing">Paragraph spacing</string>
+    <string name="reader_settings_indent">First line indent</string>
+    <string name="reader_settings_horizontal_margin">Side margins</string>
+    <string name="reader_settings_vertical_margin">Top and bottom margins</string>
+    <string name="reader_settings_show_images">Show images</string>
+    <string name="reader_settings_tap_to_turn">Tap the edges to turn pages</string>
+    <string name="reader_settings_show_progress">Show chapter progress</string>
+    <string name="chapter_progress_percent">%1$d%% read</string>
 </resources>

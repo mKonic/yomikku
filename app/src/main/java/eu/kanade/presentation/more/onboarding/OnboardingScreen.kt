@@ -36,7 +36,6 @@ fun OnboardingScreen(
         listOf(
             ThemeStep(),
             // KMK: the GPU reader is a choice worth making up front, not one to discover later.
-            RendererStep(),
             StorageStep(),
             PermissionStep(),
             GuidesStep(onRestoreBackup = onRestoreBackup),

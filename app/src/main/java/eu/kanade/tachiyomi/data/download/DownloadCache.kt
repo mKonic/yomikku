@@ -462,10 +462,8 @@ class DownloadCache(
                                     when {
                                         // Ignore incomplete downloads
                                         it.name?.endsWith(Downloader.TMP_DIR_SUFFIX) == true -> null
-                                        // Folder of images
-                                        it.isDirectory -> it.name
-                                        // CBZ files
-                                        it.isFile && it.extension == "cbz" -> it.nameWithoutExtension
+                                        // Chapter text
+                                        it.isFile && it.extension == DownloadProvider.CHAPTER_EXTENSION -> it.name
                                         // Anything else is irrelevant
                                         else -> null
                                     }

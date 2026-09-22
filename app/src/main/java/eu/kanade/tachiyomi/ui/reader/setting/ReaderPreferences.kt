@@ -1,43 +1,42 @@
 package eu.kanade.tachiyomi.ui.reader.setting
 
-import android.os.Build
-import androidx.compose.ui.graphics.BlendMode
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import dev.icerock.moko.resources.StringResource
-import eu.kanade.tachiyomi.ui.reader.viewer.pager.PagerConfig
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
-import tachiyomi.i18n.sy.SYMR
 
 class ReaderPreferences(
     private val preferenceStore: PreferenceStore,
 ) {
 
-    // region General
+    // region Display
 
-    // SY -->
-    fun pageTransitionsPager() = preferenceStore.getBoolean("pref_enable_transitions_pager_key", true)
+    fun readingMode() = preferenceStore.getEnum("pref_text_reading_mode", ReadingMode.SCROLL)
 
-    fun disablePageSwipe() = preferenceStore.getBoolean("pref_disable_page_swipe", false)
+    fun fontSize() = preferenceStore.getInt("pref_text_font_size", DEFAULT_FONT_SIZE)
 
-    fun pageTransitionsWebtoon() = preferenceStore.getBoolean("pref_enable_transitions_webtoon_key", true)
-    // SY <--
+    fun fontFamily() = preferenceStore.getEnum("pref_text_font_family", ReaderFont.SERIF)
 
-    fun flashOnPageChange() = preferenceStore.getBoolean("pref_reader_flash", false)
+    fun lineHeight() = preferenceStore.getFloat("pref_text_line_height", 1.6f)
 
-    fun flashDurationMillis() = preferenceStore.getInt("pref_reader_flash_duration", MILLI_CONVERSION)
+    fun paragraphSpacing() = preferenceStore.getFloat("pref_text_paragraph_spacing", 0.9f)
 
-    fun flashPageInterval() = preferenceStore.getInt("pref_reader_flash_interval", 1)
+    fun paragraphIndent() = preferenceStore.getFloat("pref_text_paragraph_indent", 0f)
 
-    fun flashColor() = preferenceStore.getEnum("pref_reader_flash_mode", FlashColor.BLACK)
+    fun textAlign() = preferenceStore.getEnum("pref_text_align", ReaderTextAlign.JUSTIFY)
 
-    fun doubleTapAnimSpeed() = preferenceStore.getInt("pref_double_tap_anim_speed", 500)
+    fun horizontalMargin() = preferenceStore.getInt("pref_text_horizontal_margin", 20)
 
-    fun showPageNumber() = preferenceStore.getBoolean("pref_show_page_number_key", true)
+    fun verticalMargin() = preferenceStore.getInt("pref_text_vertical_margin", 24)
 
-    fun showReadingMode() = preferenceStore.getBoolean("pref_show_reading_mode", true)
+    fun theme() = preferenceStore.getEnum("pref_text_theme", ReaderTheme.FOLLOW_APP)
+
+    fun showImages() = preferenceStore.getBoolean("pref_text_show_images", true)
+
+    // endregion
+
+    // region Behaviour
 
     fun fullscreen() = preferenceStore.getBoolean("fullscreen", true)
 
@@ -45,54 +44,13 @@ class ReaderPreferences(
 
     fun keepScreenOn() = preferenceStore.getBoolean("pref_keep_screen_on_key", false)
 
-    fun defaultReadingMode() = preferenceStore.getInt(
-        "pref_default_reading_mode_key",
-        ReadingMode.RIGHT_TO_LEFT.flagValue,
-    )
+    fun showProgress() = preferenceStore.getBoolean("pref_show_page_number_key", true)
 
-    fun defaultOrientationType() = preferenceStore.getInt(
-        "pref_default_orientation_type_key",
-        ReaderOrientation.FREE.flagValue,
-    )
+    fun readWithVolumeKeys() = preferenceStore.getBoolean("reader_volume_keys", false)
 
-    fun webtoonDoubleTapZoomEnabled() = preferenceStore.getBoolean("pref_enable_double_tap_zoom_webtoon", true)
+    fun readWithVolumeKeysInverted() = preferenceStore.getBoolean("reader_volume_keys_inverted", false)
 
-    // KMK -->
-    fun pagedDoubleTapZoomEnabled() = preferenceStore.getBoolean("pref_enable_double_tap_zoom_paged", true)
-
-    fun webtoonPinchToZoomEnabled() = preferenceStore.getBoolean("pref_enable_pinch_to_zoom_webtoon", true)
-    // KMK <--
-
-    fun imageScaleType() = preferenceStore.getInt("pref_image_scale_type_key", 1)
-
-    // KMK -->
-    fun webtoonScaleType() = preferenceStore.getEnum("pref_webtoon_scale_type_key", WebtoonScaleType.FIT)
-    fun longStripGapSmartScale() = preferenceStore.getBoolean("pref_webtoon_smart_scale_long_strip_gap", false)
-    // KMK <--
-
-    fun zoomStart() = preferenceStore.getInt("pref_zoom_start_key", 1)
-
-    fun readerTheme() = preferenceStore.getInt("pref_reader_theme_key", 1)
-
-    fun alwaysShowChapterTransition() = preferenceStore.getBoolean("always_show_chapter_transition", true)
-
-    fun cropBorders() = preferenceStore.getBoolean("crop_borders", false)
-
-    fun navigateToPan() = preferenceStore.getBoolean("navigate_pan", true)
-
-    fun landscapeZoom() = preferenceStore.getBoolean("landscape_zoom", true)
-
-    // KMK -->
-    fun landscapeZoomType() = preferenceStore.getEnum("landscape_zoom_type", LandscapeZoomScaleType.FIT)
-    // KMK <--
-
-    fun cropBordersWebtoon() = preferenceStore.getBoolean("crop_borders_webtoon", false)
-
-    fun webtoonSidePadding() = preferenceStore.getInt("webtoon_side_padding", WEBTOON_PADDING_MIN)
-
-    fun readerHideThreshold() = preferenceStore.getEnum("reader_hide_threshold", ReaderHideThreshold.LOW)
-
-    fun folderPerManga() = preferenceStore.getBoolean("create_folder_per_manga", false)
+    fun tapToTurnPages() = preferenceStore.getBoolean("pref_text_tap_to_turn", true)
 
     fun skipRead() = preferenceStore.getBoolean("skip_read", false)
 
@@ -100,314 +58,40 @@ class ReaderPreferences(
 
     fun skipDupe() = preferenceStore.getBoolean("skip_dupe", false)
 
-    fun webtoonDisableZoomOut() = preferenceStore.getBoolean("webtoon_disable_zoom_out", false)
-
-    // KMK -->
-    fun pagedDisableZoomIn() = preferenceStore.getBoolean("paged_disable_zoom_in", false)
+    // KMK --> in MB; the chapter text cache
+    fun cacheSize() = preferenceStore.getString("pref_reader_cache_size", "75")
     // KMK <--
 
     // endregion
 
-    // region Split two page spread
-
-    fun dualPageSplitPaged() = preferenceStore.getBoolean("pref_dual_page_split", false)
-
-    fun dualPageInvertPaged() = preferenceStore.getBoolean("pref_dual_page_invert", false)
-
-    fun dualPageSplitWebtoon() = preferenceStore.getBoolean("pref_dual_page_split_webtoon", false)
-
-    fun dualPageInvertWebtoon() = preferenceStore.getBoolean("pref_dual_page_invert_webtoon", false)
-
-    fun dualPageRotateToFit() = preferenceStore.getBoolean("pref_dual_page_rotate", false)
-
-    fun dualPageRotateToFitInvert() = preferenceStore.getBoolean("pref_dual_page_rotate_invert", false)
-
-    fun dualPageRotateToFitWebtoon() = preferenceStore.getBoolean("pref_dual_page_rotate_webtoon", false)
-
-    fun dualPageRotateToFitInvertWebtoon() = preferenceStore.getBoolean("pref_dual_page_rotate_invert_webtoon", false)
-
-    // endregion
-
-    // region Color filter
-
-    fun customBrightness() = preferenceStore.getBoolean("pref_custom_brightness_key", false)
-
-    fun customBrightnessValue() = preferenceStore.getInt("custom_brightness_value", 0)
-
-    fun colorFilter() = preferenceStore.getBoolean("pref_color_filter_key", false)
-
-    fun colorFilterValue() = preferenceStore.getInt("color_filter_value", 0)
-
-    fun colorFilterMode() = preferenceStore.getInt("color_filter_mode", 0)
-
-    fun grayscale() = preferenceStore.getBoolean("pref_grayscale", false)
-
-    fun invertedColors() = preferenceStore.getBoolean("pref_inverted_colors", false)
-
-    // endregion
-
-    // region Controls
-
-    fun readWithLongTap() = preferenceStore.getBoolean("reader_long_tap", true)
-
-    fun readWithVolumeKeys() = preferenceStore.getBoolean("reader_volume_keys", false)
-
-    fun readWithVolumeKeysInverted() = preferenceStore.getBoolean("reader_volume_keys_inverted", false)
-
-    fun navigationModePager() = preferenceStore.getInt("reader_navigation_mode_pager", 0)
-
-    fun navigationModeWebtoon() = preferenceStore.getInt("reader_navigation_mode_webtoon", 0)
-
-    fun pagerNavInverted() = preferenceStore.getEnum("reader_tapping_inverted", TappingInvertMode.NONE)
-
-    fun webtoonNavInverted() = preferenceStore.getEnum("reader_tapping_inverted_webtoon", TappingInvertMode.NONE)
-
-    fun showNavigationOverlayNewUser() = preferenceStore.getBoolean("reader_navigation_overlay_new_user", true)
-
-    fun showNavigationOverlayOnStart() = preferenceStore.getBoolean("reader_navigation_overlay_on_start", false)
-
-    // KMK -->
-    fun smallerTapZone() = preferenceStore.getBoolean("reader_navigation_smaller_tap_zone", false)
-    // KMK <--
-
-    // endregion
-
-    // SY -->
-
-    fun readerThreads() = preferenceStore.getInt("eh_reader_threads", 2)
-
-    fun readerInstantRetry() = preferenceStore.getBoolean("eh_reader_instant_retry", true)
-
-    fun aggressivePageLoading() = preferenceStore.getBoolean("eh_aggressive_page_loading", false)
-
-    fun parallelImageDownload() = preferenceStore.getBoolean("parallel_image_download", true)
-
-    fun cacheSize() = preferenceStore.getString("eh_cache_size", "75")
-
-    fun autoscrollInterval() = preferenceStore.getFloat("eh_util_autoscroll_interval", 3f)
-
-    fun smoothAutoScroll() = preferenceStore.getBoolean("smooth_auto_scroll", true)
-
-    fun preserveReadingPosition() = preferenceStore.getBoolean("eh_preserve_reading_position", false)
-
-    fun preloadSize() = preferenceStore.getInt("eh_preload_size", 10)
-
-    fun useAutoWebtoon() = preferenceStore.getBoolean("eh_use_auto_webtoon", true)
-
-    fun continuousVerticalTappingByPage() = preferenceStore.getBoolean("continuous_vertical_tapping_by_page", false)
-
-    fun cropBordersContinuousVertical() = preferenceStore.getBoolean("crop_borders_continues_vertical", false)
-
-    fun forceHorizontalSeekbar() = preferenceStore.getBoolean("pref_force_horz_seekbar", false)
-
-    fun landscapeVerticalSeekbar() = preferenceStore.getBoolean("pref_show_vert_seekbar_landscape", false)
-
-    fun leftVerticalSeekbar() = preferenceStore.getBoolean("pref_left_handed_vertical_seekbar", false)
-
-    fun readerBottomButtons() = preferenceStore.getStringSet("reader_bottom_buttons", ReaderBottomButton.BUTTONS_DEFAULTS)
-
-    fun pageLayout() = preferenceStore.getInt("page_layout", PagerConfig.PageLayout.AUTOMATIC)
-
-    fun invertDoublePages() = preferenceStore.getBoolean("invert_double_pages", false)
-
-    fun centerMarginType() = preferenceStore.getInt("center_margin_type", PagerConfig.CenterMarginType.NONE)
-
-    fun archiveReaderMode() = preferenceStore.getInt("archive_reader_mode", ArchiveReaderMode.LOAD_FROM_FILE)
-    // SY <--
-
-    // KMK --> WebGPU reader
-    fun dualPageView() = preferenceStore.getEnum("pref_dual_page_view", DualPageView.NEVER)
-
-    fun transitionAnimation() =
-        preferenceStore.getEnum("webgpu_transition_animation", TransitionAnimation.BASIC)
-
-    fun transitionAnimationDual() =
-        preferenceStore.getEnum("webgpu_dual_transition_animation", TransitionAnimation.BASIC)
-
-    fun cutoutMode() = preferenceStore.getEnum("webgpu_cutout_mode", CutoutMode.AVOID)
-
-    fun cutoutModeDual() = preferenceStore.getEnum("webgpu_dual_cutout_mode", CutoutMode.IGNORE)
-
-    fun continuousMinWidth() = preferenceStore.getInt("webgpu_continuous_minwidth", 100)
-
-    fun continuousGap() = preferenceStore.getInt("webgpu_continuous_gap", 10)
-
-    /**
-     * Stops of headroom the renderer may give an HDR page's highlights, so 2 is the 4x the library
-     * defaults to and 0 reads everything as SDR. A ceiling rather than a target: a page whose
-     * highlights sit below it keeps its own brightness.
-     */
-    fun hdrPeakStops() = preferenceStore.getInt("webgpu_hdr_peak_stops", 2)
-
-    /**
-     * A `.cube` colour lookup table the renderer runs over the finished frame - a display profile,
-     * a paper-white warm-up, a film look. Empty for none. The document picker's URI, so it is read
-     * back through the content resolver rather than a path.
-     */
-    fun colorLut() = preferenceStore.getString("webgpu_color_lut", "")
-
-    /** How far towards the table's answer a frame is taken, as a percentage. */
-    fun colorLutIntensity() = preferenceStore.getInt("webgpu_color_lut_intensity", 100)
-    // KMK <--
-
-    enum class FlashColor {
-        BLACK,
-        WHITE,
-        WHITE_BLACK,
+    enum class ReadingMode(val titleRes: StringResource) {
+        SCROLL(KMR.strings.reader_mode_scroll),
+        PAGED(KMR.strings.reader_mode_paged),
     }
 
-    enum class TappingInvertMode(
-        val titleRes: StringResource,
-        val shouldInvertHorizontal: Boolean = false,
-        val shouldInvertVertical: Boolean = false,
-    ) {
-        NONE(MR.strings.tapping_inverted_none),
-        HORIZONTAL(MR.strings.tapping_inverted_horizontal, shouldInvertHorizontal = true),
-        VERTICAL(MR.strings.tapping_inverted_vertical, shouldInvertVertical = true),
-        BOTH(MR.strings.tapping_inverted_both, shouldInvertHorizontal = true, shouldInvertVertical = true),
+    enum class ReaderFont(val titleRes: StringResource) {
+        DEFAULT(MR.strings.label_default),
+        SERIF(KMR.strings.reader_font_serif),
+        SANS_SERIF(KMR.strings.reader_font_sans_serif),
+        MONOSPACE(KMR.strings.reader_font_monospace),
     }
 
-    enum class ReaderHideThreshold(val threshold: Int) {
-        HIGHEST(5),
-        HIGH(13),
-        LOW(31),
-        LOWEST(47),
+    enum class ReaderTextAlign(val titleRes: StringResource) {
+        START(KMR.strings.reader_align_start),
+        JUSTIFY(KMR.strings.reader_align_justify),
     }
 
-    // KMK -->
-    enum class LandscapeZoomScaleType(
-        val titleRes: StringResource,
-    ) {
-        FIT(MR.strings.scale_type_fit_screen),
-        DOUBLE(KMR.strings.scale_type_double),
-    }
-
-    enum class WebtoonScaleType(
-        val titleRes: StringResource,
-        val ratio: Float,
-    ) {
-        FIT(MR.strings.scale_type_fit_screen, 0f),
-        R4_3(KMR.strings.scale_type_4_3, 3f / 4f),
-        R3_2(KMR.strings.scale_type_3_2, 2f / 3f),
-        R16_9(KMR.strings.scale_type_16_9, 9f / 16f),
-        R20_9(KMR.strings.scale_type_20_9, 9f / 20f),
-    }
-    // KMK <--
-
-    object ArchiveReaderMode {
-        const val LOAD_FROM_FILE = 0
-        const val LOAD_INTO_MEMORY = 1
-        const val CACHE_TO_DISK = 2
+    enum class ReaderTheme(val titleRes: StringResource) {
+        FOLLOW_APP(KMR.strings.reader_theme_app),
+        LIGHT(MR.strings.theme_light),
+        SEPIA(KMR.strings.reader_theme_sepia),
+        DARK(MR.strings.theme_dark),
+        BLACK(KMR.strings.reader_theme_black),
     }
 
     companion object {
-        const val WEBTOON_PADDING_MIN = 0
-        const val WEBTOON_PADDING_MAX = 25
-
-        const val MILLI_CONVERSION = 100
-
-        val TapZones = listOf(
-            MR.strings.label_default,
-            MR.strings.l_nav,
-            MR.strings.kindlish_nav,
-            MR.strings.edge_nav,
-            MR.strings.right_and_left_nav,
-            MR.strings.disabled_nav,
-        )
-
-        val ImageScaleType = listOf(
-            MR.strings.scale_type_fit_screen,
-            MR.strings.scale_type_stretch,
-            MR.strings.scale_type_fit_width,
-            MR.strings.scale_type_fit_height,
-            MR.strings.scale_type_original_size,
-            MR.strings.scale_type_smart_fit,
-        )
-
-        val ZoomStart = listOf(
-            MR.strings.zoom_start_automatic,
-            MR.strings.zoom_start_left,
-            MR.strings.zoom_start_right,
-            MR.strings.zoom_start_center,
-        )
-
-        // KMK -->
-        val zoomWideImagesAllowedList = listOf(
-            SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE,
-            SubsamplingScaleImageView.SCALE_TYPE_ORIGINAL_SIZE,
-        )
-        // KMK <--
-
-        val ColorFilterMode = buildList {
-            addAll(
-                listOf(
-                    MR.strings.label_default to BlendMode.SrcOver,
-                    MR.strings.filter_mode_multiply to BlendMode.Modulate,
-                    MR.strings.filter_mode_screen to BlendMode.Screen,
-                ),
-            )
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                addAll(
-                    listOf(
-                        MR.strings.filter_mode_overlay to BlendMode.Overlay,
-                        MR.strings.filter_mode_lighten to BlendMode.Lighten,
-                        MR.strings.filter_mode_darken to BlendMode.Darken,
-                    ),
-                )
-            }
-        }
-
-        // SY -->
-        val PageLayouts = listOf(
-            SYMR.strings.single_page,
-            SYMR.strings.double_pages,
-            SYMR.strings.automatic_orientation,
-        )
-
-        val CenterMarginTypes = listOf(
-            SYMR.strings.center_margin_none,
-            SYMR.strings.center_margin_double_page,
-            SYMR.strings.center_margin_wide_page,
-            SYMR.strings.center_margin_double_and_wide_page,
-        )
-
-        val archiveModeTypes = listOf(
-            SYMR.strings.archive_mode_load_from_file,
-            SYMR.strings.archive_mode_load_into_memory,
-            SYMR.strings.archive_mode_cache_to_disk,
-        )
-        // SY <--
+        const val DEFAULT_FONT_SIZE = 18
+        const val MIN_FONT_SIZE = 10
+        const val MAX_FONT_SIZE = 40
     }
-
-    // KMK --> WebGPU reader
-    enum class TransitionAnimation(val titleRes: StringResource) {
-        BASIC(MR.strings.transition_animation_basic),
-        FLIP(MR.strings.transition_animation_flip),
-        FLIP_LEFT(MR.strings.transition_animation_flip_left),
-        FLIP_RIGHT(MR.strings.transition_animation_flip_right),
-        STACK_LEFT(MR.strings.transition_animation_stack_left),
-        STACK_RIGHT(MR.strings.transition_animation_stack_right),
-        STACK_UP(MR.strings.transition_animation_stack_up),
-        STACK_DOWN(MR.strings.transition_animation_stack_down),
-        SPHERE(MR.strings.transition_animation_sphere),
-        CUBE_INSIDE(MR.strings.transition_animation_cube_inside),
-        CUBE_OUTSIDE(MR.strings.transition_animation_cube_outside),
-        FADE(MR.strings.transition_animation_fade),
-        FADE_WHITE(MR.strings.transition_animation_fade_white),
-        NONE(MR.strings.transition_animation_none),
-    }
-
-    enum class CutoutMode(val titleRes: StringResource) {
-        IGNORE(MR.strings.cutout_mode_ignore),
-        AVOID(MR.strings.cutout_mode_avoid),
-        SHIFT(MR.strings.cutout_mode_shift),
-    }
-
-    enum class DualPageView(val titleRes: StringResource) {
-        NEVER(MR.strings.dual_page_view_never),
-        ALWAYS(MR.strings.dual_page_view_always),
-        WIDE(MR.strings.dual_page_view_wide),
-    }
-
-    // KMK <--
 }

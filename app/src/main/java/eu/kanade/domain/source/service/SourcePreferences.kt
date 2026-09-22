@@ -116,38 +116,7 @@ class SourcePreferences(
 
     fun sourcesTabSourcesInCategories() = preferenceStore.getStringSet("sources_tab_source_categories", mutableSetOf())
 
-    fun dataSaver() = preferenceStore.getEnum("data_saver", DataSaver.NONE)
-
-    fun dataSaverIgnoreJpeg() = preferenceStore.getBoolean("ignore_jpeg", false)
-
-    fun dataSaverIgnoreGif() = preferenceStore.getBoolean("ignore_gif", true)
-
-    fun dataSaverImageQuality() = preferenceStore.getInt("data_saver_image_quality", 80)
-
-    fun dataSaverImageFormatJpeg() = preferenceStore.getBoolean("data_saver_image_format_jpeg", false)
-
-    fun dataSaverServer() = preferenceStore.getString("data_saver_server", "")
-
-    fun dataSaverColorBW() = preferenceStore.getBoolean("data_saver_color_bw", false)
-
-    fun dataSaverExcludedSources() = preferenceStore.getStringSet("data_saver_excluded", emptySet())
-
-    fun dataSaverDownloader() = preferenceStore.getBoolean("data_saver_downloader", true)
-
-    enum class DataSaver {
-        NONE,
-        BANDWIDTH_HERO,
-        WSRV_NL,
-    }
-
     fun allowLocalSourceHiddenFolders() = preferenceStore.getBoolean("allow_local_source_hidden_folders", false)
-
-    fun preferredMangaDexId() = preferenceStore.getString("preferred_mangaDex_id", "0")
-
-    fun mangadexSyncToLibraryIndexes() = preferenceStore.getStringSet(
-        "pref_mangadex_sync_to_library_indexes",
-        emptySet(),
-    )
 
     fun recommendationSearchFlags() = preferenceStore.getInt("rec_search_flags", Int.MAX_VALUE)
     // SY <--

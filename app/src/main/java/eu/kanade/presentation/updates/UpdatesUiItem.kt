@@ -50,6 +50,7 @@ import eu.kanade.presentation.manga.components.MangaCoverHide
 import eu.kanade.presentation.manga.components.RatioSwitchToPanorama
 import eu.kanade.presentation.manga.components.getSwipeAction
 import eu.kanade.presentation.manga.components.swipeActionThreshold
+import eu.kanade.presentation.reader.readPercent
 import eu.kanade.presentation.util.animateItemFastScroll
 import eu.kanade.presentation.util.relativeTimeSpanString
 import eu.kanade.tachiyomi.R
@@ -66,6 +67,7 @@ import mihon.icons.materialsymbols.roundedfilled.Circle
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.updates.model.UpdatesWithRelations
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
@@ -109,7 +111,6 @@ internal fun LazyListScope.updatesUiItems(
     // KMK <--
     selectionMode: Boolean,
     // SY -->
-    preserveReadingPosition: Boolean,
     // SY <--
     onUpdateSelected: (UpdatesItem, /* KMK --> */ UpdateSelectionOptions /* KMK <-- */) -> Unit,
     onClickCover: (UpdatesItem) -> Unit,
@@ -169,8 +170,8 @@ internal fun LazyListScope.updatesUiItems(
                             }
                             ?.let {
                                 stringResource(
-                                    MR.strings.chapter_progress,
-                                    it + 1,
+                                    KMR.strings.chapter_progress_percent,
+                                    readPercent(it),
                                 )
                             },
                         onLongClick = {

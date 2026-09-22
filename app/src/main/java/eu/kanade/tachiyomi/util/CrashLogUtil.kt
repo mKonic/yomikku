@@ -17,7 +17,6 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.time.OffsetDateTime
 import java.time.ZoneId
-import ca.mpreg.webgpuviewer.BuildConfig as WebGpuViewerBuildConfig
 
 class CrashLogUtil(
     private val context: Context,
@@ -56,7 +55,6 @@ class CrashLogUtil(
             Device name: ${Build.DEVICE} (${Build.PRODUCT})
             Device model: ${Build.MODEL}
             WebView: ${WebViewUtil.getVersion(context)}
-            WebGPU viewer: ${WebGpuViewerBuildConfig.VERSION_NAME} (${WebGpuViewerBuildConfig.VERSION_CODE})
             Current time: ${OffsetDateTime.now(ZoneId.systemDefault())}
         """.trimIndent()
     }

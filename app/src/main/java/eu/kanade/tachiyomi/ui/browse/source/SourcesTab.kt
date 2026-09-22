@@ -118,10 +118,6 @@ fun Screen.sourcesTab(
                         onClickSetCategories = {
                             screenModel.showSourceCategoriesDialog(source)
                         }.takeIf { state.categories.isNotEmpty() },
-                        onClickToggleDataSaver = {
-                            screenModel.toggleExcludeFromDataSaver(source)
-                            screenModel.closeDialog()
-                        }.takeIf { state.dataSaverEnabled },
                         // SY <--
                         onDismiss = screenModel::closeDialog,
                         // KMK -->

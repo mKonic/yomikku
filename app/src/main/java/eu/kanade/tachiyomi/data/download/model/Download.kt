@@ -1,15 +1,8 @@
 package eu.kanade.tachiyomi.data.download.model
 
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import tachiyomi.domain.chapter.interactor.GetChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.interactor.GetManga
@@ -23,14 +16,6 @@ data class Download(
     val manga: Manga,
     val chapter: Chapter,
 ) {
-    var pages: List<Page>? = null
-
-    val totalProgress: Int
-        get() = pages?.sumOf(Page::progress) ?: 0
-
-    val downloadedImages: Int
-        get() = pages?.count { it.status == Page.State.Ready } ?: 0
-
     @Transient
     private val _statusFlow = MutableStateFlow(State.NOT_DOWNLOADED)
 
@@ -42,25 +27,19 @@ data class Download(
             _statusFlow.value = status
         }
 
+    /**
+     * Percent of the chapter fetched. A chapter is one request, so this jumps from 0 to 100 unless the source
+     * reports a body length.
+     */
     @Transient
-    val progressFlow = flow {
-        if (pages == null) {
-            emit(0)
-            while (pages == null) {
-                delay(50)
-            }
-        }
+    private val _progressFlow = MutableStateFlow(0)
 
-        val progressFlows = pages!!.map(Page::progressFlow)
-        emitAll(combine(progressFlows) { it.average().toInt() })
-    }
-        .distinctUntilChanged()
-        .debounce(50)
-
-    val progress: Int
-        get() {
-            val pages = pages ?: return 0
-            return pages.map(Page::progress).average().toInt()
+    @Transient
+    val progressFlow = _progressFlow.asStateFlow()
+    var progress: Int
+        get() = _progressFlow.value
+        set(value) {
+            _progressFlow.value = value
         }
 
     enum class State(val value: Int) {

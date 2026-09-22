@@ -1,13 +1,14 @@
 package tachiyomi.source.local
 
 import android.content.Context
+import android.net.Uri
+import android.text.TextUtils
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
@@ -28,7 +29,6 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.storage.nameWithoutExtension
 import tachiyomi.core.common.util.lang.withIOContext
-import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.core.metadata.comicinfo.COMIC_INFO_FILE
 import tachiyomi.core.metadata.comicinfo.ComicInfo
@@ -40,17 +40,17 @@ import tachiyomi.core.metadata.tachiyomi.MangaDetails
 import tachiyomi.domain.chapter.service.ChapterRecognition
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.source.local.epub.EpubBook
 import tachiyomi.source.local.filter.ArtistFilter
 import tachiyomi.source.local.filter.AuthorFilter
 import tachiyomi.source.local.filter.GenreFilter
 import tachiyomi.source.local.filter.OrderBy
 import tachiyomi.source.local.filter.StatusFilter
 import tachiyomi.source.local.image.LocalCoverManager
-import tachiyomi.source.local.io.Archive
 import tachiyomi.source.local.io.Format
 import tachiyomi.source.local.io.LocalSourceFileSystem
-import tachiyomi.source.local.metadata.fillMetadata
 import uy.kohesive.injekt.injectLazy
+import java.io.File
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import kotlin.time.Duration.Companion.days
@@ -319,20 +319,16 @@ class LocalSource(
                         }
                 }
 
-                // Copy ComicInfo.xml from chapter archive to top level if found
+                // Fill the details from the first EPUB's metadata, and keep them as a ComicInfo.xml so edits stick
+                // and searches do not reopen the book.
                 noXmlFile == null -> {
-                    val chapterArchives = mangaDirFiles.filter(Archive::isSupported)
-
-                    val copiedFile = copyComicInfoFileFromChapters(chapterArchives, mangaDir)
-
-                    // SY -->
-                    if (copiedFile != null && copiedFile.name != COMIC_INFO_ARCHIVE) {
-                        setMangaDetailsFromComicInfoFile(copiedFile.openInputStream(), manga)
-                    } else if (copiedFile != null && copiedFile.name == COMIC_INFO_ARCHIVE) {
-                        copiedFile.archiveReader(context).getInputStream(COMIC_INFO_FILE)
-                            ?.let { setMangaDetailsFromComicInfoFile(it, manga) }
-                    } // SY <--
-                    else {
+                    val epub = mangaDirFiles.firstOrNull { it.isFile && it.extension.equals("epub", true) }
+                    val filled = epub?.let { fillDetailsFromEpub(it, manga) } == true
+                    if (filled) {
+                        mangaDir.createFile(COMIC_INFO_FILE)?.openOutputStream()?.use {
+                            it.write(xml.encodeToString(ComicInfo.serializer(), manga.getComicInfo()).toByteArray())
+                        }
+                    } else {
                         // Avoid re-scanning
                         mangaDir.createFile(".noxml")
                     }
@@ -343,28 +339,6 @@ class LocalSource(
         }
 
         return@withIOContext manga
-    }
-
-    private fun <T> getComicInfoForChapter(chapter: UniFile, block: (InputStream, ArchiveReader?) -> T): T? {
-        if (chapter.isDirectory) {
-            return chapter.findFile(COMIC_INFO_FILE)?.let { file ->
-                file.openInputStream().use { block(it, /* SY --> */ null /* SY <-- */) }
-            }
-        } else {
-            return chapter.archiveReader(context).use { reader ->
-                reader.getInputStream(COMIC_INFO_FILE)?.use { block(it, /* SY --> */ reader /* SY <-- */) }
-            }
-        }
-    }
-
-    private fun copyComicInfoFileFromChapters(chapterArchives: List<UniFile>, folder: UniFile): UniFile? {
-        for (chapter in chapterArchives) {
-            val file = getComicInfoForChapter(chapter) f@{ stream, /* SY --> */ reader /* SY <-- */ ->
-                return@f copyComicInfoFile(stream, folder, /* SY --> */ reader?.encrypted == true /* SY <-- */)
-            }
-            if (file != null) return file
-        }
-        return null
     }
 
     private fun copyComicInfoFile(
@@ -401,15 +375,6 @@ class LocalSource(
 
     private fun setMangaDetailsFromComicInfoFile(stream: InputStream, manga: SManga) {
         manga.copyFromComicInfo(parseComicInfo(stream))
-    }
-
-    private fun setChapterDetailsFromComicInfoFile(stream: InputStream, chapter: SChapter) {
-        val comicInfo = parseComicInfo(stream)
-
-        comicInfo.title?.let { chapter.name = it.value }
-        comicInfo.number?.value?.toFloatOrNull()?.let { chapter.chapter_number = it }
-        comicInfo.translator?.let { chapter.scanlator = it.value }
-        comicInfo.dateMillis()?.let { chapter.date_upload = it }
     }
 
     // KMK -->
@@ -479,47 +444,101 @@ class LocalSource(
 
     // Chapters
     private suspend fun getChapterList(manga: SManga): List<SChapter> = withIOContext {
-        val chapters = fileSystem.getFilesInMangaDirectory(manga.url)
-            // Only keep supported formats
+        val files = fileSystem.getFilesInMangaDirectory(manga.url)
             .filterNot { it.name.orEmpty().startsWith('.') }
-            .filter { it.isDirectory || Archive.isSupported(it) || it.extension.equals("epub", true) }
-            .map { chapterFile ->
-                SChapter.create().apply {
-                    url = "${manga.url}/${chapterFile.name}"
-                    name = if (chapterFile.isDirectory) {
-                        chapterFile.name
-                    } else {
-                        chapterFile.nameWithoutExtension
-                    }.orEmpty()
-                    date_upload = chapterFile.lastModified()
-                    chapter_number = ChapterRecognition
-                        .parseChapterNumber(manga.title, this.name, this.chapter_number.toDouble())
-                        .toFloat()
+            .filter(Format::isSupported)
+            .sortedWith { f1, f2 -> f1.name.orEmpty().compareToCaseInsensitiveNaturalOrder(f2.name.orEmpty()) }
 
-                    val format = Format.valueOf(chapterFile)
-                    if (format is Format.Epub) {
-                        format.file.epubReader(context).use { epub ->
-                            epub.fillMetadata(manga, this)
-                        }
-                    } else {
-                        getComicInfoForChapter(chapterFile) { stream, /* SY --> */ _ /* SY <-- */ ->
-                            setChapterDetailsFromComicInfoFile(stream, this)
-                        }
-                    }
-                }
-            }
-            .sortedWith { c1, c2 ->
-                c2.name.compareToCaseInsensitiveNaturalOrder(c1.name)
-            }
-
-        // Copy the cover from the first chapter found if not available
-        if (manga.thumbnail_url.isNullOrBlank()) {
-            chapters.lastOrNull()?.let { chapter ->
-                updateCover(chapter, manga)
+        // Oldest first while building, so an EPUB's chapters stay in reading order; the list is returned newest
+        // first like every other source.
+        val chapters = files.flatMap { file ->
+            when (val format = Format.valueOf(file)) {
+                is Format.Epub -> epubChapters(manga, format.file)
+                is Format.Text, is Format.Html -> listOf(
+                    SChapter.create().apply {
+                        url = "${manga.url}/${file.name}"
+                        name = file.nameWithoutExtension.orEmpty()
+                        date_upload = file.lastModified()
+                    },
+                )
             }
         }
+        chapters.forEachIndexed { index, chapter ->
+            chapter.chapter_number = ChapterRecognition
+                .parseChapterNumber(manga.title, chapter.name, (index + 1).toDouble())
+                .toFloat()
+        }
 
-        chapters
+        if (manga.thumbnail_url.isNullOrBlank()) {
+            files.firstOrNull { it.extension.equals("epub", true) }?.let { updateCover(it, manga) }
+        }
+
+        chapters.reversed()
+    }
+
+    private fun epubChapters(manga: SManga, file: UniFile): List<SChapter> {
+        return file.epubReader(context).use { reader ->
+            val book = EpubBook(reader)
+            val lastModified = file.lastModified()
+            book.chapters.map { chapter ->
+                SChapter.create().apply {
+                    url = "${manga.url}/${file.name}$EPUB_PATH_SEPARATOR${chapter.path}"
+                    name = chapter.title
+                    date_upload = lastModified
+                    scanlator = book.metadata.publisher
+                }
+            }
+        }
+    }
+
+    override suspend fun getChapterText(chapter: SChapter): String = withIOContext {
+        val (novelDirName, rest) = chapter.url.split('/', limit = 2).takeIf { it.size == 2 }
+            ?: throw Exception(context.stringResource(MR.strings.chapter_not_found))
+        val fileName = rest.substringBefore(EPUB_PATH_SEPARATOR)
+        val file = fileSystem.getBaseDirectory()?.findFile(novelDirName)?.findFile(fileName)
+            ?: throw Exception(context.stringResource(MR.strings.chapter_not_found))
+        val format = try {
+            Format.valueOf(file)
+        } catch (_: Format.UnknownFormatException) {
+            throw Exception(context.stringResource(MR.strings.local_invalid_format))
+        }
+        when (format) {
+            is Format.Epub -> {
+                val entry = rest.substringAfter(EPUB_PATH_SEPARATOR, "")
+                format.file.epubReader(context).use { reader ->
+                    val book = EpubBook(reader)
+                    book.readChapter(entry) { imagePath -> extractEpubImage(book, file, imagePath) }
+                }
+            }
+            is Format.Html -> file.openInputStream().use { it.bufferedReader().readText() }
+            is Format.Text -> file.openInputStream().use { plainTextToHtml(it.bufferedReader().readText()) }
+        }
+    }
+
+    /**
+     * Copies an image out of the book into the app's cache and returns its file URI, so the reader loads it like
+     * any other picture. Files are keyed by the book and the image's path, so a chapter reopened reuses them.
+     */
+    private fun extractEpubImage(book: EpubBook, file: UniFile, imagePath: String): String? {
+        val bookKey = "${file.uri}:${file.length()}".hashCode().toUInt().toString(16)
+        val target = File(File(context.cacheDir, "local_epub_images/$bookKey"), imagePath.replace('/', '_'))
+        if (!target.exists()) {
+            val input = book.open(imagePath) ?: return null
+            target.parentFile?.mkdirs()
+            input.use { stream -> target.outputStream().use { stream.copyTo(it) } }
+        }
+        return Uri.fromFile(target).toString()
+    }
+
+    private fun fillDetailsFromEpub(file: UniFile, manga: SManga): Boolean {
+        return file.epubReader(context).use { reader ->
+            val metadata = EpubBook(reader).metadata
+            metadata.title?.let { manga.title = it }
+            if (metadata.authors.isNotEmpty()) manga.author = metadata.authors.joinToString()
+            metadata.description?.let { manga.description = it }
+            if (metadata.subjects.isNotEmpty()) manga.genre = metadata.subjects.joinToString()
+            metadata.title != null || metadata.authors.isNotEmpty() || metadata.description != null
+        }
     }
 
     // Filters
@@ -534,58 +553,12 @@ class LocalSource(
         // KMK <--
     )
 
-    // Unused stuff
-    override suspend fun getPageList(chapter: SChapter): List<Page> = throw UnsupportedOperationException("Unused")
-
-    fun getFormat(chapter: SChapter): Format {
-        try {
-            val (mangaDirName, chapterName) = chapter.url.split('/', limit = 2)
-            return fileSystem.getBaseDirectory()
-                ?.findFile(mangaDirName)
-                ?.findFile(chapterName)
-                ?.let(Format.Companion::valueOf)
-                ?: throw Exception(context.stringResource(MR.strings.chapter_not_found))
-        } catch (_: Format.UnknownFormatException) {
-            throw Exception(context.stringResource(MR.strings.local_invalid_format))
-        } catch (e: Exception) {
-            throw e
-        }
-    }
-
-    private fun updateCover(chapter: SChapter, manga: SManga): UniFile? {
+    private fun updateCover(epub: UniFile, manga: SManga): UniFile? {
         return try {
-            when (val format = getFormat(chapter)) {
-                is Format.Directory -> {
-                    val entry = format.file.listFiles()
-                        ?.sortedWith { f1, f2 ->
-                            f1.name.orEmpty().compareToCaseInsensitiveNaturalOrder(
-                                f2.name.orEmpty(),
-                            )
-                        }
-                        ?.find {
-                            !it.isDirectory && ImageUtil.isImage(it.name) { it.openInputStream() }
-                        }
-
-                    entry?.let { coverManager.update(manga, it.openInputStream()) }
-                }
-                is Format.Archive -> {
-                    format.file.archiveReader(context).use { reader ->
-                        val entry = reader.useEntries { entries ->
-                            entries
-                                .sortedWith { f1, f2 -> f1.name.compareToCaseInsensitiveNaturalOrder(f2.name) }
-                                .find { it.isFile && ImageUtil.isImage(it.name) { reader.getInputStream(it.name)!! } }
-                        }
-
-                        entry?.let { coverManager.update(manga, reader.getInputStream(it.name)!!, reader.encrypted) }
-                    }
-                }
-                is Format.Epub -> {
-                    format.file.epubReader(context).use { epub ->
-                        val entry = epub.getImagesFromPages().firstOrNull()
-
-                        entry?.let { coverManager.update(manga, epub.getInputStream(it)!!) }
-                    }
-                }
+            epub.epubReader(context).use { reader ->
+                val book = EpubBook(reader)
+                val cover = book.coverPath ?: return null
+                book.open(cover)?.let { coverManager.update(manga, it) }
             }
         } catch (e: Throwable) {
             logcat(LogPriority.ERROR, e) { "Error updating cover for ${manga.title}" }
@@ -595,11 +568,28 @@ class LocalSource(
 
     companion object {
         const val ID = 0L
-        const val HELP_URL = "https://komikku-app.github.io/docs/guides/local-source/"
+        const val HELP_URL = "https://github.com/mKonic/yomikku#local-novels"
 
         // SY -->
         const val COMIC_INFO_ARCHIVE = "ComicInfo.cbm"
         // SY <--
+
+        /** Separates an EPUB's file name from the chapter's path inside it, in a chapter URL. */
+        const val EPUB_PATH_SEPARATOR = "#"
+
+        /**
+         * Plain text as HTML: blank lines separate paragraphs, and a file with no blank lines at all takes each line
+         * as a paragraph, which is how most novel text files are written.
+         */
+        fun plainTextToHtml(text: String): String {
+            val normalized = text.replace("\r\n", "\n").replace('\r', '\n')
+            val blankLine = Regex("\n\\s*\n")
+            val paragraphs = if (blankLine.containsMatchIn(normalized)) normalized.split(blankLine) else normalized.split('\n')
+            return paragraphs
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString("\n") { "<p>" + TextUtils.htmlEncode(it).replace("\n", "<br>") + "</p>" }
+        }
 
         private val LATEST_THRESHOLD = 7.days.inWholeMilliseconds
     }

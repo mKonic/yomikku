@@ -79,7 +79,6 @@ class UpdatesScreenModel(
     val lastUpdated by libraryPreferences.lastUpdatedTimestamp().asState(screenModelScope)
 
     // SY -->
-    val preserveReadingPosition by readerPreferences.preserveReadingPosition().asState(screenModelScope)
     // SY <--
 
     // First and last selected index in list

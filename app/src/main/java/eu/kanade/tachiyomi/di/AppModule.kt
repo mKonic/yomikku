@@ -152,7 +152,7 @@ class AppModule(val app: Application) : InjektModule {
 
         addSingletonFactory { UniFileTempFileManager(app) }
 
-        addSingletonFactory { ChapterCache(app, get(), get()) }
+        addSingletonFactory { ChapterCache(app, get()) }
         addSingletonFactory { CoverCache(app) }
 
         addSingletonFactory { NetworkHelper(app, get()) }

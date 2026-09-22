@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.source
 
 import eu.kanade.tachiyomi.source.model.FilterList
 import eu.kanade.tachiyomi.source.model.MangasPage
-import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.model.SMangaUpdate
@@ -12,7 +11,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import logcat.LogPriority
-import rx.Observable
 import tachiyomi.core.common.util.QuerySanitizer.sanitize
 import tachiyomi.core.common.util.system.logcat
 
@@ -94,14 +92,14 @@ interface Source {
     ): SMangaUpdate
 
     /**
-     * Get the list of pages a chapter has. Pages should be returned
-     * in the expected order; the index is ignored.
+     * Get the text of a chapter as HTML. Paragraphs are `<p>`, headings `<h1>`-`<h6>`, emphasis `<em>`/`<strong>`,
+     * images `<img src>` with absolute URLs. The app sanitises what it renders, so a source only extracts the
+     * content element and drops site chrome (ads, navigation, comments).
      *
-     * @since tachiyomix 1.6
      * @param chapter the chapter.
-     * @return the pages for the chapter.
+     * @return the chapter body as HTML.
      */
-    suspend fun getPageList(chapter: SChapter): List<Page>
+    suspend fun getChapterText(chapter: SChapter): String
 
     // KMK -->
 
@@ -249,13 +247,4 @@ interface Source {
         }
     }
     // KMK <--
-
-    @Deprecated("Use the combined suspend API instead", ReplaceWith("getMangaUpdate"))
-    fun fetchMangaDetails(manga: SManga): Observable<SManga> = throw UnsupportedOperationException()
-
-    @Deprecated("Use the combined suspend API instead", ReplaceWith("getMangaUpdate"))
-    fun fetchChapterList(manga: SManga): Observable<List<SChapter>> = throw UnsupportedOperationException()
-
-    @Deprecated("Use the suspend API instead", ReplaceWith("getPageList"))
-    fun fetchPageList(chapter: SChapter): Observable<List<Page>> = throw UnsupportedOperationException()
 }
