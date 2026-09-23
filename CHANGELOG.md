@@ -20,5 +20,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Scroll mode reads on into the next chapter without stopping, which can be turned off in the reader settings.
 
 ### Changed
+- Tracker searches on AniList, MyAnimeList, Kitsu, MangaUpdates, Shikimori and Bangumi find the novel instead of its manga adaptations.
+- Shikimori is reached at its new shikimori.io address.
 - The text reader shows the chapter transition, loading and error screens the image readers had.
 - Related titles are off by default, so opening a novel doesn't send a burst of searches to its site.
