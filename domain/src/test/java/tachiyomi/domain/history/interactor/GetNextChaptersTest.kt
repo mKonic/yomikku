@@ -66,7 +66,7 @@ class GetNextChaptersTest {
         coEvery { getManga.await(MANGA_ID) } returns manga
         val historyRepository = mockk<HistoryRepository>()
         coEvery { historyRepository.getLastHistory() } returns history
-        return GetNextChapters(getChaptersByMangaId, mockk(), getManga, historyRepository)
+        return GetNextChapters(getChaptersByMangaId, getManga, historyRepository)
     }
 
     private fun chapter(id: Long, sourceOrder: Long) =

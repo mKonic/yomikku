@@ -68,8 +68,6 @@ class HttpSourceRelatedMangaTest {
                     .build()
             }
             .build()
-
-        override fun imageUrlParse(response: Response): String = throw UnsupportedOperationException()
     }
 
     /** What a source that has no popular listing looks like: the method is there and it throws. */
