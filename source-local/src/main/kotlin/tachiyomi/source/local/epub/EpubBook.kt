@@ -153,7 +153,10 @@ class EpubBook(private val reader: EpubReader) {
         return document.body().html()
     }
 
-    private fun parse(path: String): Document? = open(path)?.use { Jsoup.parse(it, null, "") }
+    private fun parse(path: String): Document? = open(path)?.use { stream ->
+        val isXhtml = manifest.values.firstOrNull { it.path == path }?.mediaType != HTML
+        if (isXhtml) parseXhtml(stream.bufferedReader().readText()) else Jsoup.parse(stream, null, "")
+    }
 
     /**
      * The table of contents in its own order, flattened, from the EPUB 3 navigation document or else the EPUB 2 NCX.
@@ -209,6 +212,17 @@ class EpubBook(private val reader: EpubReader) {
     private data class ManifestItem(val id: String, val path: String, val mediaType: String, val properties: String)
 
     companion object {
+        /**
+         * Reads an XHTML document. The HTML parser would take a self-closing `<a id="x"/>`, which books use to mark
+         * where chapters start, as an open link running to the end of the page, so the document is read as XML and
+         * handed to the HTML parser with every element closed.
+         */
+        internal fun parseXhtml(text: String): Document {
+            val xml = Jsoup.parse(text, "", Parser.xmlParser())
+            xml.outputSettings().syntax(Document.OutputSettings.Syntax.html).prettyPrint(false)
+            return Jsoup.parse(xml.outerHtml())
+        }
+
         private fun split(ref: String): Pair<String, String?> =
             ref.substringBefore('#') to ref.substringAfter('#', "").takeIf { it.isNotEmpty() }
 

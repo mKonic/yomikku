@@ -61,4 +61,15 @@ class EpubBookTest {
     fun `a missing anchor leaves that end open`() {
         slice(book, "c3", "nowhere").text() shouldBe "III Three."
     }
+
+    @Test
+    fun `a self-closing anchor in xhtml does not wrap the text after it in a link`() {
+        val document = EpubBook.parseXhtml(
+            """<?xml version="1.0"?><html xmlns="http://www.w3.org/1999/xhtml"><body>""" +
+                """<a id="c1"/><h2>I</h2><p>It is a truth&#160;universally acknowledged.</p></body></html>""",
+        )
+        document.selectFirst("a")!!.childNodeSize() shouldBe 0
+        document.body().text().replace('\u00a0', ' ') shouldBe "I It is a truth universally acknowledged."
+        document.getElementById("c1") shouldBe document.selectFirst("a")
+    }
 }
