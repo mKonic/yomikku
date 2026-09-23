@@ -4,8 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.reader.text.ReaderFonts
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableMap
 import tachiyomi.i18n.MR
@@ -35,6 +37,10 @@ object SettingsReaderScreen : SearchableSettings {
     @Composable
     private fun getTextGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
         val fontSize by readerPreferences.fontSize().collectAsState()
+        val font by readerPreferences.fontFamily().collectAsState()
+        val customFont by readerPreferences.customFont().collectAsState()
+        val context = LocalContext.current
+        val fontFiles = remember { ReaderFonts.list(context) }
         return Preference.PreferenceGroup(
             title = stringResource(KMR.strings.reader_settings_text),
             preferenceItems = persistentListOf(
@@ -52,12 +58,19 @@ object SettingsReaderScreen : SearchableSettings {
                         .toImmutableMap(),
                     title = stringResource(KMR.strings.reader_settings_theme),
                 ),
-                Preference.PreferenceItem.ListPreference(
-                    preference = readerPreferences.fontFamily(),
-                    entries = ReaderPreferences.ReaderFont.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                // Added font files are listed by file name after the system fonts, which go by their enum name.
+                Preference.PreferenceItem.BasicListPreference(
+                    value = customFont.ifEmpty { font.name },
+                    entries = (
+                        ReaderPreferences.ReaderFont.entries.associate { it.name to stringResource(it.titleRes) } +
+                            fontFiles.associate { it.name to ReaderFonts.title(it) }
+                        ).toImmutableMap(),
                     title = stringResource(KMR.strings.reader_settings_font),
+                    onValueChanged = { value ->
+                        val system = ReaderPreferences.ReaderFont.entries.firstOrNull { it.name == value }
+                        if (system != null) readerPreferences.fontFamily().set(system)
+                        readerPreferences.customFont().set(if (system == null) value else "")
+                    },
                 ),
                 Preference.PreferenceItem.SliderPreference(
                     value = fontSize,

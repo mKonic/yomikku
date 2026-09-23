@@ -18,6 +18,9 @@ class ReaderPreferences(
 
     fun fontFamily() = preferenceStore.getEnum("pref_text_font_family", ReaderFont.SERIF)
 
+    /** File name of an added font the reader uses instead of [fontFamily]; empty for none. */
+    fun customFont() = preferenceStore.getString("pref_text_custom_font", "")
+
     fun lineHeight() = preferenceStore.getFloat("pref_text_line_height", 1.6f)
 
     fun paragraphSpacing() = preferenceStore.getFloat("pref_text_paragraph_spacing", 0.9f)

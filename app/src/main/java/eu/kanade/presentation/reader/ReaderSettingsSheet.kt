@@ -1,19 +1,39 @@
 package eu.kanade.presentation.reader
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import eu.kanade.presentation.components.TabbedDialog
 import eu.kanade.presentation.components.TabbedDialogPaddings
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import eu.kanade.tachiyomi.ui.reader.text.ReaderFonts
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.launch
+import mihon.icons.materialsymbols.MaterialSymbols
+import mihon.icons.materialsymbols.rounded.Add
+import mihon.icons.materialsymbols.rounded.Close
 import tachiyomi.core.common.preference.Preference
+import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.CheckboxItem
@@ -75,9 +95,7 @@ private fun TextPage(
     EnumChips(KMR.strings.reader_settings_theme, preferences.theme(), ReaderPreferences.ReaderTheme.entries) {
         stringResource(it.titleRes)
     }
-    EnumChips(KMR.strings.reader_settings_font, preferences.fontFamily(), ReaderPreferences.ReaderFont.entries) {
-        stringResource(it.titleRes)
-    }
+    FontChips(preferences)
     EnumChips(KMR.strings.reader_settings_align, preferences.textAlign(), ReaderPreferences.ReaderTextAlign.entries) {
         stringResource(it.titleRes)
     }
@@ -127,6 +145,81 @@ private fun GeneralPage(preferences: ReaderPreferences) {
     CheckboxItem(stringResource(KMR.strings.reader_settings_show_progress), preferences.showProgress())
     CheckboxItem(stringResource(MR.strings.pref_fullscreen), preferences.fullscreen())
     CheckboxItem(stringResource(MR.strings.pref_keep_screen_on), preferences.keepScreenOn())
+}
+
+/**
+ * The system fonts and every added font file, with a chip to add another. The selected added font can be removed
+ * from its chip.
+ */
+@Composable
+private fun FontChips(preferences: ReaderPreferences) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val font by preferences.fontFamily().collectAsState()
+    val customFont by preferences.customFont().collectAsState()
+    var files by remember { mutableStateOf(ReaderFonts.list(context)) }
+    val invalidMessage = stringResource(KMR.strings.reader_settings_font_invalid)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val added = withIOContext { ReaderFonts.add(context, uri) }
+            if (added == null) {
+                context.toast(invalidMessage)
+            } else {
+                files = ReaderFonts.list(context)
+                preferences.customFont().set(added.name)
+            }
+        }
+    }
+
+    SettingsChipRow(KMR.strings.reader_settings_font) {
+        ReaderPreferences.ReaderFont.entries.forEach { entry ->
+            FilterChip(
+                selected = customFont.isEmpty() && font == entry,
+                onClick = {
+                    preferences.fontFamily().set(entry)
+                    preferences.customFont().set("")
+                },
+                label = { Text(stringResource(entry.titleRes)) },
+            )
+        }
+        files.forEach { file ->
+            val selected = customFont == file.name
+            FilterChip(
+                selected = selected,
+                onClick = { preferences.customFont().set(file.name) },
+                label = { Text(ReaderFonts.title(file)) },
+                trailingIcon = if (selected) {
+                    {
+                        Icon(
+                            imageVector = MaterialSymbols.Rounded.Close,
+                            contentDescription = stringResource(KMR.strings.reader_settings_remove_font),
+                            modifier = Modifier
+                                .size(FilterChipDefaults.IconSize)
+                                .clickable {
+                                    ReaderFonts.remove(file)
+                                    preferences.customFont().set("")
+                                    files = ReaderFonts.list(context)
+                                },
+                        )
+                    }
+                } else {
+                    null
+                },
+            )
+        }
+        AssistChip(
+            onClick = { picker.launch(ReaderFonts.MIME_TYPES) },
+            label = { Text(stringResource(KMR.strings.reader_settings_add_font)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = MaterialSymbols.Rounded.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(AssistChipDefaults.IconSize),
+                )
+            },
+        )
+    }
 }
 
 @Composable

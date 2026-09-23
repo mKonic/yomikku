@@ -6,7 +6,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -56,6 +58,8 @@ data class ReaderTextStyle(
 fun rememberReaderTextStyle(preferences: ReaderPreferences): ReaderTextStyle {
     val fontSize by preferences.fontSize().collectAsState()
     val font by preferences.fontFamily().collectAsState()
+    val customFont by preferences.customFont().collectAsState()
+    val context = LocalContext.current
     val lineHeight by preferences.lineHeight().collectAsState()
     val paragraphSpacing by preferences.paragraphSpacing().collectAsState()
     val indent by preferences.paragraphIndent().collectAsState()
@@ -75,14 +79,19 @@ fun rememberReaderTextStyle(preferences: ReaderPreferences): ReaderTextStyle {
     }
 
     return remember(
-        fontSize, font, lineHeight, paragraphSpacing, indent, align, horizontalMargin, verticalMargin,
+        fontSize, font, customFont, lineHeight, paragraphSpacing, indent, align, horizontalMargin, verticalMargin,
         background, foreground, showImages,
     ) {
-        val family = when (font) {
-            ReaderFont.DEFAULT -> FontFamily.Default
-            ReaderFont.SERIF -> FontFamily.Serif
-            ReaderFont.SANS_SERIF -> FontFamily.SansSerif
-            ReaderFont.MONOSPACE -> FontFamily.Monospace
+        val customFile = ReaderFonts.find(context, customFont)
+        val family = if (customFile != null) {
+            FontFamily(Font(customFile))
+        } else {
+            when (font) {
+                ReaderFont.DEFAULT -> FontFamily.Default
+                ReaderFont.SERIF -> FontFamily.Serif
+                ReaderFont.SANS_SERIF -> FontFamily.SansSerif
+                ReaderFont.MONOSPACE -> FontFamily.Monospace
+            }
         }
         val body = TextStyle(
             color = foreground,

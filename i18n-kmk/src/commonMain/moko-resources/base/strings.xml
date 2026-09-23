@@ -235,6 +235,9 @@
     <string name="reader_settings_mode">Reading mode</string>
     <string name="reader_settings_theme">Theme</string>
     <string name="reader_settings_font">Font</string>
+    <string name="reader_settings_add_font">Add font</string>
+    <string name="reader_settings_remove_font">Remove font</string>
+    <string name="reader_settings_font_invalid">That file isn\'t a TrueType or OpenType font</string>
     <string name="reader_settings_align">Alignment</string>
     <string name="reader_settings_font_size">Font size</string>
     <string name="reader_settings_line_height">Line height</string>
