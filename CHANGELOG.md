@@ -11,6 +11,10 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+
+## [v1.0.0]
+First release: a light-novel reader built on Komikku, with a native text reader, EPUB import and export, and Kotlin extensions ported from LNReader's plugins.
+
 ### Added
 - Export a novel's downloaded chapters as an EPUB from the novel screen's menu; it runs in the background with a progress notification.
 - Downloaded chapters keep their images, so they read fully offline.
