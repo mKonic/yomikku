@@ -97,7 +97,11 @@ class MangaCoverFetcher(
         // diskCacheKey is thumbnail_url
         if (url == null) error("No cover specified")
         return when (getResourceType(url)) {
-            Type.File -> fileLoader(File(url.substringAfter("file://")))
+            // KMK --> a file:// uri is percent-encoded ("My%20Novel"), a bare path is not
+            Type.File -> fileLoader(
+                if (url.startsWith("file://")) File(url.toUri().path!!) else File(url),
+            )
+            // KMK <--
             Type.URI -> fileUriLoader(url)
             Type.URL -> httpLoader()
             null -> error("Invalid image")

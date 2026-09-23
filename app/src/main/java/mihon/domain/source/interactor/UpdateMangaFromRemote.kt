@@ -170,7 +170,9 @@ class UpdateMangaFromRemote(
                 memo = remoteManga.memo,
             ),
         )
-        if (success && title != null) {
+        // KMK --> a local novel's folder is the user's own; renaming it to the book's title broke its chapter paths
+        if (success && title != null && !localManga.isLocal()) {
+            // KMK <--
             downloadManager.renameManga(localManga, title)
         }
         return success

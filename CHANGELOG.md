@@ -19,4 +19,6 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Related titles are off by default, so opening a novel doesn't send a burst of searches to its site.
 
 ### Fixed
+- Covers of local novels in folders with spaces in their names now show.
+- Refreshing a local novel no longer renames its folder to the book's title, which lost its chapters.
 - Full-page illustrations in local EPUBs no longer show their alt text as a stray line.
