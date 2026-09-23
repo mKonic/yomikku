@@ -91,10 +91,6 @@ object SettingsSecurityScreen : SearchableSettings {
         val useAuthPref = securityPreferences.useAuthenticator()
         val useAuth by useAuthPref.collectAsState()
 
-        val scope = rememberCoroutineScope()
-        val isCbzPasswordSet by remember { CbzCrypto.isPasswordSetState(scope) }.collectAsState()
-        val passwordProtectDownloads by securityPreferences.passwordProtectDownloads().collectAsState()
-
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_security),
             preferenceItems = persistentListOf(
@@ -140,49 +136,6 @@ object SettingsSecurityScreen : SearchableSettings {
                     title = stringResource(MR.strings.secure_screen),
                 ),
                 // SY -->
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = securityPreferences.passwordProtectDownloads(),
-                    title = stringResource(SYMR.strings.password_protect_downloads),
-                    subtitle = stringResource(SYMR.strings.password_protect_downloads_summary),
-                    enabled = isCbzPasswordSet,
-                ),
-                Preference.PreferenceItem.ListPreference(
-                    preference = securityPreferences.encryptionType(),
-                    entries = SecurityPreferences.EncryptionType.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
-                    title = stringResource(SYMR.strings.encryption_type),
-                    enabled = passwordProtectDownloads,
-
-                ),
-                run {
-                    var dialogOpen by remember { mutableStateOf(false) }
-                    if (dialogOpen) {
-                        PasswordDialog(
-                            onDismissRequest = { dialogOpen = false },
-                            onReturnPassword = { password ->
-                                dialogOpen = false
-
-                                CbzCrypto.deleteKeyCbz()
-                                securityPreferences.cbzPassword().set(CbzCrypto.encryptCbz(password.replace("\n", "")))
-                            },
-                        )
-                    }
-                    Preference.PreferenceItem.TextPreference(
-                        title = stringResource(SYMR.strings.set_cbz_zip_password),
-                        onClick = {
-                            dialogOpen = true
-                        },
-                    )
-                },
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(SYMR.strings.delete_cbz_archive_password),
-                    enabled = isCbzPasswordSet,
-                    onClick = {
-                        CbzCrypto.deleteKeyCbz()
-                        securityPreferences.cbzPassword().set("")
-                    },
-                ),
                 run {
                     val navigator = LocalNavigator.currentOrThrow
                     val count by securityPreferences.authenticatorTimeRanges().collectAsState()

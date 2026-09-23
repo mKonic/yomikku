@@ -72,10 +72,6 @@ class UiPreferences(
 
     fun recommendsInOverflow() = preferenceStore.getBoolean("recommends_in_overflow", false)
 
-    fun mergeInOverflow() = preferenceStore.getBoolean("merge_in_overflow", true)
-
-    fun previewsRowCount() = preferenceStore.getInt("pref_previews_row_count", 4)
-
     fun useNewSourceNavigation() = preferenceStore.getBoolean("use_new_source_navigation", true)
 
     fun bottomBarLabels() = preferenceStore.getBoolean("pref_show_bottom_bar_labels", true)

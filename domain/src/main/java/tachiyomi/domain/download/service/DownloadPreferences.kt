@@ -11,10 +11,6 @@ class DownloadPreferences(
         true,
     )
 
-    fun saveChaptersAsCBZ() = preferenceStore.getBoolean("save_chapter_as_cbz", true)
-
-    fun splitTallImages() = preferenceStore.getBoolean("split_tall_images", true)
-
     fun autoDownloadWhileReading() = preferenceStore.getInt("auto_download_while_reading", 0)
 
     fun removeAfterReadSlots() = preferenceStore.getInt("remove_after_read_slots", -1)
@@ -38,8 +34,6 @@ class DownloadPreferences(
     fun downloadNewUnreadChaptersOnly() = preferenceStore.getBoolean("download_new_unread_chapters_only", false)
 
     fun parallelSourceLimit() = preferenceStore.getInt("download_parallel_source_limit", 5)
-
-    fun parallelPageLimit() = preferenceStore.getInt("download_parallel_page_limit", 5)
 
     // SY -->
     fun includeChapterUrlHash() = preferenceStore.getBoolean("download_include_chapter_url_hash", false)
