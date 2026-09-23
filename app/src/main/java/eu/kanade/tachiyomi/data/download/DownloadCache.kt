@@ -403,12 +403,16 @@ class DownloadCache(
         // KMK <--
         forced: Boolean = false,
     ) {
-        // Avoid renewing cache if in the process nor too often
-        if (lastRenew + renewInterval >= System.currentTimeMillis() ||
-            // KMK -->
-            renewInterval < 0L ||
-            // KMK <--
-            renewalJob?.isActive == true
+        // Avoid renewing cache if in the process nor too often. A forced renewal skips the interval: the disk read
+        // can set [lastRenew] again between the caller clearing it and this check, which dropped the renewal.
+        if (renewalJob?.isActive == true) return
+        if (!forced &&
+            (
+                lastRenew + renewInterval >= System.currentTimeMillis() ||
+                    // KMK -->
+                    renewInterval < 0L
+                // KMK <--
+                )
         ) {
             return
         }
