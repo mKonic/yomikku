@@ -321,7 +321,6 @@ class DiscordRPCService : Service() {
             val customMessage = connectionsPreferences.discordCustomMessage().get()
             val showButtons = connectionsPreferences.discordShowButtons().get()
             val showDownloadButton = connectionsPreferences.discordShowDownloadButton().get()
-            val showDiscordButton = connectionsPreferences.discordShowDiscordButton().get()
 
             val name = title ?: appName
             val details = customMessage.takeIf { it.isNotBlank() }
@@ -332,14 +331,12 @@ class DiscordRPCService : Service() {
             val buttonLabels = mutableListOf<String>().apply {
                 if (showButtons) {
                     if (showDownloadButton) add(context.getString(DOWNLOAD_BUTTON_LABEL_RES, appName))
-                    if (showDiscordButton) add(DISCORD_BUTTON_LABEL)
                 }
             }
 
             val buttonUrls = mutableListOf<String>().apply {
                 if (showButtons) {
                     if (showDownloadButton) add(DOWNLOAD_BUTTON_URL)
-                    if (showDiscordButton) add(DISCORD_BUTTON_URL)
                 }
             }
 

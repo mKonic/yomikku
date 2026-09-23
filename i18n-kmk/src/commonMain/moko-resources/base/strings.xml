@@ -215,8 +215,6 @@
     <string name="pref_discord_show_buttons_summary">Display buttons to download the app or join the Discord server</string>
     <string name="pref_discord_show_download_button">Show Download Button</string>
     <string name="pref_discord_show_download_button_summary">Displays a button to download the app</string>
-    <string name="pref_discord_show_discord_button">Show Discord Button</string>
-    <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
 
     <!-- WebGPU reader -->
     <string name="pref_trust_all_extensions">Trust all extensions</string>

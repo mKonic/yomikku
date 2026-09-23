@@ -272,7 +272,7 @@ fun WebViewScreenContent(
                                     .clip(MaterialTheme.shapes.small)
                                     .clickable {
                                         uriHandler.openUri(
-                                            "https://komikku-app.github.io/docs/guides/troubleshooting/#cloudflare",
+                                            "https://github.com/mKonic/yomikku#readme",
                                         )
                                     },
                             )

@@ -56,7 +56,7 @@ object SettingsDiscordScreen : SearchableSettings {
     @Composable
     override fun RowScope.AppBarAction() {
         val uriHandler = LocalUriHandler.current
-        IconButton(onClick = { uriHandler.openUri("https://tachiyomi.org/help/guides/tracking/") }) {
+        IconButton(onClick = { uriHandler.openUri("https://github.com/mKonic/yomikku#readme") }) {
             Icon(
                 imageVector = MaterialSymbols.AutoMirroredRounded.Help,
                 contentDescription = stringResource(MR.strings.tracking_guide),
@@ -77,7 +77,6 @@ object SettingsDiscordScreen : SearchableSettings {
         val showTimestampPref = connectionsPreferences.discordShowTimestamp()
         val showButtonsPref = connectionsPreferences.discordShowButtons()
         val showDownloadButtonPref = connectionsPreferences.discordShowDownloadButton()
-        val showDiscordButtonPref = connectionsPreferences.discordShowDiscordButton()
         val showProgressEnabled by showProgressPref.collectAsState()
 
         val enableDRPC by enableDRPCPref.collectAsState()
@@ -219,12 +218,6 @@ object SettingsDiscordScreen : SearchableSettings {
                         preference = showDownloadButtonPref,
                         title = stringResource(KMR.strings.pref_discord_show_download_button),
                         subtitle = stringResource(KMR.strings.pref_discord_show_download_button_summary),
-                        enabled = showButtons,
-                    ),
-                    Preference.PreferenceItem.SwitchPreference(
-                        preference = showDiscordButtonPref,
-                        title = stringResource(KMR.strings.pref_discord_show_discord_button),
-                        subtitle = stringResource(KMR.strings.pref_discord_show_discord_button_summary),
                         enabled = showButtons,
                     ),
                 ),

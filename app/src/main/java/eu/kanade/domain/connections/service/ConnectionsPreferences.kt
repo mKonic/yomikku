@@ -51,8 +51,6 @@ class ConnectionsPreferences(
 
     fun discordShowDownloadButton() = preferenceStore.getBoolean("pref_discord_show_download_button", true)
 
-    fun discordShowDiscordButton() = preferenceStore.getBoolean("pref_discord_show_discord_button", true)
-
     fun discordAccounts() = preferenceStore.getString("discord_accounts", "")
 
     companion object {

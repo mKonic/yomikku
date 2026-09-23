@@ -56,7 +56,7 @@ internal class GuidesStep(
     }
 }
 
-const val GETTING_STARTED_URL = "https://komikku-app.github.io/docs/guides/getting-started"
+const val GETTING_STARTED_URL = "https://github.com/mKonic/yomikku#readme"
 
 @PreviewLightDark
 @Composable

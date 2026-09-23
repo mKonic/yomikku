@@ -2,8 +2,8 @@ package tachiyomi.core.common
 
 object Constants {
 
-    const val URL_HELP = "https://komikku-app.github.io/docs/guides/troubleshooting/"
-    const val URL_HELP_UPCOMING = "https://komikku-app.github.io/docs/faq/updates/upcoming"
+    const val URL_HELP = "https://github.com/mKonic/yomikku#readme"
+    const val URL_HELP_UPCOMING = "https://github.com/mKonic/yomikku#readme"
 
     const val MANGA_EXTRA = "manga"
 

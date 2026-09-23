@@ -224,26 +224,8 @@ class AboutScreen : Screen() {
 
                 item {
                     TextPreferenceWidget(
-                        title = stringResource(MR.strings.help_translate),
-                        onPreferenceClick = {
-                            uriHandler.openUri(
-                                "https://hosted.weblate.org/engage/komikku-app/",
-                            )
-                        },
-                    )
-                }
-
-                item {
-                    TextPreferenceWidget(
                         title = stringResource(MR.strings.licenses),
                         onPreferenceClick = { navigator.push(OpenSourceLicensesScreen()) },
-                    )
-                }
-
-                item {
-                    TextPreferenceWidget(
-                        title = stringResource(MR.strings.privacy_policy),
-                        onPreferenceClick = { uriHandler.openUri("https://komikku-app.github.io/privacy/") },
                     )
                 }
 
@@ -255,37 +237,9 @@ class AboutScreen : Screen() {
                         horizontalArrangement = Arrangement.Center,
                     ) {
                         LinkIcon(
-                            label = stringResource(MR.strings.website),
-                            icon = MaterialSymbols.Rounded.Public,
-                            url = "https://komikku-app.github.io",
-                        )
-                        LinkIcon(
-                            label = "Discord",
-                            icon = CustomIcons.Discord,
-                            url = "https://discord.gg/85jB7V5AJR",
-                        )
-                        // LinkIcon(
-                        //     label = "X",
-                        //     icon = CustomIcons.X,
-                        //     url = "https://x.com/mihonapp",
-                        // )
-                        // LinkIcon(
-                        //     label = "Facebook",
-                        //     icon = CustomIcons.Facebook,
-                        //     url = "https://facebook.com/mihonapp",
-                        // )
-                        // LinkIcon(
-                        //     label = "Reddit",
-                        //     icon = CustomIcons.Reddit,
-                        //     url = "https://www.reddit.com/r/mihonapp",
-                        // )
-                        LinkIcon(
                             label = "GitHub",
                             icon = CustomIcons.Github,
-                            // KMK --> this fork, not upstream: it is where these builds and their
-                            // releases come from. Website and Discord above stay upstream's.
                             url = "https://github.com/mKonic/yomikku",
-                            // KMK <--
                         )
                     }
                 }
