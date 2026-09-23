@@ -12,7 +12,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 ### Added
-- Export a novel's downloaded chapters as an EPUB from the novel screen's menu.
+- Export a novel's downloaded chapters as an EPUB from the novel screen's menu; it runs in the background with a progress notification.
 - Downloaded chapters keep their images, so they read fully offline.
 - Each novel can have its own reading mode, scroll or paged, from the reader's settings.
 - Read chapters aloud with the system's text to speech; the reader follows the paragraph being spoken and carries on into the next chapter.
