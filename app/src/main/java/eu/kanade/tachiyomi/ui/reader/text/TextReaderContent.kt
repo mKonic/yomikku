@@ -37,7 +37,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -87,6 +90,7 @@ fun ScrollTextReader(
     onNextChapter: () -> Unit,
     nextDocument: ChapterDocument? = null,
     onContinueToNext: (fraction: Float) -> Unit = {},
+    speakingBlock: Int = -1,
 ) {
     val listState = rememberLazyListState()
     val currentOnContinue by rememberUpdatedState(onContinueToNext)
@@ -124,6 +128,17 @@ fun ScrollTextReader(
             .filter { it }
             .first()
         currentOnContinue(listState.readingPosition(next, firstItem = firstNextItem).first)
+    }
+
+    // Reading aloud keeps the paragraph being spoken on screen, moving only when it is not all there already.
+    LaunchedEffect(speakingBlock) {
+        if (speakingBlock < 0) return@LaunchedEffect
+        val item = speakingBlock + 1
+        val info = listState.layoutInfo
+        val shown = info.visibleItemsInfo.firstOrNull { it.index == item }
+        val fits = shown != null && shown.offset >= info.viewportStartOffset &&
+            shown.offset + shown.size <= info.viewportEndOffset
+        if (!fits) listState.animateScrollToItem(item)
     }
 
     LaunchedEffect(navigation) {
@@ -173,8 +188,13 @@ fun ScrollTextReader(
                     atStart = true,
                 )
             }
-            itemsIndexed(document.blocks, key = { index, _ -> index }) { _, block ->
-                BlockContent(block, style, Modifier.padding(bottom = style.paragraphSpacing))
+            itemsIndexed(document.blocks, key = { index, _ -> index }) { index, block ->
+                BlockContent(
+                    block = block,
+                    style = style,
+                    modifier = Modifier.padding(bottom = style.paragraphSpacing),
+                    speaking = index == speakingBlock,
+                )
             }
             if (nextDocument != null && nextChapter != null) {
                 item(key = "next-header") {
@@ -231,6 +251,8 @@ fun PagedTextReader(
     onTap: (TapZone) -> Unit,
     onPreviousChapter: () -> Unit,
     onNextChapter: () -> Unit,
+    speakingBlock: Int = -1,
+    speakingOffset: Int = -1,
 ) {
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer(cacheSize = 0)
@@ -275,6 +297,13 @@ fun PagedTextReader(
                     val fraction = if (document.length == 0) 0f else page.startOffset.toFloat() / document.length
                     currentOnProgress(fraction, index >= laidOut.size)
                 }
+        }
+
+        // Reading aloud turns to the page with the word being spoken.
+        LaunchedEffect(speakingOffset, laidOut) {
+            if (speakingOffset < 0) return@LaunchedEffect
+            val target = 1 + laidOut.indexOfLast { it.startOffset <= speakingOffset }.coerceAtLeast(0)
+            if (pagerState.currentPage != target) pagerState.animateScrollToPage(target)
         }
 
         LaunchedEffect(navigation, pagerState) {
@@ -327,6 +356,7 @@ fun PagedTextReader(
                 else -> TextPageContent(
                     page = laidOut[index - 1],
                     style = style,
+                    speakingBlock = speakingBlock,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = style.horizontalPadding, vertical = style.verticalPadding),
@@ -351,7 +381,12 @@ private fun List<TextPage>.pageAt(fraction: Float, document: ChapterDocument): I
 }
 
 @Composable
-private fun TextPageContent(page: TextPage, style: ReaderTextStyle, modifier: Modifier = Modifier) {
+private fun TextPageContent(
+    page: TextPage,
+    style: ReaderTextStyle,
+    speakingBlock: Int,
+    modifier: Modifier = Modifier,
+) {
     val image = page.items.singleOrNull() as? PageItem.Image
     if (image != null) {
         Box(modifier, contentAlignment = Alignment.Center) {
@@ -368,8 +403,18 @@ private fun TextPageContent(page: TextPage, style: ReaderTextStyle, modifier: Mo
     Canvas(modifier) {
         page.items.forEach { item ->
             when (item) {
-                is PageItem.Lines -> clipRect(top = item.y, bottom = item.y + item.height) {
-                    drawText(item.layout, topLeft = Offset(0f, item.y - item.top))
+                is PageItem.Lines -> {
+                    if (item.block == speakingBlock) {
+                        drawRoundRect(
+                            color = style.foreground.copy(alpha = SPEAKING_ALPHA),
+                            topLeft = Offset(-SPEAKING_INSET.toPx(), item.y),
+                            size = Size(size.width + SPEAKING_INSET.toPx() * 2, item.height),
+                            cornerRadius = CornerRadius(SPEAKING_INSET.toPx()),
+                        )
+                    }
+                    clipRect(top = item.y, bottom = item.y + item.height) {
+                        drawText(item.layout, topLeft = Offset(0f, item.y - item.top))
+                    }
                 }
                 is PageItem.Rule -> {
                     val y = item.y + RULE_HEIGHT.toPx() / 2
@@ -387,12 +432,32 @@ private fun TextPageContent(page: TextPage, style: ReaderTextStyle, modifier: Mo
 }
 
 @Composable
-private fun BlockContent(block: TextBlock, style: ReaderTextStyle, modifier: Modifier = Modifier) {
+private fun BlockContent(
+    block: TextBlock,
+    style: ReaderTextStyle,
+    modifier: Modifier = Modifier,
+    speaking: Boolean = false,
+) {
     when (block) {
         is TextBlock.Paragraph -> Text(
             text = block.text,
             style = style.forKind(block.kind),
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                .fillMaxWidth()
+                .then(
+                    if (speaking) {
+                        Modifier.drawBehind {
+                            drawRoundRect(
+                                color = style.foreground.copy(alpha = SPEAKING_ALPHA),
+                                topLeft = Offset(-SPEAKING_INSET.toPx(), 0f),
+                                size = Size(size.width + SPEAKING_INSET.toPx() * 2, size.height),
+                                cornerRadius = CornerRadius(SPEAKING_INSET.toPx()),
+                            )
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
         )
         is TextBlock.Image -> if (style.showImages) {
             // Scaled down to the column width but never up, so a small image stays its own size.
@@ -468,3 +533,7 @@ private const val PAGE_SCROLL_FRACTION = 0.9f
 /** Items of the current chapter before the appended one's blocks: its header, then the next chapter's title. */
 private const val NEXT_CHAPTER_ITEMS_BEFORE_BLOCKS = 2
 private val RULE_HEIGHT = 32.dp
+
+/** The shade behind the paragraph being read aloud, reaching a little past the text on either side. */
+private const val SPEAKING_ALPHA = 0.08f
+private val SPEAKING_INSET = 6.dp

@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -63,10 +64,13 @@ import mihon.icons.materialsymbols.automirroredrounded.FormatListBulleted
 import mihon.icons.materialsymbols.rounded.Bookmark
 import mihon.icons.materialsymbols.rounded.BookmarkAdd
 import mihon.icons.materialsymbols.rounded.Public
+import mihon.icons.materialsymbols.rounded.RecordVoiceOver
 import mihon.icons.materialsymbols.rounded.Settings
 import mihon.icons.materialsymbols.rounded.SkipNext
 import mihon.icons.materialsymbols.rounded.SkipPrevious
+import mihon.icons.materialsymbols.rounded.Stop
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.CombinedCircularProgressIndicator
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -89,6 +93,7 @@ fun ReaderScreen(
     onOpenInWebView: (() -> Unit)?,
     onOpenChapterList: () -> Unit,
     onOpenSettings: () -> Unit,
+    onToggleSpeech: () -> Unit,
 ) {
     val style = rememberReaderTextStyle(preferences)
     val defaultReadingMode by preferences.readingMode().collectAsState()
@@ -130,6 +135,8 @@ fun ReaderScreen(
                     onTap = { if (it == TapZone.MENU) onToggleMenus() },
                     onPreviousChapter = onPreviousChapter,
                     onNextChapter = onNextChapter,
+                    speakingBlock = state.speakingBlock,
+                    speakingOffset = state.speakingOffset,
                 )
                 else -> ScrollTextReader(
                     document = document,
@@ -147,6 +154,7 @@ fun ReaderScreen(
                     onNextChapter = onNextChapter,
                     nextDocument = state.nextDocument,
                     onContinueToNext = onContinueToNextChapter,
+                    speakingBlock = state.speakingBlock,
                 )
             }
 
@@ -200,8 +208,24 @@ fun ReaderScreen(
                 onSeek = onSeek,
                 onOpenChapterList = onOpenChapterList,
                 onOpenSettings = onOpenSettings,
+                speaking = state.speaking,
+                onToggleSpeech = onToggleSpeech,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
+            // While reading aloud with the menus hidden, stopping stays one tap away.
+            AnimatedVisibility(
+                visible = state.speaking && !state.menuVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
+                    .padding(16.dp),
+            ) {
+                SmallFloatingActionButton(onClick = onToggleSpeech) {
+                    Icon(MaterialSymbols.Rounded.Stop, stringResource(KMR.strings.reader_tts_stop))
+                }
+            }
         }
     }
 }
@@ -312,6 +336,8 @@ private fun ReaderBottomBar(
     onSeek: (Float) -> Unit,
     onOpenChapterList: () -> Unit,
     onOpenSettings: () -> Unit,
+    speaking: Boolean,
+    onToggleSpeech: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -362,6 +388,13 @@ private fun ReaderBottomBar(
                         MaterialSymbols.AutoMirroredRounded.FormatListBulleted,
                         stringResource(MR.strings.chapters),
                     )
+                }
+                IconButton(onClick = onToggleSpeech) {
+                    if (speaking) {
+                        Icon(MaterialSymbols.Rounded.Stop, stringResource(KMR.strings.reader_tts_stop))
+                    } else {
+                        Icon(MaterialSymbols.Rounded.RecordVoiceOver, stringResource(KMR.strings.reader_tts_start))
+                    }
                 }
                 IconButton(onClick = onOpenSettings) {
                     Icon(MaterialSymbols.Rounded.Settings, stringResource(MR.strings.action_settings))

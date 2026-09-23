@@ -56,6 +56,10 @@ class ReaderPreferences(
     fun tapToTurnPages() = preferenceStore.getBoolean("pref_text_tap_to_turn", true)
 
     /** In scroll mode, show the next chapter below the end of this one, so reading carries on. */
+    fun speechRate() = preferenceStore.getFloat("pref_text_speech_rate", 1f)
+
+    fun speechPitch() = preferenceStore.getFloat("pref_text_speech_pitch", 1f)
+
     fun appendNextChapter() = preferenceStore.getBoolean("pref_text_append_next_chapter", true)
 
     fun skipRead() = preferenceStore.getBoolean("skip_read", false)

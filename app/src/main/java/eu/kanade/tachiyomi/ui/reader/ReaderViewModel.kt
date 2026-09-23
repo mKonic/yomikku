@@ -23,8 +23,10 @@ import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.text.ChapterDocument
 import eu.kanade.tachiyomi.ui.reader.text.ChapterTextLoader
 import eu.kanade.tachiyomi.ui.reader.text.ReaderNavigation
+import eu.kanade.tachiyomi.ui.reader.text.ReaderSpeech
 import eu.kanade.tachiyomi.util.chapter.filterDownloaded
 import eu.kanade.tachiyomi.util.chapter.removeDuplicates
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -54,6 +56,7 @@ import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.source.service.SourceManager
+import tachiyomi.i18n.kmk.KMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.util.Date
@@ -116,6 +119,9 @@ class ReaderViewModel @JvmOverloads constructor(
 
     private var readStartTime: Long? = null
 
+    /** Made the first time the reader reads aloud, as starting the engine takes a moment and most never do. */
+    private var speech: ReaderSpeech? = null
+
     val manga: Manga? get() = state.value.manga
 
     val incognitoMode: Boolean by lazy { getIncognitoState.await(manga?.source) }
@@ -172,6 +178,7 @@ class ReaderViewModel @JvmOverloads constructor(
         chapterId = chapter.id
         // The next chapter's text is dropped below, so it has to be fetched again even if it was before.
         preloadedChapterId = null
+        speech?.stop()
         val index = chapterList.indexOfFirst { it.id == chapter.id }
         mutableState.update {
             it.copy(
@@ -184,6 +191,8 @@ class ReaderViewModel @JvmOverloads constructor(
                 previousChapter = chapterList.getOrNull(index - 1),
                 nextChapter = chapterList.getOrNull(index + 1).takeIf { index >= 0 },
                 progress = startFraction,
+                speakingBlock = -1,
+                speakingOffset = -1,
                 // A new token makes the content jump to startFraction even when it equals the old value.
                 restoreToken = it.restoreToken + 1,
                 restoreFraction = startFraction,
@@ -196,6 +205,8 @@ class ReaderViewModel @JvmOverloads constructor(
             try {
                 val document = loaded ?: textLoader.load(manga, chapter, source)
                 mutableState.update { it.copy(document = document, isLoading = false) }
+                // Reading aloud carries on into whichever chapter opens.
+                if (state.value.speaking) speakFrom(document, startFraction)
                 recordChapterOpened(chapter)
                 readStartTime = System.currentTimeMillis()
             } catch (e: Throwable) {
@@ -445,6 +456,70 @@ class ReaderViewModel @JvmOverloads constructor(
 
     // endregion
 
+    // region Reading aloud
+
+    fun toggleSpeech() {
+        if (state.value.speaking) {
+            stopSpeech()
+            return
+        }
+        val document = state.value.document ?: return
+        mutableState.update { it.copy(speaking = true) }
+        speakFrom(document, state.value.progress)
+    }
+
+    fun stopSpeech() {
+        speech?.stop()
+        mutableState.update { it.copy(speaking = false, speakingBlock = -1, speakingOffset = -1) }
+    }
+
+    private fun speakFrom(document: ChapterDocument, fraction: Float) {
+        val engine = speech ?: ReaderSpeech(
+            context = Injekt.get<Application>(),
+            onBlock = { index ->
+                mutableState.update {
+                    it.copy(speakingBlock = index, speakingOffset = it.document?.blocks?.getOrNull(index)?.start ?: -1)
+                }
+            },
+            onOffset = { offset -> mutableState.update { it.copy(speakingOffset = offset) } },
+            onFinished = { viewModelScope.launch { onSpeechFinished() } },
+            onUnavailable = {
+                viewModelScope.launch {
+                    stopSpeech()
+                    Injekt.get<Application>().toast(KMR.strings.reader_tts_unavailable)
+                }
+            },
+        ).also { speech = it }
+        engine.speak(
+            document = document,
+            from = document.blockIndexAt((fraction * document.length).toInt()),
+            rate = readerPreferences.speechRate().get(),
+            pitch = readerPreferences.speechPitch().get(),
+            language = source?.lang?.takeIf { it.length in 2..3 || '-' in it },
+        )
+    }
+
+    /** The chapter has been read to its end: the next one opens and is read on, or reading stops at the last. */
+    private suspend fun onSpeechFinished() {
+        if (!state.value.speaking) return
+        val current = state.value.chapter ?: return
+        val next = state.value.nextChapter
+        if (next == null) {
+            stopSpeech()
+            return
+        }
+        if (!incognitoMode) saveProgress(current, 1f, reachedEnd = true)
+        updateHistory()
+        openChapter(next, startFraction = 0f, loaded = state.value.nextDocument)
+    }
+
+    override fun onCleared() {
+        speech?.shutdown()
+        speech = null
+    }
+
+    // endregion
+
     // region Menus and dialogs
 
     fun showMenus(visible: Boolean) {
@@ -549,6 +624,13 @@ class ReaderViewModel @JvmOverloads constructor(
         val restoreFraction: Float = 0f,
         val restoreToken: Int = 0,
         val menuVisible: Boolean = false,
+        /**
+         * Whether the chapter is being read aloud, the index of the block being spoken and the offset in the
+         * chapter's text of the word being spoken, or -1.
+         */
+        val speaking: Boolean = false,
+        val speakingBlock: Int = -1,
+        val speakingOffset: Int = -1,
         val dialog: Dialog? = null,
     )
 

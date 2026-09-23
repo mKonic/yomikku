@@ -28,6 +28,8 @@ sealed interface PageItem {
     @Immutable
     data class Lines(
         val layout: TextLayoutResult,
+        /** Index of the paragraph in the chapter's blocks. */
+        val block: Int,
         val firstLine: Int,
         val lastLine: Int,
         override val y: Float,
@@ -74,7 +76,7 @@ object TextPaginator {
             y = 0f
         }
 
-        for (block in document.blocks) {
+        for ((blockIndex, block) in document.blocks.withIndex()) {
             coroutineContext.ensureActive()
             when (block) {
                 is TextBlock.Paragraph -> {
@@ -98,7 +100,7 @@ object TextPaginator {
                             finishPage(block.start + layout.getLineStart(line))
                             continue
                         }
-                        items += PageItem.Lines(layout, line, last, y)
+                        items += PageItem.Lines(layout, blockIndex, line, last, y)
                         y += layout.getLineBottom(last) - sliceTop
                         line = last + 1
                         if (line < layout.lineCount) finishPage(block.start + layout.getLineStart(line))

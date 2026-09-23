@@ -37,6 +37,7 @@ import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.components.CheckboxItem
+import tachiyomi.presentation.core.components.HeadingItem
 import tachiyomi.presentation.core.components.SettingsChipRow
 import tachiyomi.presentation.core.components.SliderItem
 import tachiyomi.presentation.core.i18n.stringResource
@@ -145,6 +146,10 @@ private fun GeneralPage(preferences: ReaderPreferences) {
     CheckboxItem(stringResource(KMR.strings.reader_settings_show_progress), preferences.showProgress())
     CheckboxItem(stringResource(MR.strings.pref_fullscreen), preferences.fullscreen())
     CheckboxItem(stringResource(MR.strings.pref_keep_screen_on), preferences.keepScreenOn())
+
+    HeadingItem(KMR.strings.reader_settings_tts)
+    FloatSlider(KMR.strings.reader_settings_tts_rate, preferences.speechRate(), 0.5f, 3f, step = 0.1f)
+    FloatSlider(KMR.strings.reader_settings_tts_pitch, preferences.speechPitch(), 0.5f, 2f, step = 0.1f)
 }
 
 /**

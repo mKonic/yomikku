@@ -235,6 +235,12 @@
     <string name="reader_settings_mode">Reading mode</string>
     <string name="reader_settings_theme">Theme</string>
     <string name="reader_settings_font">Font</string>
+    <string name="reader_tts_start">Read aloud</string>
+    <string name="reader_tts_stop">Stop reading aloud</string>
+    <string name="reader_tts_unavailable">Text to speech isn\'t available on this device</string>
+    <string name="reader_settings_tts">Read aloud</string>
+    <string name="reader_settings_tts_rate">Speech rate</string>
+    <string name="reader_settings_tts_pitch">Speech pitch</string>
     <string name="reader_settings_add_font">Add font</string>
     <string name="reader_settings_remove_font">Remove font</string>
     <string name="reader_settings_font_invalid">That file isn\'t a TrueType or OpenType font</string>

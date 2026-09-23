@@ -115,6 +115,7 @@ class ReaderActivity : BaseActivity() {
                     onOpenInWebView = ::openChapterInWebView.takeIf { viewModel.getSource() != null },
                     onOpenChapterList = viewModel::openChapterList,
                     onOpenSettings = viewModel::openSettings,
+                    onToggleSpeech = viewModel::toggleSpeech,
                 )
                 when (state.dialog) {
                     ReaderViewModel.Dialog.Settings -> ReaderSettingsSheet(
