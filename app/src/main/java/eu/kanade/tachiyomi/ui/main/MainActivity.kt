@@ -411,7 +411,8 @@ class MainActivity : BaseActivity() {
             var showChangelog by remember {
                 mutableStateOf(
                     // KMK -->
-                    (isReleaseBuildType && didMigration) ||
+                    // A fresh install runs its first-time migrations too, but has nothing it was updated from.
+                    (isReleaseBuildType && didMigration && preferences.shownOnboardingFlow().get()) ||
                         (isPreviewBuildType && previewCurrentVersion > previewLastVersion.get()),
                     // KMK <--
                 )
