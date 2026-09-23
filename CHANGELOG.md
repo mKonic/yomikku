@@ -15,6 +15,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Export a novel's downloaded chapters as an EPUB from the novel screen's menu.
 - Downloaded chapters keep their images, so they read fully offline.
 - Each novel can have its own reading mode, scroll or paged, from the reader's settings.
+- Read chapters aloud with the system's text to speech; the reader follows the paragraph being spoken and carries on into the next chapter.
 - Add your own TrueType or OpenType font files to read in.
 - Scroll mode reads on into the next chapter without stopping, which can be turned off in the reader settings.
 
