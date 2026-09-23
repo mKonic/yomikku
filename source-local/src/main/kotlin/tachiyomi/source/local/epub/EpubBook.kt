@@ -75,13 +75,15 @@ class EpubBook(private val reader: EpubReader) {
      */
     fun readChapter(path: String, extractImage: (entryPath: String) -> String?): String {
         val document = open(path)?.use { Jsoup.parse(it, null, "") } ?: error("Missing $path in the book")
+        unwrapImageSvgs(document)
         val dir = path.substringBeforeLast('/', "")
         document.select("img[src], image").forEach { element ->
-            val attribute = if (element.normalName() == "image") "xlink:href" else "src"
-            val entry = resolve(dir, element.attr(attribute))
+            val href = if (element.normalName() == "image") element.imageHref() else element.attr("src")
+            val entry = resolve(dir, href)
             val file = extractImage(entry)
             if (file != null) {
                 element.tagName("img")
+                element.removeAttr("xlink:href").removeAttr("href")
                 element.attr("src", file)
             } else {
                 element.remove()
@@ -139,6 +141,33 @@ class EpubBook(private val reader: EpubReader) {
         private const val XHTML = "application/xhtml+xml"
         private const val HTML = "text/html"
         private const val NCX = "application/x-dtbncx+xml"
+
+        /**
+         * Replaces each `<svg>` that only wraps raster images (full-page illustrations often come this way) with
+         * plain `<image>` elements, taking the svg's title or description as their alt text. The svg's own text would
+         * otherwise show up in the chapter. Svgs that draw anything else are left alone.
+         */
+        internal fun unwrapImageSvgs(document: Document) {
+            document.getElementsByTag("svg").toList().forEach { svg ->
+                val children = svg.children()
+                val images = children.filter { it.normalName() == "image" && it.imageHref().isNotEmpty() }
+                if (images.isEmpty() || children.any { it.normalName() !in SVG_WRAPPER_TAGS }) return@forEach
+                val description = children.firstOrNull { it.normalName() == "title" || it.normalName() == "desc" }
+                    ?.text()?.trim().orEmpty()
+                images.forEach { image ->
+                    svg.before(
+                        Element("image")
+                            .attr("xlink:href", image.imageHref())
+                            .apply { if (description.isNotEmpty()) attr("alt", description) },
+                    )
+                }
+                svg.remove()
+            }
+        }
+
+        private fun Element.imageHref() = attr("xlink:href").ifEmpty { attr("href") }
+
+        private val SVG_WRAPPER_TAGS = setOf("image", "title", "desc")
 
         /**
          * Resolves [href] against [dir], both paths inside the book. Hrefs are URL-encoded and may climb with "..";
