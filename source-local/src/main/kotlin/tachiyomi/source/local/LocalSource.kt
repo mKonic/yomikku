@@ -482,7 +482,7 @@ class LocalSource(
             val lastModified = file.lastModified()
             book.chapters.map { chapter ->
                 SChapter.create().apply {
-                    url = "${manga.url}/${file.name}$EPUB_PATH_SEPARATOR${chapter.path}"
+                    url = "${manga.url}/${file.name}$EPUB_PATH_SEPARATOR${chapter.ref}"
                     name = chapter.title
                     date_upload = lastModified
                     scanlator = book.metadata.publisher

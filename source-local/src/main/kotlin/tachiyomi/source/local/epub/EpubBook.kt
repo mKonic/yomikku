@@ -4,14 +4,17 @@ import mihon.core.archive.EpubReader
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import org.jsoup.nodes.Node
 import org.jsoup.parser.Parser
+import org.jsoup.select.NodeTraversor
 import java.io.File
 import java.io.InputStream
 import java.net.URLDecoder
 
 /**
- * An EPUB read as a novel: the reading order (spine) is the chapter list, and the table of contents gives the
- * chapters their names.
+ * An EPUB read as a novel. The table of contents is the chapter list: each entry runs from where it points to where
+ * the next one does, so a file holding several chapters is split and a chapter spread over several files is joined.
+ * A book without one falls back to its reading order (spine), a chapter per file.
  */
 class EpubBook(private val reader: EpubReader) {
 
@@ -40,23 +43,57 @@ class EpubBook(private val reader: EpubReader) {
         )
     }
 
-    /**
-     * The chapters in reading order. Documents the book marks as not part of the reading order (linear="no") are
-     * left out, as are ones with no text at all, like a page holding only the cover.
-     */
-    val chapters: List<Chapter> by lazy {
-        val titles = tableOfContents()
+    /** The documents in reading order, leaving out those the book marks as not part of it (linear="no"). */
+    private val spine: List<String> by lazy {
         packageDocument.select("spine > itemref")
             .filterNot { it.attr("linear") == "no" }
             .mapNotNull { manifest[it.attr("idref")] }
             .filter { it.mediaType == XHTML || it.mediaType == HTML }
-            .mapIndexed { index, item ->
-                Chapter(
-                    path = item.path,
-                    title = titles[item.path] ?: item.path.substringAfterLast('/').substringBeforeLast('.'),
-                    index = index,
-                )
+            .map { it.path }
+            .distinct()
+    }
+
+    /**
+     * The chapters in reading order. Documents before the first table of contents entry, like a title page, are
+     * chapters of their own when they have any text; ones with none, like a page holding only the cover, are left out.
+     */
+    val chapters: List<Chapter> by lazy {
+        val spineIndex = spine.withIndex().associate { (index, path) -> path to index }
+        // Entries in reading order; one pointing back into the book (a second listing of a section) is dropped, and
+        // of entries at the same place the last, most specific one names it.
+        val entries = mutableListOf<TocEntry>()
+        tableOfContents().forEach { entry ->
+            val index = spineIndex[entry.path] ?: return@forEach
+            val last = entries.lastOrNull()
+            val lastIndex = last?.let { spineIndex.getValue(it.path) } ?: -1
+            when {
+                last != null && last.path == entry.path && last.fragment == entry.fragment -> {
+                    entries[entries.lastIndex] = entry
+                }
+                index > lastIndex || (index == lastIndex && entry.fragment != null) -> entries += entry
             }
+        }
+
+        val chapters = mutableListOf<Chapter>()
+        val firstIndex = entries.firstOrNull()?.let { spineIndex.getValue(it.path) } ?: spine.size
+        spine.take(firstIndex).forEach { path ->
+            val document = parse(path) ?: return@forEach
+            if (document.body().text().isBlank()) return@forEach
+            val title = document.selectFirst("h1, h2, h3")?.text()?.takeIf { it.isNotBlank() }
+                ?: document.title().takeIf { it.isNotBlank() }
+                ?: path.substringAfterLast('/').substringBeforeLast('.')
+            chapters += Chapter(ref = path, title = title.trim(), index = chapters.size, end = null)
+        }
+        entries.forEachIndexed { i, entry ->
+            val next = entries.getOrNull(i + 1)
+            chapters += Chapter(
+                ref = entry.ref,
+                title = entry.title,
+                index = chapters.size,
+                end = next?.ref,
+            )
+        }
+        chapters
     }
 
     /** Path of the cover image inside the book, if it declares one. */
@@ -71,10 +108,34 @@ class EpubBook(private val reader: EpubReader) {
     fun open(path: String): InputStream? = reader.getInputStream(path)
 
     /**
-     * The body of the chapter at [path], with every image pointed at a file [extractImage] provides.
+     * The text of the chapter starting at [ref] (a document path, with the anchor it starts at if any), up to where
+     * the next chapter starts, with every image pointed at a file [extractImage] provides.
      */
-    fun readChapter(path: String, extractImage: (entryPath: String) -> String?): String {
-        val document = open(path)?.use { Jsoup.parse(it, null, "") } ?: error("Missing $path in the book")
+    fun readChapter(ref: String, extractImage: (entryPath: String) -> String?): String {
+        val chapter = chapters.firstOrNull { it.ref == ref }
+        val (startPath, startFragment) = split(ref)
+        val (endPath, endFragment) = chapter?.end?.let(::split) ?: (null to null)
+        val first = spine.indexOf(startPath)
+        val last = when {
+            chapter == null || first < 0 -> first
+            endPath == null -> spine.lastIndex
+            // Up to the end of the document before the next chapter's, or into it up to the next chapter's anchor.
+            endFragment == null -> spine.indexOf(endPath) - 1
+            else -> spine.indexOf(endPath)
+        }
+        val paths = if (first < 0) listOf(startPath) else spine.subList(first, maxOf(first, last) + 1)
+        return paths.mapIndexed { i, path ->
+            val document = parse(path) ?: error("Missing $path in the book")
+            slice(
+                document,
+                from = startFragment.takeIf { i == 0 },
+                until = endFragment.takeIf { path == endPath },
+            )
+            bodyHtml(document, path, extractImage)
+        }.joinToString("\n")
+    }
+
+    private fun bodyHtml(document: Document, path: String, extractImage: (entryPath: String) -> String?): String {
         unwrapImageSvgs(document)
         val dir = path.substringBeforeLast('/', "")
         document.select("img[src], image").forEach { element ->
@@ -92,15 +153,17 @@ class EpubBook(private val reader: EpubReader) {
         return document.body().html()
     }
 
+    private fun parse(path: String): Document? = open(path)?.use { Jsoup.parse(it, null, "") }
+
     /**
-     * Chapter titles keyed by document path, from the EPUB 3 navigation document or the EPUB 2 NCX. A document the
-     * table of contents lists more than once (sections of one file) takes its first entry.
+     * The table of contents in its own order, flattened, from the EPUB 3 navigation document or else the EPUB 2 NCX.
      */
-    private fun tableOfContents(): Map<String, String> {
-        val titles = mutableMapOf<String, String>()
+    private fun tableOfContents(): List<TocEntry> {
+        val titles = mutableListOf<TocEntry>()
         fun add(dir: String, href: String, title: String) {
-            val path = resolve(dir, href.substringBefore('#'))
-            if (title.isNotBlank() && path !in titles) titles[path] = title.trim()
+            if (title.isBlank()) return
+            val fragment = href.substringAfter('#', "").takeIf { it.isNotEmpty() }
+            titles += TocEntry(resolve(dir, href), fragment, title.trim())
         }
 
         manifest.values.firstOrNull { "nav" in it.properties.split(' ') }?.let { nav ->
@@ -125,7 +188,15 @@ class EpubBook(private val reader: EpubReader) {
         return titles
     }
 
-    data class Chapter(val path: String, val title: String, val index: Int)
+    /**
+     * A chapter: [ref] is the document it starts in, with "#anchor" when it starts partway, and [end] the same for
+     * where the next chapter starts, or null when it runs to the end of its document or the book.
+     */
+    data class Chapter(val ref: String, val title: String, val index: Int, val end: String?)
+
+    private data class TocEntry(val path: String, val fragment: String?, val title: String) {
+        val ref get() = if (fragment == null) path else "$path#$fragment"
+    }
 
     data class Metadata(
         val title: String?,
@@ -138,6 +209,35 @@ class EpubBook(private val reader: EpubReader) {
     private data class ManifestItem(val id: String, val path: String, val mediaType: String, val properties: String)
 
     companion object {
+        private fun split(ref: String): Pair<String, String?> =
+            ref.substringBefore('#') to ref.substringAfter('#', "").takeIf { it.isNotEmpty() }
+
+        /**
+         * Cuts [document] down to what lies from the element with id [from] (or the start) up to, not including, the
+         * element with id [until] (or the end). The elements holding the two stay, as the text's frame.
+         */
+        internal fun slice(document: Document, from: String?, until: String?) {
+            val body = document.body()
+            val start = from?.let { anchor(body, it) }
+            val end = until?.let { anchor(body, it) }
+            if (start == null && end == null) return
+            val nodes = mutableListOf<Node>()
+            NodeTraversor.traverse({ node, _ -> nodes += node }, body)
+            if (end != null) {
+                val at = nodes.indexOf(end)
+                nodes.drop(at).forEach { if (it.parent() != null) it.remove() }
+            }
+            if (start != null) {
+                val ancestors = generateSequence<Node>(start) { it.parent() }.toSet()
+                nodes.takeWhile { it !== start }
+                    .filter { it !in ancestors && it !== body }
+                    .forEach { if (it.parent() != null) it.remove() }
+            }
+        }
+
+        private fun anchor(body: Element, id: String): Element? =
+            body.getElementById(id) ?: body.getElementsByAttributeValue("name", id).firstOrNull()
+
         private const val XHTML = "application/xhtml+xml"
         private const val HTML = "text/html"
         private const val NCX = "application/x-dtbncx+xml"
