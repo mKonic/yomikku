@@ -52,6 +52,9 @@ class ReaderPreferences(
 
     fun tapToTurnPages() = preferenceStore.getBoolean("pref_text_tap_to_turn", true)
 
+    /** In scroll mode, show the next chapter below the end of this one, so reading carries on. */
+    fun appendNextChapter() = preferenceStore.getBoolean("pref_text_append_next_chapter", true)
+
     fun skipRead() = preferenceStore.getBoolean("skip_read", false)
 
     fun skipFiltered() = preferenceStore.getBoolean("skip_filtered", true)
@@ -64,9 +67,19 @@ class ReaderPreferences(
 
     // endregion
 
-    enum class ReadingMode(val titleRes: StringResource) {
-        SCROLL(KMR.strings.reader_mode_scroll),
-        PAGED(KMR.strings.reader_mode_paged),
+    enum class ReadingMode(val titleRes: StringResource, private val flag: Long) {
+        SCROLL(KMR.strings.reader_mode_scroll, 1L),
+        PAGED(KMR.strings.reader_mode_paged, 2L),
+        ;
+
+        companion object {
+            /** The low bits of a novel's viewer flags hold its own reading mode; 0 means the default one. */
+            const val FLAG_MASK = 0x7L
+
+            fun fromFlags(flags: Long): ReadingMode? = entries.firstOrNull { it.flag == flags and FLAG_MASK }
+
+            fun toFlags(flags: Long, mode: ReadingMode?): Long = (flags and FLAG_MASK.inv()) or (mode?.flag ?: 0L)
+        }
     }
 
     enum class ReaderFont(val titleRes: StringResource) {

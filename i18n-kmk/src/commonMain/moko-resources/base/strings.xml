@@ -244,6 +244,7 @@
     <string name="reader_settings_vertical_margin">Top and bottom margins</string>
     <string name="reader_settings_show_images">Show images</string>
     <string name="reader_settings_tap_to_turn">Tap the edges to turn pages</string>
+    <string name="reader_settings_append_next_chapter">Continue into the next chapter when scrolling</string>
     <string name="reader_settings_show_progress">Show chapter progress</string>
     <string name="chapter_progress_percent">%1$d%% read</string>
     <string name="action_export_epub">Export as EPUB</string>

@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.ReadingMode
+import eu.kanade.tachiyomi.ui.reader.text.LocalDownloadedChapters
 import eu.kanade.tachiyomi.ui.reader.text.PagedTextReader
 import eu.kanade.tachiyomi.ui.reader.text.ReaderNavigation
 import eu.kanade.tachiyomi.ui.reader.text.ReaderTextStyle
@@ -65,6 +67,7 @@ import mihon.icons.materialsymbols.rounded.Settings
 import mihon.icons.materialsymbols.rounded.SkipNext
 import mihon.icons.materialsymbols.rounded.SkipPrevious
 import tachiyomi.i18n.MR
+import tachiyomi.presentation.core.components.CombinedCircularProgressIndicator
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import kotlin.math.roundToInt
@@ -79,6 +82,7 @@ fun ReaderScreen(
     onToggleMenus: () -> Unit,
     onPreviousChapter: () -> Unit,
     onNextChapter: () -> Unit,
+    onContinueToNextChapter: (Float) -> Unit,
     onSeek: (Float) -> Unit,
     onRetry: () -> Unit,
     onToggleBookmark: () -> Unit,
@@ -87,108 +91,129 @@ fun ReaderScreen(
     onOpenSettings: () -> Unit,
 ) {
     val style = rememberReaderTextStyle(preferences)
-    val readingMode by preferences.readingMode().collectAsState()
+    val defaultReadingMode by preferences.readingMode().collectAsState()
+    val readingMode = state.manga?.let { ReadingMode.fromFlags(it.viewerFlags) } ?: defaultReadingMode
     val tapToTurn by preferences.tapToTurnPages().collectAsState()
     val showProgress by preferences.showProgress().collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(style.background),
-    ) {
-        val document = state.document
-        val chapter = state.chapter
-        when {
-            state.initError != null -> ReaderMessage(state.initError.message.orEmpty(), style, onRetry = null)
-            state.loadError != null -> ReaderMessage(state.loadError.message.orEmpty(), style, onRetry = onRetry)
-            document == null || chapter == null -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                CircularProgressIndicator()
+    CompositionLocalProvider(LocalDownloadedChapters provides state.downloadedChapterIds) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(style.background),
+        ) {
+            val document = state.document
+            val chapter = state.chapter
+            when {
+                state.initError != null -> ReaderMessage(state.initError.message.orEmpty(), style, onRetry = null)
+                state.loadError != null -> ReaderMessage(
+                    stringResource(MR.strings.transition_pages_error, state.loadError.message.orEmpty()),
+                    style,
+                    onRetry = onRetry,
+                    onOpenInWebView = onOpenInWebView,
+                )
+                document == null || chapter == null -> Box(Modifier.fillMaxSize(), Alignment.Center) {
+                    // The image readers' indicator, which always turns so a slow load never looks stuck.
+                    CombinedCircularProgressIndicator(progress = { 0f })
+                }
+                readingMode == ReadingMode.PAGED -> PagedTextReader(
+                    document = document,
+                    style = style,
+                    chapter = chapter,
+                    previousChapter = state.previousChapter,
+                    nextChapter = state.nextChapter,
+                    restoreToken = state.restoreToken,
+                    restoreFraction = state.restoreFraction,
+                    navigation = navigation,
+                    tapToTurn = tapToTurn,
+                    onProgress = onProgress,
+                    onTap = { if (it == TapZone.MENU) onToggleMenus() },
+                    onPreviousChapter = onPreviousChapter,
+                    onNextChapter = onNextChapter,
+                )
+                else -> ScrollTextReader(
+                    document = document,
+                    style = style,
+                    chapter = chapter,
+                    previousChapter = state.previousChapter,
+                    nextChapter = state.nextChapter,
+                    restoreToken = state.restoreToken,
+                    restoreFraction = state.restoreFraction,
+                    navigation = navigation,
+                    tapToTurn = tapToTurn,
+                    onProgress = onProgress,
+                    onTap = { if (it == TapZone.MENU) onToggleMenus() },
+                    onPreviousChapter = onPreviousChapter,
+                    onNextChapter = onNextChapter,
+                    nextDocument = state.nextDocument,
+                    onContinueToNext = onContinueToNextChapter,
+                )
             }
-            readingMode == ReadingMode.PAGED -> PagedTextReader(
-                document = document,
-                style = style,
-                chapter = chapter,
-                previousChapter = state.previousChapter,
-                nextChapter = state.nextChapter,
-                restoreToken = state.restoreToken,
-                restoreFraction = state.restoreFraction,
-                navigation = navigation,
-                tapToTurn = tapToTurn,
-                onProgress = onProgress,
-                onTap = { if (it == TapZone.MENU) onToggleMenus() },
-                onPreviousChapter = onPreviousChapter,
-                onNextChapter = onNextChapter,
-            )
-            else -> ScrollTextReader(
-                document = document,
-                style = style,
-                chapter = chapter,
-                previousChapter = state.previousChapter,
-                nextChapter = state.nextChapter,
-                restoreToken = state.restoreToken,
-                restoreFraction = state.restoreFraction,
-                navigation = navigation,
-                tapToTurn = tapToTurn,
-                onProgress = onProgress,
-                onTap = { if (it == TapZone.MENU) onToggleMenus() },
-                onPreviousChapter = onPreviousChapter,
-                onNextChapter = onNextChapter,
-            )
-        }
 
-        if (showProgress && document != null && !state.menuVisible) {
-            Text(
-                text = "${(state.progress * 100).roundToInt()}%",
-                style = MaterialTheme.typography.labelSmall,
-                color = style.foreground.copy(alpha = 0.6f),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 4.dp),
-            )
-        }
+            if (showProgress && document != null && !state.menuVisible) {
+                Text(
+                    text = "${(state.progress * 100).roundToInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = style.foreground.copy(alpha = 0.7f),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 4.dp)
+                        // Over the text it would otherwise collide with the line behind it.
+                        .clip(RoundedCornerShape(50))
+                        .background(style.background.copy(alpha = 0.85f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
 
-        ReaderTopBar(
-            visible = state.menuVisible,
-            mangaTitle = state.manga?.title.orEmpty(),
-            chapterTitle = chapter?.name.orEmpty(),
-            bookmarked = state.bookmarked,
-            onNavigateUp = onNavigateUp,
-            onToggleBookmark = onToggleBookmark,
-            onOpenInWebView = onOpenInWebView,
-            modifier = Modifier.align(Alignment.TopCenter),
-        )
-        val vertical = readingMode == ReadingMode.SCROLL
-        if (vertical) {
-            VerticalChapterNavigator(
+            ReaderTopBar(
                 visible = state.menuVisible,
+                mangaTitle = state.manga?.title.orEmpty(),
+                chapterTitle = chapter?.name.orEmpty(),
+                bookmarked = state.bookmarked,
+                onNavigateUp = onNavigateUp,
+                onToggleBookmark = onToggleBookmark,
+                onOpenInWebView = onOpenInWebView,
+                modifier = Modifier.align(Alignment.TopCenter),
+            )
+            val vertical = readingMode == ReadingMode.SCROLL
+            if (vertical) {
+                VerticalChapterNavigator(
+                    visible = state.menuVisible,
+                    progress = state.progress,
+                    hasPrevious = state.previousChapter != null,
+                    hasNext = state.nextChapter != null,
+                    onPreviousChapter = onPreviousChapter,
+                    onNextChapter = onNextChapter,
+                    onSeek = onSeek,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
+            }
+            ReaderBottomBar(
+                visible = state.menuVisible,
+                showSlider = !vertical,
                 progress = state.progress,
                 hasPrevious = state.previousChapter != null,
                 hasNext = state.nextChapter != null,
                 onPreviousChapter = onPreviousChapter,
                 onNextChapter = onNextChapter,
                 onSeek = onSeek,
-                modifier = Modifier.align(Alignment.CenterEnd),
+                onOpenChapterList = onOpenChapterList,
+                onOpenSettings = onOpenSettings,
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
-        ReaderBottomBar(
-            visible = state.menuVisible,
-            showSlider = !vertical,
-            progress = state.progress,
-            hasPrevious = state.previousChapter != null,
-            hasNext = state.nextChapter != null,
-            onPreviousChapter = onPreviousChapter,
-            onNextChapter = onNextChapter,
-            onSeek = onSeek,
-            onOpenChapterList = onOpenChapterList,
-            onOpenSettings = onOpenSettings,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 }
 
 @Composable
-private fun ReaderMessage(message: String, style: ReaderTextStyle, onRetry: (() -> Unit)?) {
+private fun ReaderMessage(
+    message: String,
+    style: ReaderTextStyle,
+    onRetry: (() -> Unit)?,
+    onOpenInWebView: (() -> Unit)? = null,
+) {
+    // The image readers' error page: the message, then Retry and Open in WebView.
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -196,10 +221,22 @@ private fun ReaderMessage(message: String, style: ReaderTextStyle, onRetry: (() 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = message, color = style.foreground, textAlign = TextAlign.Center)
+        Text(
+            text = message,
+            color = style.foreground,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(8.dp),
+        )
         if (onRetry != null) {
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = onRetry) { Text(stringResource(MR.strings.action_retry)) }
+            Button(onClick = onRetry, modifier = Modifier.padding(8.dp)) {
+                Text(stringResource(MR.strings.action_retry))
+            }
+        }
+        if (onOpenInWebView != null) {
+            Button(onClick = onOpenInWebView, modifier = Modifier.padding(8.dp)) {
+                Text(stringResource(MR.strings.action_open_in_web_view))
+            }
         }
     }
 }

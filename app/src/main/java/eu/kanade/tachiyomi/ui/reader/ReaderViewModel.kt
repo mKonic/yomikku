@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.chapter.model.toSChapter
+import eu.kanade.domain.manga.interactor.UpdateManga
 import eu.kanade.domain.source.interactor.GetIncognitoState
 import eu.kanade.domain.sync.SyncPreferences
 import eu.kanade.domain.track.interactor.TrackChapter
@@ -51,6 +52,7 @@ import tachiyomi.domain.history.model.HistoryUpdate
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetManga
 import tachiyomi.domain.manga.model.Manga
+import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.source.service.SourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
@@ -78,6 +80,7 @@ class ReaderViewModel @JvmOverloads constructor(
     private val uiPreferences: UiPreferences = Injekt.get(),
     private val trackChapter: TrackChapter = Injekt.get(),
     private val getManga: GetManga = Injekt.get(),
+    private val updateManga: UpdateManga = Injekt.get(),
     private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
     private val getNextChapters: GetNextChapters = Injekt.get(),
     private val upsertHistory: UpsertHistory = Injekt.get(),
@@ -164,16 +167,19 @@ class ReaderViewModel @JvmOverloads constructor(
     /**
      * Opens [chapter] at [startFraction] of its text, replacing whatever is open.
      */
-    private fun openChapter(chapter: Chapter, startFraction: Float) {
+    private fun openChapter(chapter: Chapter, startFraction: Float, loaded: ChapterDocument? = null) {
         loadJob?.cancel()
         chapterId = chapter.id
+        // The next chapter's text is dropped below, so it has to be fetched again even if it was before.
+        preloadedChapterId = null
         val index = chapterList.indexOfFirst { it.id == chapter.id }
         mutableState.update {
             it.copy(
                 chapter = chapter,
-                document = null,
+                document = loaded,
+                nextDocument = null,
                 loadError = null,
-                isLoading = true,
+                isLoading = loaded == null,
                 bookmarked = chapter.bookmark,
                 previousChapter = chapterList.getOrNull(index - 1),
                 nextChapter = chapterList.getOrNull(index + 1).takeIf { index >= 0 },
@@ -183,11 +189,12 @@ class ReaderViewModel @JvmOverloads constructor(
                 restoreFraction = startFraction,
             )
         }
+        refreshDownloadedChapters()
         loadJob = viewModelScope.launchIO {
             val manga = manga ?: return@launchIO
             val source = source ?: return@launchIO
             try {
-                val document = textLoader.load(manga, chapter, source)
+                val document = loaded ?: textLoader.load(manga, chapter, source)
                 mutableState.update { it.copy(document = document, isLoading = false) }
                 recordChapterOpened(chapter)
                 readStartTime = System.currentTimeMillis()
@@ -196,6 +203,18 @@ class ReaderViewModel @JvmOverloads constructor(
                 logcat(LogPriority.ERROR, e) { "Failed to load chapter ${chapter.url}" }
                 mutableState.update { it.copy(isLoading = false, loadError = e) }
             }
+        }
+    }
+
+    private fun refreshDownloadedChapters() {
+        val manga = manga ?: return
+        val source = source ?: return
+        viewModelScope.launchIO {
+            val around = with(state.value) { listOfNotNull(previousChapter, chapter, nextChapter) }
+            val downloaded = around.filter {
+                downloadManager.isChapterDownloaded(it.name, it.scanlator, it.url, manga.ogTitle, source.id)
+            }.mapTo(mutableSetOf()) { it.id }
+            mutableState.update { it.copy(downloadedChapterIds = downloaded) }
         }
     }
 
@@ -209,6 +228,21 @@ class ReaderViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             updateHistory()
             openChapter(next, startFraction = 0f)
+        }
+    }
+
+    /**
+     * Scroll mode read on from the end of this chapter into the next one, which it already shows: that becomes the
+     * open chapter at [fraction] of its text, and this one has been read to its end.
+     */
+    fun continueToNextChapter(fraction: Float) {
+        val current = state.value.chapter ?: return
+        val next = state.value.nextChapter ?: return
+        val nextDocument = state.value.nextDocument ?: return
+        viewModelScope.launch {
+            if (!incognitoMode) saveProgress(current, 1f, reachedEnd = true)
+            updateHistory()
+            openChapter(next, startFraction = fraction.coerceAtLeast(Float.MIN_VALUE), loaded = nextDocument)
         }
     }
 
@@ -320,7 +354,12 @@ class ReaderViewModel @JvmOverloads constructor(
         val source = source ?: return
         viewModelScope.launchIO {
             try {
-                textLoader.preload(manga, next, source)
+                if (readerPreferences.appendNextChapter().get()) {
+                    val document = textLoader.load(manga, next, source)
+                    mutableState.update { if (it.nextChapter?.id == next.id) it.copy(nextDocument = document) else it }
+                } else {
+                    textLoader.preload(manga, next, source)
+                }
             } catch (e: Throwable) {
                 if (e is CancellationException) throw e
                 // The chapter still loads normally when it is opened.
@@ -432,6 +471,16 @@ class ReaderViewModel @JvmOverloads constructor(
         toggleBookmark(chapter.id, !chapter.bookmark)
     }
 
+    /** Sets the reading mode for this novel only; null goes back to the default from the settings. */
+    fun setReadingMode(mode: ReaderPreferences.ReadingMode?) {
+        val manga = state.value.manga ?: return
+        val flags = ReaderPreferences.ReadingMode.toFlags(manga.viewerFlags, mode)
+        mutableState.update { it.copy(manga = manga.copy(viewerFlags = flags)) }
+        viewModelScope.launchNonCancellable {
+            updateManga.await(MangaUpdate(id = manga.id, viewerFlags = flags))
+        }
+    }
+
     fun toggleBookmark(chapterId: Long, bookmarked: Boolean) {
         chapterList = chapterList.map { if (it.id == chapterId) it.copy(bookmark = bookmarked) else it }
         mutableState.update {
@@ -484,12 +533,16 @@ class ReaderViewModel @JvmOverloads constructor(
         val manga: Manga? = null,
         val chapter: Chapter? = null,
         val document: ChapterDocument? = null,
+        /** The next chapter, parsed ahead so scroll mode can show it below this one. */
+        val nextDocument: ChapterDocument? = null,
         val isLoading: Boolean = true,
         val loadError: Throwable? = null,
         val initError: Throwable? = null,
         val previousChapter: Chapter? = null,
         val nextChapter: Chapter? = null,
         val bookmarked: Boolean = false,
+        /** Which of the open chapter and its neighbours are downloaded, for the transition screens. */
+        val downloadedChapterIds: Set<Long> = emptySet(),
         /** Fraction of the chapter's text above the top of the screen. */
         val progress: Float = 0f,
         /** Where the content should scroll to when [restoreToken] changes. */

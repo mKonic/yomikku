@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -46,10 +47,13 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import eu.kanade.presentation.reader.ChapterTransition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tachiyomi.domain.chapter.model.Chapter
@@ -81,14 +85,23 @@ fun ScrollTextReader(
     onTap: (TapZone) -> Unit,
     onPreviousChapter: () -> Unit,
     onNextChapter: () -> Unit,
+    nextDocument: ChapterDocument? = null,
+    onContinueToNext: (fraction: Float) -> Unit = {},
 ) {
     val listState = rememberLazyListState()
+    val currentOnContinue by rememberUpdatedState(onContinueToNext)
     val scope = rememberCoroutineScope()
     val currentOnProgress by rememberUpdatedState(onProgress)
 
     // Item 0 is the header, blocks follow, and the last item is the footer.
     LaunchedEffect(restoreToken, document) {
         val offset = (restoreFraction * document.length).toInt()
+        // Opening a chapter at its start shows the header too, with the chapter's title. Scrolling on from the
+        // chapter before comes in above zero, so it lands on the text it was already showing.
+        if (restoreFraction <= 0f) {
+            listState.scrollToItem(0)
+            return@LaunchedEffect
+        }
         val blockIndex = document.blockIndexAt(offset)
         listState.scrollToItem(blockIndex + 1)
         val block = document.blocks.getOrNull(blockIndex) ?: return@LaunchedEffect
@@ -101,6 +114,16 @@ fun ScrollTextReader(
         snapshotFlow { listState.readingPosition(document) }
             .distinctUntilChanged()
             .collectLatest { (fraction, reachedEnd) -> currentOnProgress(fraction, reachedEnd) }
+    }
+
+    // With the next chapter appended, reading into it makes it the open chapter, at the same place.
+    LaunchedEffect(listState, document, nextDocument) {
+        val next = nextDocument ?: return@LaunchedEffect
+        val firstNextItem = document.blocks.size + NEXT_CHAPTER_ITEMS_BEFORE_BLOCKS
+        snapshotFlow { listState.firstVisibleItemIndex >= firstNextItem }
+            .filter { it }
+            .first()
+        currentOnContinue(listState.readingPosition(next, firstItem = firstNextItem).first)
     }
 
     LaunchedEffect(navigation) {
@@ -143,9 +166,9 @@ fun ScrollTextReader(
             item(key = "header") {
                 ChapterBoundary(
                     style = style,
+                    current = chapter,
                     title = chapter.name,
                     neighbour = previousChapter,
-                    neighbourLabel = stringResource(MR.strings.transition_previous),
                     onClick = onPreviousChapter,
                     atStart = true,
                 )
@@ -153,15 +176,37 @@ fun ScrollTextReader(
             itemsIndexed(document.blocks, key = { index, _ -> index }) { _, block ->
                 BlockContent(block, style, Modifier.padding(bottom = style.paragraphSpacing))
             }
-            item(key = "footer") {
-                ChapterBoundary(
-                    style = style,
-                    title = null,
-                    neighbour = nextChapter,
-                    neighbourLabel = stringResource(MR.strings.transition_next),
-                    onClick = onNextChapter,
-                    atStart = false,
-                )
+            if (nextDocument != null && nextChapter != null) {
+                item(key = "next-header") {
+                    // The same transition as the end of a chapter, then the next chapter's own title.
+                    ChapterBoundary(
+                        style = style,
+                        current = chapter,
+                        title = null,
+                        neighbour = nextChapter,
+                        onClick = onNextChapter,
+                        atStart = false,
+                    )
+                    Text(
+                        text = nextChapter.name,
+                        style = style.heading,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+                    )
+                }
+                itemsIndexed(nextDocument.blocks, key = { index, _ -> "next-$index" }) { _, block ->
+                    BlockContent(block, style, Modifier.padding(bottom = style.paragraphSpacing))
+                }
+            } else {
+                item(key = "footer") {
+                    ChapterBoundary(
+                        style = style,
+                        current = chapter,
+                        title = null,
+                        neighbour = nextChapter,
+                        onClick = onNextChapter,
+                        atStart = false,
+                    )
+                }
             }
         }
     }
@@ -263,18 +308,18 @@ fun PagedTextReader(
             when (index) {
                 0 -> ChapterBoundary(
                     style = style,
+                    current = chapter,
                     title = chapter.name,
                     neighbour = previousChapter,
-                    neighbourLabel = stringResource(MR.strings.transition_previous),
                     onClick = onPreviousChapter,
                     atStart = true,
                     modifier = Modifier.fillMaxSize(),
                 )
                 laidOut.size + 1 -> ChapterBoundary(
                     style = style,
+                    current = chapter,
                     title = null,
                     neighbour = nextChapter,
-                    neighbourLabel = stringResource(MR.strings.transition_next),
                     onClick = onNextChapter,
                     atStart = false,
                     modifier = Modifier.fillMaxSize(),
@@ -371,57 +416,55 @@ private fun BlockContent(block: TextBlock, style: ReaderTextStyle, modifier: Mod
 @Composable
 private fun ChapterBoundary(
     style: ReaderTextStyle,
+    current: Chapter,
     title: String?,
     neighbour: Chapter?,
-    neighbourLabel: String,
     onClick: () -> Unit,
     atStart: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val downloaded = LocalDownloadedChapters.current
     Column(
         modifier = modifier.padding(horizontal = style.horizontalPadding, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        if (!atStart) {
-            Text(
-                text = stringResource(KMR.strings.reader_end_of_chapter),
-                style = style.subheading.copy(textAlign = TextAlign.Center),
-            )
-            Spacer(Modifier.height(16.dp))
-        }
-        if (neighbour != null) {
-            OutlinedButton(onClick = onClick) {
-                Text(text = "$neighbourLabel ${neighbour.name}", maxLines = 2)
-            }
-        } else {
-            Text(
-                text = stringResource(
-                    if (atStart) MR.strings.transition_no_previous else MR.strings.transition_no_next,
-                ),
-                style = style.body.copy(textAlign = TextAlign.Center, color = style.foreground.copy(alpha = 0.7f)),
-            )
-        }
+        ChapterTransition(
+            isNext = !atStart,
+            current = current,
+            target = neighbour,
+            currentDownloaded = current.id in downloaded,
+            targetDownloaded = neighbour != null && neighbour.id in downloaded,
+            contentColor = style.foreground,
+            onOpenTarget = onClick,
+        )
         if (atStart && title != null) {
             Spacer(Modifier.height(32.dp))
             Text(text = title, style = style.heading)
-            Spacer(Modifier.width(0.dp))
         }
     }
 }
 
+/** Ids of the chapters around the open one that are downloaded, for the transition screens. */
+val LocalDownloadedChapters = compositionLocalOf { emptySet<Long>() }
+
 /** Fraction of the chapter above the top of the screen, and whether the end of the chapter is visible. */
-private fun LazyListState.readingPosition(document: ChapterDocument): Pair<Float, Boolean> {
+private fun LazyListState.readingPosition(document: ChapterDocument, firstItem: Int = 1): Pair<Float, Boolean> {
     val info = layoutInfo
-    val lastIndex = info.totalItemsCount - 1
-    val reachedEnd = info.visibleItemsInfo.any { it.index == lastIndex }
+    // The end is the item after the chapter's last block: its footer, or the next chapter's title when appended.
+    val endIndex = firstItem + document.blocks.size
+    val reachedEnd = info.visibleItemsInfo.any { it.index >= endIndex }
     if (document.length == 0) return 0f to reachedEnd
     val first = info.visibleItemsInfo.firstOrNull() ?: return 0f to reachedEnd
-    val block = document.blocks.getOrNull(first.index - 1) ?: return (if (first.index == 0) 0f else 1f) to reachedEnd
+    val block = document.blocks.getOrNull(first.index - firstItem)
+        ?: return (if (first.index < firstItem) 0f else 1f) to reachedEnd
     val within = if (first.size > 0) (firstVisibleItemScrollOffset.toFloat() / first.size).coerceIn(0f, 1f) else 0f
     val offset = block.start + within * block.length
     return (offset / document.length).coerceIn(0f, 1f) to reachedEnd
 }
 
 private const val PAGE_SCROLL_FRACTION = 0.9f
+
+/** Items of the current chapter before the appended one's blocks: its header, then the next chapter's title. */
+private const val NEXT_CHAPTER_ITEMS_BEFORE_BLOCKS = 2
 private val RULE_HEIGHT = 32.dp

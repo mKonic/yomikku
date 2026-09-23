@@ -27,6 +27,8 @@ import kotlin.math.roundToInt
 @Composable
 fun ReaderSettingsSheet(
     preferences: ReaderPreferences,
+    novelReadingMode: ReaderPreferences.ReadingMode?,
+    onNovelReadingModeChange: (ReaderPreferences.ReadingMode?) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
     TabbedDialog(
@@ -42,7 +44,7 @@ fun ReaderSettingsSheet(
                 .verticalScroll(rememberScrollState()),
         ) {
             when (page) {
-                0 -> TextPage(preferences)
+                0 -> TextPage(preferences, novelReadingMode, onNovelReadingModeChange)
                 1 -> GeneralPage(preferences)
             }
         }
@@ -50,9 +52,25 @@ fun ReaderSettingsSheet(
 }
 
 @Composable
-private fun TextPage(preferences: ReaderPreferences) {
-    EnumChips(KMR.strings.reader_settings_mode, preferences.readingMode(), ReaderPreferences.ReadingMode.entries) {
-        stringResource(it.titleRes)
+private fun TextPage(
+    preferences: ReaderPreferences,
+    novelReadingMode: ReaderPreferences.ReadingMode?,
+    onNovelReadingModeChange: (ReaderPreferences.ReadingMode?) -> Unit,
+) {
+    // Here the reading mode is this novel's own; the default is in the reader settings.
+    SettingsChipRow(KMR.strings.reader_settings_mode) {
+        FilterChip(
+            selected = novelReadingMode == null,
+            onClick = { onNovelReadingModeChange(null) },
+            label = { Text(stringResource(MR.strings.label_default)) },
+        )
+        ReaderPreferences.ReadingMode.entries.forEach { mode ->
+            FilterChip(
+                selected = novelReadingMode == mode,
+                onClick = { onNovelReadingModeChange(mode) },
+                label = { Text(stringResource(mode.titleRes)) },
+            )
+        }
     }
     EnumChips(KMR.strings.reader_settings_theme, preferences.theme(), ReaderPreferences.ReaderTheme.entries) {
         stringResource(it.titleRes)
@@ -97,6 +115,7 @@ private fun TextPage(preferences: ReaderPreferences) {
 private fun GeneralPage(preferences: ReaderPreferences) {
     CheckboxItem(stringResource(KMR.strings.reader_settings_show_images), preferences.showImages())
     CheckboxItem(stringResource(KMR.strings.reader_settings_tap_to_turn), preferences.tapToTurnPages())
+    CheckboxItem(stringResource(KMR.strings.reader_settings_append_next_chapter), preferences.appendNextChapter())
     CheckboxItem(stringResource(MR.strings.pref_read_with_volume_keys), preferences.readWithVolumeKeys())
     val volumeKeys by preferences.readWithVolumeKeys().collectAsState()
     if (volumeKeys) {

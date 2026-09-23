@@ -108,6 +108,7 @@ class ReaderActivity : BaseActivity() {
                     onToggleMenus = viewModel::toggleMenus,
                     onPreviousChapter = { viewModel.loadPreviousChapter() },
                     onNextChapter = viewModel::loadNextChapter,
+                    onContinueToNextChapter = viewModel::continueToNextChapter,
                     onSeek = viewModel::seek,
                     onRetry = viewModel::retry,
                     onToggleBookmark = viewModel::toggleChapterBookmark,
@@ -118,6 +119,8 @@ class ReaderActivity : BaseActivity() {
                 when (state.dialog) {
                     ReaderViewModel.Dialog.Settings -> ReaderSettingsSheet(
                         preferences = readerPreferences,
+                        novelReadingMode = state.manga?.let { ReaderPreferences.ReadingMode.fromFlags(it.viewerFlags) },
+                        onNovelReadingModeChange = viewModel::setReadingMode,
                         onDismissRequest = viewModel::closeDialog,
                     )
                     ReaderViewModel.Dialog.ChapterList -> ChapterListDialog(

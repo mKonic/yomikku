@@ -129,6 +129,10 @@ object SettingsReaderScreen : SearchableSettings {
                     title = stringResource(KMR.strings.reader_settings_tap_to_turn),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
+                    preference = readerPreferences.appendNextChapter(),
+                    title = stringResource(KMR.strings.reader_settings_append_next_chapter),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
                     preference = readerPreferences.readWithVolumeKeys(),
                     title = stringResource(MR.strings.pref_read_with_volume_keys),
                 ),
