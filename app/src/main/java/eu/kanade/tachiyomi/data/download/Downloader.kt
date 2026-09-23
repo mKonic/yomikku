@@ -394,10 +394,11 @@ class Downloader internal constructor(
             download.status = Download.State.DOWNLOADING
             download.progress = 0
 
-            val text = chapterCache.getChapterText(download.chapter) ?: fetchChapterText(download)
-            if (text.isBlank()) {
+            val fetched = chapterCache.getChapterText(download.chapter) ?: fetchChapterText(download)
+            if (fetched.isBlank()) {
                 throw Exception(context.stringResource(MR.strings.page_list_empty_error))
             }
+            val text = ChapterImages.embed(fetched, download.source)
 
             // Written beside the final name and renamed at the end, so an interrupted download never leaves a
             // file the cache would take for a finished chapter.

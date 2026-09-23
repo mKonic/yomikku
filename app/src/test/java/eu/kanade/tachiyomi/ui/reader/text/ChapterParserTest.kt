@@ -30,6 +30,13 @@ class ChapterParserTest {
     }
 
     @Test
+    fun `an image embedded as a data uri keeps its source`() {
+        val source = "data:image/png;base64,iVBORw0KGgo="
+        val document = ChapterParser.parse("<p>Before</p><img src='$source'>")
+        document.blocks[1].shouldBeInstanceOf<TextBlock.Image>().url shouldBe source
+    }
+
+    @Test
     fun `a line break inside bold splits the paragraph and keeps the style`() {
         // Used to throw "Nothing to pop": the break started a new paragraph while <b> was still open.
         val document = ChapterParser.parse("<p><b>one<br>two</b> plain</p>")
