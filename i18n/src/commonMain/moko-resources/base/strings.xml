@@ -3,7 +3,6 @@
     <string name="app_name" translatable="false">Yomikku</string>
 
     <!-- Generic strings -->
-    <string name="on">On</string>
     <string name="off">Off</string>
     <string name="selected">Selected</string>
     <string name="not_selected">Not selected</string>
@@ -18,7 +17,7 @@
     <string name="track">Tracking</string>
     <string name="delete_downloaded">Delete downloaded</string>
     <string name="history">History</string>
-    <string name="scanlator">Scanlator</string>
+    <string name="scanlator">Translator</string>
 
     <!-- Screen titles -->
     <string name="label_more">More</string>
@@ -52,20 +51,17 @@
     <string name="action_settings">Settings</string>
     <string name="action_menu">Menu</string>
     <string name="action_filter">Filter</string>
-    <string name="action_set_interval">Set interval</string>
     <string name="action_filter_bookmarked">Bookmarked</string>
     <string name="action_filter_tracked">Tracked</string>
     <string name="action_filter_unread">Unread</string>
     <string name="action_filter_interval_custom">Customized update frequency</string>
     <!-- reserved for #4048 -->
-    <string name="action_filter_empty">Remove filter</string>
     <string name="action_sort_alpha">Alphabetically</string>
     <string name="action_sort_count">Total entries</string>
     <string name="action_sort_total">Total chapters</string>
     <string name="action_sort_last_read">Last read</string>
     <string name="action_sort_last_manga_update">Last update check</string>
     <string name="action_sort_unread_count">Unread count</string>
-    <string name="action_sort_next_updated">Next expected update</string>
     <string name="action_sort_latest_chapter">Latest chapter</string>
     <string name="action_sort_chapter_fetch_date">Chapter fetch date</string>
     <string name="action_sort_date_added">Date added</string>
@@ -131,7 +127,6 @@
     <string name="action_disable">Disable</string>
     <string name="action_pin">Pin</string>
     <string name="action_unpin">Unpin</string>
-    <string name="action_apply">Apply</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel_all">Cancel all</string>
@@ -153,11 +148,8 @@
     <string name="action_share">Share</string>
     <string name="action_save">Save</string>
     <string name="action_reset">Reset</string>
-    <string name="action_revert_to_default">Revert to default</string>
     <!-- missing undo feature after Compose rewrite #7454 -->
-    <string name="action_undo">Undo</string>
     <string name="action_close">Close</string>
-    <string name="action_open_log">Open log</string>
     <string name="action_show_errors">Tap to see details</string>
     <string name="action_restore">Restore</string>
     <string name="action_webview_back">Back</string>
@@ -181,10 +173,8 @@
     <string name="onboarding_description">Let\'s set some things up first. You can always change these in the settings later too.</string>
     <string name="onboarding_action_next">Next</string>
     <string name="onboarding_action_finish">Get started</string>
-    <string name="onboarding_action_skip">Skip</string>
     <string name="onboarding_storage_info">Select a folder where %1$s will store chapter downloads, backups, and more.\n\nA dedicated folder is recommended.\n\nSelected folder: %2$s</string>
     <string name="onboarding_storage_action_select">Select a folder</string>
-    <string name="onboarding_storage_selection_required">A folder must be selected</string>
     <string name="onboarding_storage_help_info">Updating from an older version and not sure what to select? Refer to the storage guide for more information.</string>
     <string name="onboarding_storage_help_action">Storage guide</string>
     <string name="onboarding_permission_install_apps">Install apps permission</string>
@@ -247,7 +237,7 @@
     <!-- "Today" instead of "2023-12-31" -->
     <string name="pref_relative_format_summary">\"%1$s\" instead of \"%2$s\"</string>
     <string name="pref_date_format">Date format</string>
-    <string name="pref_display_images_description">Render images in manga descriptions</string>
+    <string name="pref_display_images_description">Render images in novel descriptions</string>
 
     <string name="pref_manage_notifications">Manage notifications</string>
     <string name="pref_app_language">App language</string>
@@ -274,7 +264,6 @@
       <!-- Library section -->
     <string name="pref_category_display">Display</string>
     <string name="pref_library_columns">Items per row</string>
-    <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
 
     <string name="pref_category_library_update">Global update</string>
@@ -381,123 +370,15 @@
 
       <!-- Reader section -->
     <string name="pref_fullscreen">Fullscreen</string>
-    <string name="pref_show_navigation_mode">Show tap zones overlay</string>
-    <string name="pref_show_navigation_mode_summary">Briefly show when reader is opened</string>
-    <string name="pref_dual_page_split">Split wide pages</string>
-    <string name="pref_dual_page_invert">Invert split page placement</string>
-    <string name="pref_dual_page_invert_summary">If the placement of the split wide pages don\'t match reading direction</string>
-    <string name="pref_page_rotate">Rotate wide pages to fit</string>
-    <string name="pref_page_rotate_invert">Flip orientation of rotated wide pages</string>
-    <string name="pref_double_tap_zoom">Double tap to zoom</string>
     <string name="pref_cutout_short">Show content in cutout area</string>
-    <string name="pref_page_transitions">Animate page transitions</string>
-    <string name="pref_flash_page">Flash on page change</string>
-    <string name="pref_flash_page_summ">Reduces ghosting on e-ink displays</string>
-    <string name="pref_flash_duration">Flash duration</string>
-    <string name="pref_flash_duration_summary">%1$s ms</string>
-    <string name="pref_flash_page_interval">Flash every</string>
-    <string name="pref_flash_with">Flash with</string>
-    <string name="pref_flash_style_black">Black</string>
-    <string name="pref_flash_style_white">White</string>
-    <string name="pref_flash_style_white_black">White and Black</string>
-    <string name="pref_double_tap_anim_speed">Double tap animation speed</string>
-    <string name="pref_show_page_number">Show page number</string>
-    <string name="pref_show_reading_mode">Show reading mode</string>
-    <string name="pref_show_reading_mode_summary">Briefly show current mode when reader is opened</string>
-    <string name="pref_hardware_bitmap_threshold">Custom hardware bitmap threshold</string>
-    <string name="pref_hardware_bitmap_threshold_default">Default (%d)</string>
-    <string name="pref_hardware_bitmap_threshold_summary">If reader loads a blank image incrementally reduce the threshold.\nSelected: %s</string>
-    <string name="pref_always_decode_long_strip_with_ssiv_2">Use legacy decoder for long strip reader</string>
-    <string name="pref_always_decode_long_strip_with_ssiv_summary">Affects performance. Only enable if reducing bitmap threshold doesn\'t fix blank image issues</string>
-    <string name="pref_display_profile">Custom display profile</string>
-    <string name="pref_crop_borders">Crop borders</string>
-    <string name="pref_custom_brightness">Custom brightness</string>
-    <string name="pref_grayscale">Grayscale</string>
-    <string name="pref_inverted_colors">Inverted</string>
-    <string name="pref_custom_color_filter">Custom color filter</string>
-    <string name="pref_color_filter_mode">Color filter blend mode</string>
-    <string name="filter_mode_overlay">Overlay</string>
-    <string name="filter_mode_multiply">Multiply</string>
-    <string name="filter_mode_screen">Screen</string>
-    <string name="filter_mode_lighten">Dodge / Lighten</string>
-    <string name="filter_mode_darken">Burn / Darken</string>
     <string name="pref_keep_screen_on">Keep screen on</string>
     <string name="pref_skip_read_chapters">Skip chapters marked read</string>
     <string name="pref_skip_filtered_chapters">Skip filtered chapters</string>
     <string name="pref_skip_dupe_chapters">Skip duplicate chapters</string>
-    <string name="pref_reader_navigation">Navigation</string>
     <string name="pref_read_with_volume_keys">Volume keys</string>
     <string name="pref_read_with_volume_keys_inverted">Invert volume keys</string>
-    <string name="pref_read_with_tapping_inverted">Invert tap zones</string>
-    <string name="tapping_inverted_none">None</string>
-    <string name="tapping_inverted_horizontal">Horizontal</string>
-    <string name="tapping_inverted_vertical">Vertical</string>
-    <string name="tapping_inverted_both">Both</string>
-    <string name="pref_reader_actions">Actions</string>
-    <string name="pref_read_with_long_tap">Show actions on long tap</string>
-    <string name="pref_create_folder_per_manga">Save pages into separate folders</string>
-    <string name="pref_create_folder_per_manga_summary">Creates folders according to entries\' title</string>
-    <string name="pref_reader_theme">Background color</string>
-    <string name="white_background">White</string>
-    <string name="gray_background">Gray</string>
-    <string name="black_background">Black</string>
     <string name="automatic_background">Auto</string>
-    <string name="pref_viewer_type">Default reading mode</string>
-    <string name="l_nav">L shaped</string>
-    <string name="kindlish_nav">Kindle-ish</string>
-    <string name="edge_nav">Edge</string>
-    <string name="right_and_left_nav">Right and Left</string>
-    <string name="disabled_nav">Disabled</string>
-    <string name="nav_zone_prev">Prev</string>
-    <string name="nav_zone_next">Next</string>
-    <string name="nav_zone_left">Left</string>
-    <string name="nav_zone_right">Right</string>
-    <string name="left_to_right_viewer">Paged (left to right)</string>
-    <string name="right_to_left_viewer">Paged (right to left)</string>
-    <string name="vertical_viewer">Paged (vertical)</string>
-    <string name="webtoon_viewer">Long strip</string>
-    <string name="vertical_plus_viewer">Long strip with gaps</string>
-    <string name="pager_viewer">Paged</string>
-    <string name="pref_viewer_nav">Tap zones</string>
-    <string name="pref_image_scale_type">Scale type</string>
-    <string name="scale_type_fit_screen">Fit screen</string>
-    <string name="scale_type_stretch">Stretch</string>
-    <string name="scale_type_fit_width">Fit width</string>
-    <string name="scale_type_fit_height">Fit height</string>
-    <string name="scale_type_original_size">Original size</string>
-    <string name="scale_type_smart_fit">Smart fit</string>
-    <string name="pref_navigate_pan">Pan wide images</string>
-    <string name="pref_landscape_zoom">Automatically zoom into wide images</string>
-    <string name="pref_zoom_start">Zoom start position</string>
-    <string name="zoom_start_automatic">Automatic</string>
-    <string name="zoom_start_left">Left</string>
-    <string name="zoom_start_right">Right</string>
-    <string name="zoom_start_center">Center</string>
-    <string name="double_tap_anim_speed_0">No animation</string>
-    <string name="double_tap_anim_speed_normal">Normal</string>
-    <string name="double_tap_anim_speed_fast">Fast</string>
-    <string name="pref_rotation_type">Default rotation</string>
-    <string name="rotation_type">Rotation</string>
-    <string name="rotation_free">Free</string>
-    <string name="rotation_portrait">Portrait</string>
-    <string name="rotation_reverse_portrait">Reverse portrait</string>
-    <string name="rotation_landscape">Landscape</string>
-    <string name="rotation_force_portrait">Locked portrait</string>
-    <string name="rotation_force_landscape">Locked landscape</string>
-    <string name="color_filter_r_value">Red</string>
-    <string name="color_filter_g_value">Green</string>
-    <string name="color_filter_b_value">Blue</string>
-    <string name="color_filter_a_value">Alpha</string>
-    <string name="pref_always_show_chapter_transition">Always show chapter transition</string>
-    <string name="pref_category_reading_mode">Reading mode</string>
     <string name="pref_category_reading">Reading</string>
-    <string name="pref_webtoon_side_padding">Side padding</string>
-    <string name="pref_hide_threshold">Sensitivity for hiding menu on scroll</string>
-    <string name="pref_highest">Highest</string>
-    <string name="pref_high">High</string>
-    <string name="pref_low">Low</string>
-    <string name="pref_lowest">Lowest</string>
-    <string name="pref_webtoon_disable_zoom_out">Disable zoom out</string>
 
       <!-- Downloads section -->
     <string name="pref_category_delete_chapters">Delete chapters</string>
@@ -522,12 +403,7 @@
     <string name="download_ahead">Download ahead</string>
     <string name="auto_download_while_reading">Auto download while reading</string>
     <string name="download_ahead_info">Only works if the current chapter + the next one are already downloaded.</string>
-    <string name="save_chapter_as_cbz">Save as CBZ archive</string>
-    <string name="split_tall_images">Split tall images</string>
-    <string name="split_tall_images_summary">Improves reader performance</string>
     <string name="pref_download_concurrent_sources">Concurrent source downloads</string>
-    <string name="pref_download_concurrent_pages">Concurrent page downloads</string>
-    <string name="pref_download_concurrent_pages_summary">Pages downloaded simultaneously per source</string>
 
     <!-- Tracking section -->
     <string name="tracking_guide">Tracking guide</string>
@@ -550,15 +426,12 @@
     <string name="pref_storage_location">Storage location</string>
     <string name="pref_storage_location_info">Used for automatic backups, chapter downloads, and local source.</string>
     <string name="pref_create_backup">Create backup</string>
-    <string name="pref_create_backup_summ">Can be used to restore current library</string>
     <string name="pref_restore_backup">Restore backup</string>
-    <string name="pref_restore_backup_summ">Restore library from backup file</string>
     <string name="pref_backup_interval">Automatic backup frequency</string>
     <string name="action_create">Create</string>
     <string name="backup_created">Backup created</string>
     <string name="invalid_backup_file">Invalid backup file:</string>
     <string name="invalid_backup_file_error">Full error:</string>
-    <string name="invalid_backup_file_missing_manga">Backup does not contain any library entries.</string>
     <string name="invalid_backup_file_json">JSON backup not supported</string>
     <string name="invalid_backup_file_unknown">Backup file is corrupted</string>
     <string name="backup_restore_missing_sources">Missing sources:</string>
@@ -567,14 +440,12 @@
     <string name="restore_completed">Restore completed</string>
     <string name="restore_duration">%1$02d min, %2$02d sec</string>
     <string name="backup_in_progress">Backup is already in progress</string>
-    <string name="backup_choice">What do you want to backup?</string>
     <string name="app_settings">App settings</string>
     <string name="source_settings">Source settings</string>
     <string name="private_settings">Include sensitive settings (e.g., tracker login tokens)</string>
     <string name="non_library_settings">All read entries</string>
     <string name="creating_backup">Creating backup</string>
     <string name="creating_backup_error">Backup failed</string>
-    <string name="missing_storage_permission">Storage permissions not granted</string>
     <string name="empty_backup_error">No library entries to back up</string>
     <string name="create_backup_file_error">Couldn\'t create a backup file</string>
     <string name="restore_miui_warning">Backup/restore may not function properly if MIUI Optimization is disabled.</string>
@@ -605,7 +476,6 @@
     <string name="pref_clear_cookies">Clear cookies</string>
     <string name="pref_dns_over_https">DNS over HTTPS (DoH)</string>
     <string name="pref_user_agent_string">Default user agent string</string>
-    <string name="error_user_agent_string_blank">User agent string can not be blank</string>
     <string name="error_user_agent_string_invalid">Invalid user agent string</string>
     <string name="pref_reset_user_agent_string">Reset default user agent string</string>
     <string name="requires_app_restart">Requires app restart to take effect</string>
@@ -640,8 +510,8 @@
     <string name="pref_verbose_logging">Verbose logging</string>
     <string name="pref_verbose_logging_summary">Print verbose logs to system log (reduces app performance)</string>
     <string name="pref_debug_info">Debug info</string>
-    <string name="pref_update_library_manga_titles">Update library manga titles to match source</string>
-    <string name="pref_update_library_manga_titles_summary">Warning: if a manga is renamed, it will be removed from the download queue (if present).</string>
+    <string name="pref_update_library_manga_titles">Update library novel titles to match source</string>
+    <string name="pref_update_library_manga_titles_summary">Warning: if a novel is renamed, it will be removed from the download queue (if present).</string>
 
       <!-- About section -->
     <string name="website">Website</string>
@@ -654,12 +524,9 @@
     <string name="updated_version">Updated to v%1$s</string>
 
     <!-- ACRA -->
-    <string name="pref_enable_acra">Send crash reports</string>
-    <string name="pref_acra_summary">Helps fix any bugs. No sensitive data will be sent</string>
 
 
     <!-- More -->
-    <string name="fdroid_warning">F-Droid builds are not officially supported.\nTap to learn more.</string>
     <string name="label_downloaded_only">Downloaded only</string>
     <string name="pref_incognito_mode">Incognito mode</string>
     <string name="pref_incognito_mode_summary">Pauses reading history</string>
@@ -685,14 +552,12 @@
     <string name="updating_category">Updating category</string>
     <string name="manga_from_library">From library</string>
     <string name="downloaded_chapters">Downloaded chapters</string>
-    <string name="intervals_header">Intervals</string>
     <!-- For badges/buttons on library covers. -->
     <string name="overlay_header">Overlay</string>
     <string name="tabs_header">Tabs</string>
 
     <!-- Browse source -->
     <!-- missing prompt after Compose rewrite #7901 -->
-    <string name="no_more_results">No more results</string>
     <string name="no_results_found">No results found</string>
     <string name="local_source">Local source</string>
     <string name="other_source">Other</string>
@@ -705,7 +570,6 @@
     <string name="browse">Browse</string>
     <string name="has_results">Has results</string>
     <string name="local_source_help_guide">Local source guide</string>
-    <string name="no_pinned_sources">You have no pinned sources</string>
     <string name="chapter_not_found">Chapter not found</string>
     <string name="local_invalid_format">Invalid chapter format</string>
     <string name="local_filter_order_by">Order by</string>
@@ -718,7 +582,6 @@
     <string name="author">Author</string>
     <string name="artist">Artist</string>
     <!-- reserved for #6163 -->
-    <string name="unknown_status">Unknown status</string>
     <string name="licensed">Licensed</string>
     <string name="publishing_finished">Publishing finished</string>
     <string name="cancelled">Cancelled</string>
@@ -726,16 +589,12 @@
     <string name="add_to_library">Add to library</string>
     <string name="in_library">In library</string>
     <!-- missing confirm menu after Compose rewrite #7901 -->
-    <string name="remove_from_library">Remove from library</string>
     <string name="unknown_title">Unknown title</string>
     <string name="possible_duplicates_title">Possible duplicates</string>
     <string name="possible_duplicates_summary">You have entries in your library with a similar name.\n\nSelect an entry to migrate or add anyway.</string>
-    <string name="manga_added_library">Added to library</string>
-    <string name="manga_removed_library">Removed from library</string>
     <string name="manga_info_expand">More</string>
     <string name="manga_info_collapse">Less</string>
     <string name="delete_downloads_for_manga">Delete downloaded chapters?</string>
-    <string name="copied_to_clipboard_plain">Copied to clipboard</string>
     <string name="copied_to_clipboard">Copied to clipboard:\n%1$s</string>
     <string name="clipboard_copy_error">Failed to copy to clipboard</string>
     <string name="source_not_installed">Source not installed: %1$s</string>
@@ -744,14 +603,11 @@
 
     <!-- Manga chapters -->
     <string name="display_mode_chapter">Chapter %1$s</string>
-    <string name="manga_display_interval_title">Estimate every</string>
-    <string name="manga_display_modified_interval_title">Set to update every</string>
     <!-- "... around 2 days" -->
     <string name="manga_interval_expected_update">New chapters predicted to be released in around %1$s, checking around every %2$s.</string>
-    <string name="manga_interval_expected_update_null">This manga is either completed, or there is no predicted release date.</string>
+    <string name="manga_interval_expected_update_null">This novel is either completed, or there is no predicted release date.</string>
     <string name="manga_interval_expected_update_soon">Soon</string>
     <string name="manga_interval_custom_amount">Custom update frequency:</string>
-    <string name="chapter_downloading_progress">Downloading (%1$d/%2$d)</string>
     <string name="chapter_error">Error</string>
     <string name="chapter_paused">Paused</string>
     <string name="show_title">Source title</string>
@@ -774,8 +630,8 @@
     <string name="set_chapter_settings_as_default">Set as default</string>
     <string name="no_chapters_error">No chapters found</string>
     <string name="are_you_sure">Are you sure?</string>
-    <string name="exclude_scanlators">Exclude scanlators</string>
-    <string name="no_scanlators_found">No scanlators found</string>
+    <string name="exclude_scanlators">Exclude translators</string>
+    <string name="no_scanlators_found">No translators found</string>
     <string name="confirm_tracker_update">Update trackers to chapter %d?</string>
     <string name="trackers_updated_summary">Trackers updated to chapter %d</string>
 
@@ -806,8 +662,6 @@
     <string name="action_toggle_private_on">Track privately</string>
     <string name="action_toggle_private_off">Track publicly</string>
     <string name="track_type">Type</string>
-    <string name="myanimelist_relogin">Please login to MAL again</string>
-    <string name="source_unsupported">Source is not supported</string>
     <string name="error_no_match">No match found</string>
     <string name="track_error">%1$s error: %2$s</string>
     <string name="track_remove_date_conf_title">Remove date?</string>
@@ -820,47 +674,32 @@
     <!-- Category activity -->
     <string name="error_category_exists">A category with this name already exists!</string>
     <!-- missing undo feature after Compose rewrite #7454 -->
-    <string name="snack_categories_deleted">Categories deleted</string>
 
     <!-- Dialog option with checkbox view -->
     <string name="dialog_with_checkbox_remove_description">This will remove the read date of this chapter. Are you sure?</string>
     <string name="dialog_with_checkbox_reset">Reset all chapters for this entry</string>
 
     <!-- Image notifier -->
-    <string name="picture_saved">Picture saved</string>
     <string name="error_saving_picture">Error saving picture</string>
 
     <!-- Reader activity -->
-    <string name="custom_filter">Custom filter</string>
-    <string name="set_as_cover">Set as cover</string>
     <string name="cover_updated">Cover updated</string>
-    <string name="share_page_info">%1$s: %2$s, page %3$d</string>
-    <string name="chapter_progress">Page: %1$d</string>
     <string name="no_next_chapter">Next chapter not found</string>
-    <string name="decode_image_error">The image couldn\'t be loaded</string>
-    <string name="confirm_set_image_as_cover">Use this image as cover art?</string>
-    <string name="pref_category_for_this_series">For this series</string>
-    <string name="viewer">Reading mode</string>
-    <string name="transition_finished">Finished:</string>
-    <string name="transition_current">Current:</string>
     <string name="transition_next">Next:</string>
     <string name="transition_previous">Previous:</string>
     <string name="transition_no_next">There\'s no next chapter</string>
     <string name="transition_no_previous">There\'s no previous chapter</string>
-    <string name="transition_pages_loading">Loading pages…</string>
-    <string name="transition_pages_error">Failed to load pages: %1$s</string>
-    <string name="page_list_empty_error">No pages found</string>
+    <string name="page_list_empty_error">No chapter text found</string>
     <string name="loader_not_implemented_error">Source not found</string>
 
     <!-- Updates -->
     <string name="updating_library">Updating library</string>
     <string name="update_already_running">An update is already running</string>
-    <string name="cant_open_last_read_chapter">Unable to open last read chapter</string>
     <string name="updates_last_update_info">Library last updated: %s</string>
     <string name="updates_last_update_info_just_now">Just now</string>
     <string name="relative_time_span_never">Never</string>
     <string name="action_view_upcoming">View Upcoming Updates</string>
-    <string name="action_filter_excluded_scanlators">Filter excluded scanlators</string>
+    <string name="action_filter_excluded_scanlators">Filter excluded translators</string>
     <string name="pref_filter_update_categories_details">Updates in excluded categories will not be shown even if they are also in any included categories.</string>
 
     <!-- Upcoming -->
@@ -915,7 +754,6 @@
     <string name="seconds_short">%ds</string>
 
     <!-- Downloads activity and service -->
-    <string name="download_queue_error">Couldn\'t download chapters. You can try again in the downloads section</string>
     <string name="download_insufficient_space">Couldn\'t download chapters due to low storage space</string>
     <string name="download_queue_size_warning">Warning: large bulk downloads may lead to sources becoming slower and/or blocking %s. Tap to learn more.</string>
 
@@ -926,10 +764,7 @@
     <string name="notification_chapters_single">Chapter %1$s</string>
     <string name="notification_chapters_single_and_more">Chapter %1$s and %2$d more</string>
     <string name="notification_chapters_multiple">Chapters %1$s</string>
-    <string name="learn_more">Tap to learn more</string>
     <string name="notification_cover_update_failed">Failed to update cover</string>
-    <string name="notification_first_add_to_library">Please add the entry to your library before doing this</string>
-    <string name="library_errors_help">For help on how to fix library update errors, see %1$s</string>
     <string name="skipped_reason_completed">Skipped because series is complete</string>
     <string name="skipped_reason_not_caught_up">Skipped because there are unread chapters</string>
     <string name="skipped_reason_not_started">Skipped because no chapters are read</string>
@@ -937,8 +772,6 @@
     <string name="skipped_reason_not_in_release_period">Skipped because no release was expected today</string>
 
     <!-- File Picker Titles -->
-    <string name="file_select_cover">Select cover image</string>
-    <string name="file_select_backup">Select backup file</string>
     <string name="file_picker_error">No file picker app found</string>
     <string name="file_picker_uri_permission_unsupported">Failed to acquire persistent folder access. The app may behave unexpectedly.</string>
     <string name="file_null_uri_error">No file selected</string>
@@ -977,13 +810,10 @@
 
     <!-- Download Notification -->
     <string name="download_notifier_downloader_title">Downloader</string>
-    <string name="download_notifier_title_error">Error</string>
     <string name="download_notifier_unknown_error">Could not download chapter due to unexpected error</string>
     <string name="download_notifier_text_only_wifi">No Wi-Fi connection available</string>
     <string name="download_notifier_no_network">No network connection available</string>
     <string name="download_notifier_download_paused">Downloads paused</string>
-    <string name="download_notifier_split_page_not_found">Page %d not found while splitting</string>
-    <string name="download_notifier_split_page_path_not_found">Couldn\'t find file path of page %d</string>
     <string name="download_notifier_cache_renewal">Checking downloads</string>
 
     <!-- Notification channels -->
@@ -1053,42 +883,5 @@
     <string name="migrationListScreen.matchWithoutChapterToast">No chapters found, this entry cannot be used for migration</string>
 
     <!-- KMK: WebGPU reader -->
-    <string name="pref_high_quality_renderer">Use high quality renderer</string>
-    <string name="pref_high_quality_renderer_summary">Draw pages with the GPU. Smoother zooming and sharper text, and the settings below apply.</string>
-    <string name="pref_webgpu_summary">Renderer, transitions, display cutout and long strip layout</string>
-    <string name="onboarding_renderer_info">The reader can draw pages with the GPU. Zooming is smoother and text stays sharp, and a few extra settings come with it. Not every device handles it well, so it is off unless you turn it on, and you can change this later under Settings, WebGPU.</string>
-    <string name="pref_color_lut">Colour table</string>
-    <string name="pref_color_lut_file">Table file</string>
-    <string name="pref_color_lut_intensity">Strength</string>
-    <string name="pref_hdr_peak">HDR highlights</string>
-    <string name="pref_hdr_peak_summary">How far past white an HDR page may go on a display that can show it. A ceiling, so a page that is already dimmer than this keeps its own brightness.</string>
-    <string name="webgpu_unsupported">This device cannot use the WebGPU renderer, so the standard reader is used.</string>
-    <string name="webgpu_viewer">WebGPU</string>
-    <string name="pref_continuous_minwidth">Min width</string>
-    <string name="pref_continuous_gap">Gap</string>
-    <string name="pref_disable_page_swipe">Disable swiping between pages</string>
-    <string name="pref_history_resume_last_page">Open history entries at the last page read</string>
-    <string name="pref_transition_animation">Transition animation</string>
-    <string name="pref_cutout_mode">Display cutout mode</string>
-    <string name="pref_dual_page_view">Dual page view</string>
-    <string name="transition_animation_basic">Basic</string>
-    <string name="transition_animation_flip_left">Page flip (left)</string>
-    <string name="transition_animation_flip_right">Page flip (right)</string>
-    <string name="transition_animation_stack_left">Stack (left)</string>
-    <string name="transition_animation_stack_right">Stack (right)</string>
-    <string name="transition_animation_stack_up">Stack (up)</string>
-    <string name="transition_animation_stack_down">Stack (down)</string>
-    <string name="transition_animation_sphere">Sphere</string>
-    <string name="transition_animation_cube_inside">Cube (Inside)</string>
-    <string name="transition_animation_cube_outside">Cube (Outside)</string>
-    <string name="transition_animation_fade">Fade</string>
-    <string name="transition_animation_fade_white">Fade to white</string>
-    <string name="transition_animation_none">None</string>
-    <string name="transition_animation_flip">Page flip</string>
-    <string name="cutout_mode_ignore">Ignore</string>
-    <string name="cutout_mode_avoid">Avoid</string>
-    <string name="cutout_mode_shift">Shift</string>
-    <string name="dual_page_view_never">Never</string>
-    <string name="dual_page_view_always">Always</string>
-    <string name="dual_page_view_wide">When wide</string>
+    <string name="pref_history_resume_last_page">Open history entries where you left off</string>
 </resources>

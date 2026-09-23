@@ -2,46 +2,27 @@
 <resources>
     <!-- Actions -->
     <string name="action_search_for_source">Search for sources</string>
-    <string name="action_source_search">Search in source</string>
     <string name="action_library_search">Library search</string>
     <string name="action_toggle_nsfw_only">Toggle NSFW only</string>
     <string name="action_bulk_select">Bulk selection mode</string>
-    <string name="action_faq_and_guides">FAQ and Guides</string>
-    <string name="action_move_up">Move up</string>
-    <string name="action_move_down">Move down</string>
     <string name="action_confirm_color">Confirm Color</string>
-    <string name="action_remove_merged">Remove original entries from library?</string>
     <string name="action_hide">Hide</string>
     <string name="action_show_hidden_categories">Show hidden categories</string>
     <string name="action_panorama_cover">Panorama cover</string>
     <string name="action_open_folder">Open folder</string>
-    <string name="action_clear_manga">Clear manga</string>
+    <string name="action_clear_manga">Clear novel</string>
     <string name="action_update">Update</string>
         <!-- History section -->
-    <string name="action_filter_unfinished_manga">Unfinished manga</string>
+    <string name="action_filter_unfinished_manga">Unfinished novels</string>
     <string name="action_filter_unfinished_chapter">Unfinished chapter</string>
     <string name="action_filter_non_library_entries">Non-library entries</string>
     <!-- Reader -->
       <!-- Reader Actions -->
-    <string name="action_copy_to_clipboard_first_page">Copy first page to clipboard</string>
-    <string name="action_copy_to_clipboard_second_page">Copy second page to clipboard</string>
-    <string name="action_copy_to_clipboard_combined_page">Copy combined page to clipboard</string>
-    <string name="pref_viewer_nav_smaller_tap_zone">Smaller tap zones</string>
     <string name="error_opening_folder">Failed to open folder</string>
-    <string name="pref_pinch_to_zoom">Pinch to zoom</string>
-    <string name="pref_paged_disable_zoom_in">Disable zoom in</string>
-    <string name="pref_landscape_zoom_type">Wide images zoom mode</string>
-    <string name="scale_type_double">Double zoom</string>
-    <string name="pref_webtoon_scale_type">Smart scale on wide screen</string>
-    <string name="pref_smart_scale_long_strip_gap">Apply Smart scale to Long strip with gaps</string>
-    <string name="scale_type_16_9">16:9</string>
-    <string name="scale_type_20_9">20:9</string>
-    <string name="scale_type_4_3">4:3</string>
-    <string name="scale_type_3_2">3:2</string>
     <!-- Preferences -->
       <!-- Appearance section -->
     <string name="pref_custom_theme_style">Custom theme style</string>
-    <string name="pref_manga_info">Manga Info</string>
+    <string name="pref_manga_info">Novel info</string>
     <string name="pref_theme_cover_based">Theme based on cover</string>
     <string name="pref_theme_cover_based_style">Cover based theme style</string>
     <string name="pref_theme_cover_based_style_tonalspot">Tonal Spot</string>
@@ -58,7 +39,7 @@
     <string name="pref_panorama_cover_flow">Panorama Cover Flow</string>
     <string name="pref_panorama_cover_flow_summary">Show panorama cover in Global Search &amp; Suggestions</string>
     <string name="pref_top_align_cover">Align Cover to Top</string>
-    <string name="pref_top_align_cover_summary">Show the cover aligned to the top alongside manga info</string>
+    <string name="pref_top_align_cover_summary">Show the cover aligned to the top alongside the novel info</string>
     <string name="action_display_comfortable_grid_panorama">Panorama comfortable grid</string>
     <string name="pref_expand_related_mangas">Expand Suggestions</string>
     <string name="pref_expand_related_mangas_summary">If turned off, Suggestions won\'t automatically load &amp; show expanded</string>
@@ -97,9 +78,9 @@
     <string name="updating">Updating</string>
     <string name="pref_show_empty_categories_search">Show empty categories during search/filtering</string>
     <string name="pref_fetch_manga_metadata_on_add">Fetch metadata when adding to library</string>
-    <string name="pref_fetch_manga_metadata_on_add_description">Automatically fetches the metadata of a new manga when adding it to the library</string>
+    <string name="pref_fetch_manga_metadata_on_add_description">Automatically fetches the details of a new novel when adding it to the library</string>
     <string name="pref_fetch_manga_chapters_on_add">Fetch chapters when adding to library</string>
-    <string name="pref_fetch_manga_chapters_on_add_description">Automatically fetches the chapter list of a new manga when adding it to the library</string>
+    <string name="pref_fetch_manga_chapters_on_add_description">Automatically fetches the chapter list of a new novel when adding it to the library</string>
     <!-- Extension section -->
     <string name="extensions_page_need_refresh">Refresh extension page to update list.</string>
     <string name="extensions_page_more">More extensions...</string>
@@ -112,7 +93,7 @@
     <string name="download_cache_renew_interval_6hour">6 hours</string>
     <string name="download_cache_renew_interval_12hour">12 hours</string>
     <string name="download_cache_renew_interval_24hour">1 day</string>
-    <string name="download_cache_renew_interval_info">If set to "manual", either refresh each manga or using the "Reindex downloads" action in "Advanced"</string>
+    <string name="download_cache_renew_interval_info">If set to "manual", either refresh each novel or use the "Reindex downloads" action in "Advanced"</string>
     <!-- Tracking section -->
     <string name="pref_auto_sync_progress_from_trackers">Auto sync progress from Trackers</string>
     <string name="sync_progress_from_trackers_up_to_chapter">Sync progress from Trackers up to chapter %d</string>
@@ -130,9 +111,6 @@
     <string name="pref_webdav_folder">WebDAV data folder</string>
     <string name="pref_webdav_folder_summ">The application will store the data in this folder</string>
     <!-- Advanced section -->
-    <string name="pref_clean_invalid_downloads">Clean invalid downloads</string>
-    <string name="pref_clean_invalid_downloads_summary">Find and remove all downloads, files, folders which are not saved in your library</string>
-    <string name="invalid_downloads_cleaned">Invalid downloads cleaned</string>
     <string name="pref_private_installer_warning">Avoid using Private Installer because it\'s not stable yet, will lead to really slow start/resume App.</string>
     <string name="saved_searches_feeds">Saved Searches &amp; Feeds</string>
     <string name="preload_library_cover_color">Preload library's cover color</string>
@@ -146,7 +124,6 @@
     <string name="onboarding_permission_external_storage">Access media files permission</string>
     <string name="onboarding_permission_external_storage_description">Allow using custom covers in entry's Edit Info</string>
     <string name="onboarding_permission_writing_external_storage_description">Allow saving covers &amp; using custom covers in entry's Edit Info</string>
-    <string name="permission_writing_external_storage_succeed">Permission granted. Try action again.</string>
     <string name="onboarding_storage_all_files_info">If your device won\'t let you select a folder, you can grant %1$s all-files access instead. It will then keep its data in a folder in your shared storage.</string>
     <string name="onboarding_storage_action_all_files">Grant all-files access</string>
     <string name="storage_location_unavailable">Storage location unavailable</string>
@@ -154,7 +131,6 @@
     <!-- About section -->
     <string name="whats_coming">What\'s coming (soon)</string>
     <!-- Manga info -->
-    <string name="action_allow_duplicate_manga">Allow it</string>
     <string name="action_skip_duplicate_manga">Skip it</string>
     <string name="action_allow_all_duplicate_manga">Allow all</string>
     <string name="action_skip_all_duplicate_manga">Skip all</string>
@@ -169,7 +145,6 @@
     <!--UpdateCheck Notifications-->
     <string name="update_check_notification_preview_available">Coming (soon) updates!</string>
     <!-- About -->
-    <string name="changelogs">Change Logs</string>
     <string name="action_manual_install">Manual install</string>
     <string name="manual_download">Manual download</string>
     <!-- Browse settings -->
@@ -190,7 +165,6 @@
     <!-- Feed Tab -->
     <string name="too_many_in_feed">Too many sources in your feed, cannot add more than 20</string>
     <string name="action_sort_feed">Sort feeds</string>
-    <string name="sort_feed_confirmation">Would you like to sort the feeds alphabetically?</string>
     <!-- Migration -->
     <string name="current_">Current: %1$s</string>
     <string name="migrationConfigScreen_smartSearchSingleEntryTitle">Use smart search</string>
@@ -199,7 +173,6 @@
     <string name="job_failed_schedule_update_check">Failed to schedule automatic library update: %s</string>
     <string name="job_failed_schedule_backup_check">Failed to schedule automatic backup: %s</string>
     <string name="label_to_be_updated">To be updated</string>
-    <string name="batch_add_description">Support: MangaDex, E-H, ExH, nH, 8Muses</string>
     <!-- Connections section -->
     <string name="special_services">Special Services</string>
     <string name="pref_category_connections">Connections</string>
@@ -215,7 +188,6 @@
     <string name="pref_discord_dnd">⛔ Do Not Disturb</string>
     <string name="pref_discord_idle">🌙 Idle</string>
     <string name="pref_discord_online">🟢 Online</string>
-    <string name="pref_category_discord_incognito">RPC Incognito</string>
     <string name="pref_discord_incognito">Discord Incognito mode</string>
     <string name="pref_discord_incognito_summary">Overridden when Incognito Mode is enabled</string>
     <string name="pref_discord_incognito_categories_details">Entries in included categories will not be displayed in Discord</string>
@@ -230,7 +202,7 @@
     <string name="discord_status_scrolling">Scrolling through</string>
     <string name="discord_status_messing">Messing around with</string>
     <string name="discord_download_button">Read on %s</string>
-    <string name="discord_app_description">Komikku - a manga reader app</string>
+    <string name="discord_app_description">Yomikku - a light novel reader</string>
     <!-- Discord RPC Customization -->
     <string name="pref_category_discord_customization">Discord Customization</string>
     <string name="pref_discord_custom_message">Custom Message</string>
@@ -247,11 +219,8 @@
     <string name="pref_discord_show_discord_button_summary">Displays a button to join the Discord server</string>
 
     <!-- WebGPU reader -->
-    <string name="pref_transition_animation_dual">Transition animation (dual page)</string>
-    <string name="pref_cutout_mode_dual">Display cutout mode (dual page)</string>
     <string name="pref_trust_all_extensions">Trust all extensions</string>
     <string name="pref_trust_all_extensions_summary">Load every extension without asking. Only turn this on if you decide what gets installed.</string>
-    <string name="webgpu_device_lost">The WebGPU renderer stopped, so the standard reader took over</string>
     <!-- Novel reader -->
     <string name="reader_mode_scroll">Scroll</string>
     <string name="reader_mode_paged">Paged</string>
