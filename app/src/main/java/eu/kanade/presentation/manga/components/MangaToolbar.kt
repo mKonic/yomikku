@@ -48,6 +48,7 @@ fun MangaToolbar(
     onClickRefresh: () -> Unit,
     onClickMigrate: (() -> Unit)?,
     onClickEditNotes: () -> Unit,
+    onClickExportEpub: (() -> Unit)?,
     // SY -->
     onClickEditInfo: (() -> Unit)?,
     // KMK -->
@@ -187,6 +188,14 @@ fun MangaToolbar(
                             onClick = onClickEditNotes,
                         ),
                     )
+                    if (onClickExportEpub != null) {
+                        add(
+                            AppBar.OverflowAction(
+                                title = stringResource(KMR.strings.action_export_epub),
+                                onClick = onClickExportEpub,
+                            ),
+                        )
+                    }
                     // SY -->
                     if (onClickEditInfo != null) {
                         add(

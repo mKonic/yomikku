@@ -147,6 +147,7 @@ fun MangaScreen(
     onEditFetchIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
     onEditNotesClicked: () -> Unit,
+    onExportEpubClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -215,6 +216,7 @@ fun MangaScreen(
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
             onEditNotesClicked = onEditNotesClicked,
+            onExportEpubClicked = onExportEpubClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -269,6 +271,7 @@ fun MangaScreen(
             onEditIntervalClicked = onEditFetchIntervalClicked,
             onMigrateClicked = onMigrateClicked,
             onEditNotesClicked = onEditNotesClicked,
+            onExportEpubClicked = onExportEpubClicked,
             // SY -->
             onEditInfoClicked = onEditInfoClicked,
             // SY <--
@@ -333,6 +336,7 @@ private fun MangaScreenSmallImpl(
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
     onEditNotesClicked: () -> Unit,
+    onExportEpubClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -433,6 +437,7 @@ private fun MangaScreenSmallImpl(
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
                 onClickEditNotes = onEditNotesClicked,
+                onClickExportEpub = onExportEpubClicked,
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },
                 // KMK -->
@@ -732,6 +737,7 @@ private fun MangaScreenLargeImpl(
     onEditIntervalClicked: (() -> Unit)?,
     onMigrateClicked: (() -> Unit)?,
     onEditNotesClicked: () -> Unit,
+    onExportEpubClicked: (() -> Unit)?,
     // SY -->
     onEditInfoClicked: () -> Unit,
     // SY <--
@@ -823,6 +829,7 @@ private fun MangaScreenLargeImpl(
                 onClickRefresh = onRefresh,
                 onClickMigrate = onMigrateClicked,
                 onClickEditNotes = onEditNotesClicked,
+                onClickExportEpub = onExportEpubClicked,
                 onCancelActionMode = { onAllChapterSelected(false) },
                 // SY -->
                 onClickEditInfo = onEditInfoClicked.takeIf { state.manga.favorite },

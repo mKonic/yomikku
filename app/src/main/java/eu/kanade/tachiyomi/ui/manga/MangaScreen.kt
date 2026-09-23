@@ -241,6 +241,9 @@ class MangaScreen(
         val fullCoverBackground = MaterialTheme.colorScheme.surfaceTint.blend(MaterialTheme.colorScheme.surface)
 
         val isConfigurableSource = successState.source is ConfigurableSource
+        val exportEpub = rememberLauncherForActivityResult(
+            ActivityResultContracts.CreateDocument("application/epub+zip"),
+        ) { uri -> if (uri != null) screenModel.exportEpub(uri) }
         // KMK <--
 
         MangaScreen(
@@ -308,6 +311,9 @@ class MangaScreen(
             onEditInfoClicked = screenModel::showEditMangaInfoDialog,
             // SY <--
             onEditNotesClicked = { navigator.push(MangaNotesScreen(manga = successState.manga)) },
+            onExportEpubClicked = {
+                exportEpub.launch(successState.manga.title.replace(Regex("""[\\/:*?"<>|]"""), "_") + ".epub")
+            }.takeIf { successState.chapters.any { it.isDownloaded } },
             onMultiBookmarkClicked = screenModel::bookmarkChapters,
             onMultiMarkAsReadClicked = screenModel::markChaptersRead,
             onMarkPreviousAsReadClicked = screenModel::markPreviousChapterRead,
