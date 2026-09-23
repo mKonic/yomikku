@@ -258,7 +258,6 @@
     <string name="chapter_progress_percent">%1$d%% read</string>
     <string name="action_export_epub">Export as EPUB</string>
     <string name="epub_export_no_downloads">Download chapters to export them as an EPUB</string>
-    <string name="epub_exporting">Exporting %1$d chapters…</string>
-    <string name="epub_exported">Exported %1$d chapters</string>
+    <string name="epub_exporting_progress">Exporting chapter %1$d of %2$d</string>
     <string name="epub_export_failed">Could not export the EPUB: %1$s</string>
 </resources>

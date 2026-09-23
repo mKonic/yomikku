@@ -35,7 +35,8 @@ class EpubWriter(
 
     private class Resource(val path: String, val mediaType: String, val id: String, val properties: String? = null)
 
-    fun write(chapters: List<Chapter>, out: OutputStream, onChapter: (done: Int) -> Unit = {}) {
+    /** Writes [chapters] as the book to [out], taking each chapter only when it is written. */
+    fun write(chapters: Sequence<Chapter>, out: OutputStream, onChapter: (done: Int) -> Unit = {}) {
         ZipOutputStream(out).use { zip ->
             // The mimetype must be the first entry, stored uncompressed, so readers can identify the file.
             zip.putStored("mimetype", "application/epub+zip".toByteArray())
@@ -49,7 +50,9 @@ class EpubWriter(
             }
 
             var imageCount = 0
+            val titles = mutableListOf<String>()
             val chapterPaths = chapters.mapIndexed { index, chapter ->
+                titles += chapter.title
                 val path = "text/chapter-${index + 1}.xhtml"
                 val document = Jsoup.parseBodyFragment(chapter.html)
                 document.select("script, style, iframe, form, input, button").remove()
@@ -71,11 +74,11 @@ class EpubWriter(
                 zip.putText("OEBPS/$path", chapterXhtml(chapter.title, document))
                 onChapter(index + 1)
                 path
-            }
+            }.toList()
 
             zip.putText("OEBPS/style.css", STYLE)
-            zip.putText("OEBPS/nav.xhtml", navigation(chapters, chapterPaths))
-            zip.putText("OEBPS/toc.ncx", ncx(chapters, chapterPaths))
+            zip.putText("OEBPS/nav.xhtml", navigation(titles, chapterPaths))
+            zip.putText("OEBPS/toc.ncx", ncx(titles, chapterPaths))
             zip.putText("OEBPS/content.opf", packageDocument(chapterPaths, resources))
         }
     }
@@ -96,20 +99,20 @@ class EpubWriter(
         """.trimMargin()
     }
 
-    private fun navigation(chapters: List<Chapter>, paths: List<String>) = """
+    private fun navigation(titles: List<String>, paths: List<String>) = """
         |<?xml version="1.0" encoding="UTF-8"?>
         |<!DOCTYPE html>
         |<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" xml:lang="$language">
         |<head><title>${escape(title)}</title></head>
         |<body><nav epub:type="toc" id="toc"><h1>${escape(title)}</h1><ol>
-        |${chapters.indices.joinToString("\n") { "<li><a href=\"${paths[it]}\">${escape(chapters[it].title)}</a></li>" }}
+        |${titles.indices.joinToString("\n") { "<li><a href=\"${paths[it]}\">${escape(titles[it])}</a></li>" }}
         |</ol></nav></body>
         |</html>
     """.trimMargin()
 
-    private fun ncx(chapters: List<Chapter>, paths: List<String>): String {
-        val points = chapters.indices.joinToString("\n") { i ->
-            "<navPoint id=\"nav-${i + 1}\" playOrder=\"${i + 1}\"><navLabel><text>${escape(chapters[i].title)}" +
+    private fun ncx(titles: List<String>, paths: List<String>): String {
+        val points = titles.indices.joinToString("\n") { i ->
+            "<navPoint id=\"nav-${i + 1}\" playOrder=\"${i + 1}\"><navLabel><text>${escape(titles[i])}" +
                 "</text></navLabel><content src=\"${paths[i]}\"/></navPoint>"
         }
         return """

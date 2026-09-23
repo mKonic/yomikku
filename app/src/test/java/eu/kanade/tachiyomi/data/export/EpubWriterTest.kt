@@ -27,7 +27,7 @@ class EpubWriterTest {
             identifier = "urn:yomikku:1",
             cover = EpubWriter.Image(png, "image/png"),
         ).write(
-            listOf(
+            sequenceOf(
                 EpubWriter.Chapter("Chapter 1", "<p>One &nbsp; <br> two</p><img src='$image'><img src='https://x/y.png'>"),
                 EpubWriter.Chapter("Chapter 2", "<p>Two</p><script>bad()</script>"),
             ),

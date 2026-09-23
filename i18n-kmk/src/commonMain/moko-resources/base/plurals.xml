@@ -1,3 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <plurals name="epub_exporting">
+        <item quantity="one">Exporting %d chapter, see the notification for progress</item>
+        <item quantity="other">Exporting %d chapters, see the notification for progress</item>
+    </plurals>
+    <plurals name="epub_exported">
+        <item quantity="one">Exported %d chapter</item>
+        <item quantity="other">Exported %d chapters</item>
+    </plurals>
 </resources>

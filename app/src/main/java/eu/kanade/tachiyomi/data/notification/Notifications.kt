@@ -72,6 +72,9 @@ object Notifications {
     /**
      * Notification channel used for Incognito Mode
      */
+    const val ID_EPUB_EXPORT_PROGRESS = -601
+    const val ID_EPUB_EXPORT_COMPLETE = -602
+
     const val CHANNEL_INCOGNITO_MODE = "incognito_mode_channel"
     const val ID_INCOGNITO_MODE = -701
 

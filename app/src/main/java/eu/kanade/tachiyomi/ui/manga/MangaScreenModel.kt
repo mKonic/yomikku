@@ -46,23 +46,17 @@ import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.manga.DownloadAction
 import eu.kanade.presentation.manga.components.ChapterDownloadAction
 import eu.kanade.presentation.util.formattedMessage
-import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.coil.getBestColor
 import eu.kanade.tachiyomi.data.download.DownloadCache
 import eu.kanade.tachiyomi.data.download.DownloadManager
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.data.download.model.Download
-import eu.kanade.tachiyomi.data.export.EpubWriter
+import eu.kanade.tachiyomi.data.export.EpubExportJob
 import eu.kanade.tachiyomi.data.track.EnhancedTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
-import eu.kanade.tachiyomi.network.GET
-import eu.kanade.tachiyomi.network.NetworkHelper
-import eu.kanade.tachiyomi.network.await
-import eu.kanade.tachiyomi.source.CatalogueSource
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.model.SManga
-import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.manga.RelatedManga.Companion.isLoading
 import eu.kanade.tachiyomi.ui.manga.RelatedManga.Companion.removeDuplicates
 import eu.kanade.tachiyomi.ui.manga.RelatedManga.Companion.sorted
@@ -99,7 +93,7 @@ import logcat.LogPriority
 import mihon.domain.chapter.interactor.FilterChaptersForDownload
 import mihon.domain.manga.model.toDomainManga
 import mihon.domain.source.interactor.UpdateMangaFromRemote
-import okhttp3.Headers
+import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.CheckboxState
 import tachiyomi.core.common.preference.TriState
@@ -723,67 +717,19 @@ class MangaScreenModel(
     }
 
     /**
-     * Writes the downloaded chapters, in reading order, to [uri] as an EPUB.
+     * Writes the downloaded chapters, in reading order, to [uri] as an EPUB, in the background.
      */
     fun exportEpub(uri: Uri) {
         val state = successState ?: return
-        val chapters = state.chapters.filter { it.isDownloaded }.map { it.chapter }
-            .sortedByDescending { it.sourceOrder }
-        screenModelScope.launchIO {
-            if (chapters.isEmpty()) {
+        val count = state.chapters.count { it.isDownloaded }
+        screenModelScope.launch {
+            if (count == 0) {
                 snackbarHostState.showSnackbar(context.stringResource(KMR.strings.epub_export_no_downloads))
-                return@launchIO
+                return@launch
             }
-            launch { snackbarHostState.showSnackbar(context.stringResource(KMR.strings.epub_exporting, chapters.size)) }
-            val message = try {
-                val manga = state.manga
-                val contents = chapters.mapNotNull { chapter ->
-                    downloadProvider.findChapterDir(chapter.name, chapter.scanlator, chapter.url, manga.ogTitle, state.source)
-                        ?.takeIf { it.isFile }
-                        ?.openInputStream()?.bufferedReader()?.use { it.readText() }
-                        ?.let { EpubWriter.Chapter(chapter.name, it) }
-                }
-                val writer = EpubWriter(
-                    title = manga.title,
-                    authors = listOfNotNull(manga.author).flatMap { it.split(',') }.map { it.trim() }
-                        .filter { it.isNotEmpty() },
-                    description = manga.description,
-                    language = (state.source as? CatalogueSource)?.lang
-                        ?.takeIf { it.length in 2..3 } ?: "und",
-                    identifier = "urn:yomikku:${manga.source}:${manga.url}",
-                    cover = coverImage(manga, state.source),
-                )
-                context.contentResolver.openOutputStream(uri)?.use { writer.write(contents, it) }
-                    ?: error("Cannot write to the chosen file")
-                context.stringResource(KMR.strings.epub_exported, contents.size)
-            } catch (e: Exception) {
-                logcat(LogPriority.ERROR, e)
-                context.stringResource(KMR.strings.epub_export_failed, e.message.orEmpty())
-            }
-            snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(message)
+            EpubExportJob.start(context, state.manga.id, uri)
+            snackbarHostState.showSnackbar(context.pluralStringResource(KMR.plurals.epub_exporting, count, count))
         }
-    }
-
-    /** The novel's cover: the cached one for library novels, else downloaded through the source. */
-    private suspend fun coverImage(manga: Manga, source: Source): EpubWriter.Image? {
-        val coverCache = Injekt.get<CoverCache>()
-        val cached = coverCache.getCustomCoverFile(manga.id).takeIf { it.exists() }
-            ?: coverCache.getCoverFile(manga.thumbnailUrl)?.takeIf { it.exists() }
-        val bytes = cached?.readBytes() ?: runCatching {
-            val url = manga.thumbnailUrl?.takeIf { it.startsWith("http") } ?: return null
-            val client = (source as? HttpSource)?.client ?: Injekt.get<NetworkHelper>().client
-            val headers = (source as? HttpSource)?.headers ?: Headers.headersOf()
-            client.newCall(GET(url, headers)).await().use { if (it.isSuccessful) it.body.bytes() else null }
-        }.getOrNull() ?: return null
-        val type = when {
-            bytes.size > 3 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte() -> "image/jpeg"
-            bytes.size > 8 && bytes[0] == 0x89.toByte() && bytes[1] == 'P'.code.toByte() -> "image/png"
-            bytes.size > 12 && String(bytes, 8, 4) == "WEBP" -> "image/webp"
-            bytes.size > 3 && String(bytes, 0, 3) == "GIF" -> "image/gif"
-            else -> return null
-        }
-        return EpubWriter.Image(bytes, type)
     }
 
     /**
