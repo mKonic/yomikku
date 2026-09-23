@@ -11,3 +11,12 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Added
+- Export a novel's downloaded chapters as an EPUB from the novel screen's menu.
+- Downloaded chapters keep their images, so they read fully offline.
+
+### Changed
+- Related titles are off by default, so opening a novel doesn't send a burst of searches to its site.
+
+### Fixed
+- Full-page illustrations in local EPUBs no longer show their alt text as a stray line.
