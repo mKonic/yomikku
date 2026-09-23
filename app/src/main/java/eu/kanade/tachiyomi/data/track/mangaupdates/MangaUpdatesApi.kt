@@ -153,13 +153,7 @@ class MangaUpdatesApi(
     suspend fun search(query: String): List<MURecord> {
         val body = buildJsonObject {
             put("search", query)
-            put(
-                "filter_types",
-                buildJsonArray {
-                    add("drama cd")
-                    add("novel")
-                },
-            )
+            put("type", buildJsonArray { add("Novel") })
         }
 
         return with(json) {

@@ -80,7 +80,7 @@ class ShikimoriApi(
 
     suspend fun search(search: String): List<TrackSearch> {
         return withIOContext {
-            val url = "$API_URL/mangas".toUri().buildUpon()
+            val url = "$API_URL/ranobe".toUri().buildUpon()
                 .appendQueryParameter("order", "popularity")
                 .appendQueryParameter("search", search)
                 .appendQueryParameter("limit", "20")
@@ -163,7 +163,7 @@ class ShikimoriApi(
             with(json) {
                 authClient.newCall(
                     POST(
-                        "https://shikimori.one/api/graphql",
+                        "$BASE_URL/api/graphql",
                         body = payload.toString().toRequestBody(jsonMime),
                     ),
                 )
@@ -213,7 +213,7 @@ class ShikimoriApi(
     )
 
     companion object {
-        const val BASE_URL = "https://shikimori.one"
+        const val BASE_URL = "https://shikimori.io"
         private const val API_URL = "$BASE_URL/api"
         private const val OAUTH_URL = "$BASE_URL/oauth/token"
         private const val LOGIN_URL = "$BASE_URL/oauth/authorize"

@@ -86,7 +86,8 @@ class MyAnimeListApi(
                     .awaitSuccess()
                     .parseAs<MALSearchResult>()
                     .data
-                    .filter { !(it.node.mediaType.contains("novel")) }
+                    // Light novels and novels; the manga they are adapted into are not what is being read.
+                    .filter { it.node.mediaType.contains("novel") }
                     .map { parseSearchItem(it.node) }
             }
         }
