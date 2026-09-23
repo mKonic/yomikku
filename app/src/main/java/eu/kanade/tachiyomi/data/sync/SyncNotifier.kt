@@ -27,7 +27,7 @@ class SyncNotifier(private val context: Context) {
     private val progressNotificationBuilder = context.notificationBuilder(
         Notifications.CHANNEL_SYNC_LIBRARY,
     ) {
-        setSmallIcon(R.drawable.ic_komikku)
+        setSmallIcon(R.drawable.ic_yomikku)
         setColor(ContextCompat.getColor(context, R.color.ic_launcher))
         setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.komikku))
         setAutoCancel(false)
@@ -38,7 +38,7 @@ class SyncNotifier(private val context: Context) {
     private val completeNotificationBuilder = context.notificationBuilder(
         Notifications.CHANNEL_SYNC_LIBRARY,
     ) {
-        setSmallIcon(R.drawable.ic_komikku)
+        setSmallIcon(R.drawable.ic_yomikku)
         setColor(ContextCompat.getColor(context, R.color.ic_launcher))
         setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.komikku))
         setAutoCancel(false)

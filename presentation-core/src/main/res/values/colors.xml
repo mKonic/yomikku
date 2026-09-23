@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="splash">#FBEDED</color>
+    <color name="splash">#E0E7F1</color>
+    <color name="splash_icon">#3D5A80</color>
 
     <color name="cover_placeholder">#4F888888</color>
 
