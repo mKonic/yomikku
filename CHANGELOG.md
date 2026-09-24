@@ -12,6 +12,15 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 
+## [v1.0.1] - 2026-09-24
+### Fixed
+- Syncing no longer restores the whole library again and again when nothing changed. Novels were matched by title and author as well as source and address, a synced novel's original title was never saved, and a chapter whose state matched but whose version was newer was skipped, so each device kept finding the other's library changed. A sync also restored every kind of data whatever the sync settings said.
+- Syncing a large library no longer runs out of memory while uploading, and when memory does run out the sync says so instead of staying on "running".
+- Covers downloaded without a disk cache no longer come out partly drawn. The cover colours were read from the same download the image was being decoded from, and each reader took part of it.
+- The updates and lock screen widgets no longer fail when they have only text to show (no recent updates, or the app locked).
+- Library search from a source name's long press menu finds that source's novels. It searched for the name as shown, which can carry the source's language, and no novel's source matched it.
+- Scrolling through a source no longer leaves every novel it passed watching the database for the rest of the visit.
+
 ## [v1.0.0]
 First release: a light-novel reader built on Komikku, with a native text reader, EPUB import and export, and Kotlin extensions ported from LNReader's plugins.
 
