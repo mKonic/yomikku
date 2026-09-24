@@ -103,15 +103,22 @@ class MangaRestorer(
         return this.copy(
             favorite = this.favorite || newer.favorite,
             // SY -->
-            ogAuthor = newer.author,
-            ogArtist = newer.artist,
-            ogDescription = newer.description,
-            ogGenre = newer.genre,
-            ogThumbnailUrl = newer.thumbnailUrl,
-            ogStatus = newer.status,
+            // The source's own values, not the customised ones the plain getters return, or a custom title never
+            // lands and sync keeps finding the entry changed.
+            ogTitle = newer.ogTitle,
+            ogAuthor = newer.ogAuthor,
+            ogArtist = newer.ogArtist,
+            ogDescription = newer.ogDescription,
+            ogGenre = newer.ogGenre,
+            ogThumbnailUrl = newer.ogThumbnailUrl,
+            ogStatus = newer.ogStatus,
             // SY <--
+            chapterFlags = newer.chapterFlags,
+            viewerFlags = newer.viewerFlags,
+            updateStrategy = newer.updateStrategy,
             initialized = this.initialized || newer.initialized,
             version = newer.version,
+            notes = newer.notes,
         )
     }
 
@@ -168,7 +175,11 @@ class MangaRestorer(
 
                 when {
                     dbChapter == null -> chapter // New chapter
-                    chapter.forComparison() == dbChapter.forComparison() -> null // Same state; skip
+                    chapter.forComparison() == dbChapter.forComparison() -> {
+                        // Same state, but a sync still has to take the remote's version, or the next sync compares
+                        // versions, calls the entry changed and restores it all over again.
+                        if (isSync && chapter.version != dbChapter.version) chapter.copy(id = dbChapter.id) else null
+                    }
                     else -> updateChapterBasedOnSyncState(chapter, dbChapter) // Update existed chapter
                 }
             }
