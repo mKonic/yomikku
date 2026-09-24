@@ -315,18 +315,20 @@ class MangaScreenModel(
             val needRefreshInfo = !manga.initialized
             val needRefreshChapter = chapters.isEmpty()
 
+            // Resolved before the update, whose block runs again when another update lands in between.
+            val source = sourceManager.getOrStub(manga.source)
+            val availableScanlators = getAvailableScanlators.await(mangaId).toImmutableSet()
+            val excludedScanlators = getExcludedScanlators.await(mangaId).toImmutableSet()
+
             // Show what we have earlier
             mutableState.update {
-                // SY -->
-                val source = sourceManager.getOrStub(manga.source)
-                // SY <--
                 State.Success(
                     manga = manga,
                     source = source,
                     isFromSource = isFromSource,
                     chapters = chapters,
-                    availableScanlators = getAvailableScanlators.await(mangaId).toImmutableSet(),
-                    excludedScanlators = getExcludedScanlators.await(mangaId).toImmutableSet(),
+                    availableScanlators = availableScanlators,
+                    excludedScanlators = excludedScanlators,
                     isRefreshingData = needRefreshInfo || needRefreshChapter,
                     dialog = null,
                     hideMissingChapters = libraryPreferences.hideMissingChapters().get(),
