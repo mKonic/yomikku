@@ -123,7 +123,7 @@ object MangaCoverMetadata {
             ?: coverCache.getCoverFile(mangaCover.url)
 
         val bitmap = when {
-            bufferedSource != null -> BitmapFactory.decodeStream(bufferedSource.inputStream(), null, options)
+            bufferedSource != null -> bufferedSource.inputStream().use { BitmapFactory.decodeStream(it, null, options) }
             // if the file exists and the there was still an error then the file is corrupted
             file?.exists() == true -> BitmapFactory.decodeFile(file.path, options)
             else -> {

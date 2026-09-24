@@ -194,12 +194,11 @@ class MangaCoverFetcher(
                 }
 
                 // KMK -->
+                // A copy of the body: the colours are read on another coroutine while Coil decodes the live
+                // stream below, and two readers of one stream each get part of the image.
                 setRatioAndColorsInScope(
                     mangaCover,
-                    bufferedSource = ImageSource(
-                        source = responseBody.source(),
-                        fileSystem = FileSystem.SYSTEM,
-                    ).source(),
+                    bufferedSource = response.peekBody(Long.MAX_VALUE).source(),
                 )
                 // KMK <--
                 // Read from response if cache is unused or unusable
