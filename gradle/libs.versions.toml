@@ -31,7 +31,6 @@ conscrypt-android = "org.conscrypt:conscrypt-android:2.7.0"
 quickjs-android = { group = "com.github.zhanghai.quickjs-java", name = "quickjs-android", version = "547f5b1597" }
 
 jsoup = "org.jsoup:jsoup:1.23.2"
-webgpuviewer = { module = "ca.mpreg:webgpuviewer", version = "1.3.0" }
 volition = { module = "dev.mkonic:volition", version = "0.4.0" }
 
 disklrucache = "com.jakewharton:disklrucache:2.0.2"
