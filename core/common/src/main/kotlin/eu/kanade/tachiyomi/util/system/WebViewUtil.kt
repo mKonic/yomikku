@@ -31,8 +31,8 @@ object WebViewUtil {
      *   Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.3
      */
     fun getInferredUserAgent(context: Context): String {
-        return WebView(context)
-            .getDefaultUserAgentString()
+        // The string a WebView's settings would report, without creating a WebView that is never destroyed.
+        return WebSettings.getDefaultUserAgent(context)
             .replace("; Android .*?\\)".toRegex(), "; Android 10; K)")
             .replace("Version/.* Chrome/".toRegex(), "Chrome/")
     }
