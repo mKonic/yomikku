@@ -217,6 +217,65 @@ fun MoreScreen(
                     onPreferenceClick = { uriHandler.openUri(Constants.URL_HELP) },
                 )
             }
+            // KMK -->
+            item {
+                Sponsor()
+            }
+            // KMK <--
         }
     }
 }
+
+// KMK -->
+@Composable
+fun Sponsor() {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = MaterialTheme.padding.medium),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        TextButton(
+            onClick = { context.openInBrowser(Constants.SPONSOR) },
+            modifier = Modifier
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = MaterialTheme.shapes.small,
+                ),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = MaterialSymbols.RoundedFilled.Favorite,
+                    contentDescription = stringResource(KMR.strings.sponsor_me),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = stringResource(KMR.strings.sponsor_me),
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun SponsorPreview() {
+    TachiyomiPreviewTheme {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 0.dp,
+        ) {
+            Sponsor()
+        }
+    }
+}
+// KMK <--

@@ -11,6 +11,8 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Added
+- Sponsor button on the More screen, linking to Ko-fi.
 
 ## [v1.0.1] - 2026-09-24
 ### Fixed
