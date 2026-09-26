@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<issues format="6" by="lint 9.3.2" type="baseline" client="gradle" dependencies="false" name="AGP (9.3.2)" variant="all" version="9.3.2">
+<issues format="6" by="lint 9.4.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.4.1)" variant="all" version="9.4.1">
 
     <issue
         id="DefaultLocale"
@@ -57,50 +57,6 @@
     </issue>
 
     <issue
-        id="AppLinkWarning"
-        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
-        errorLine1="            &lt;intent-filter>"
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="302"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="AppLinkWarning"
-        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
-        errorLine1="            &lt;intent-filter>"
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="318"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="AppLinkWarning"
-        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
-        errorLine1="            &lt;intent-filter>"
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="333"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="AppLinkWarning"
-        message="This intent filter has the format of an Android App Link but is missing the `autoVerify` attribute; add `android:autoVerify=&quot;true&quot;` to ensure your domain will be validated and enable App Link-related Lint warnings. If you do not want clicked URLs to bring the user to your app, remove the `android.intent.category.BROWSABLE` category, or set `android:autoVerify=&quot;false&quot;` to make it clear this is not intended to be an Android App Link."
-        errorLine1="            &lt;intent-filter>"
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="348"
-            column="14"/>
-    </issue>
-
-    <issue
         id="SelectedPhotoAccess"
         message="Your app is currently not handling Selected Photos Access introduced in Android 14+"
         errorLine1="        android:name=&quot;android.permission.READ_MEDIA_IMAGES&quot;"
@@ -145,27 +101,15 @@
     </issue>
 
     <issue
-        id="LocalContextResourcesRead"
-        message="Reading Resources using LocalContext.current.resources is not configuration-aware and may return stale values if the Configuration changes"
-        errorLine1="        state.dpi = context.resources.displayMetrics.densityDpi / 100f"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/eu/kanade/presentation/manga/components/MangaCoverDialog.kt"
-            line="296"
-            column="21"/>
-    </issue>
-
-    <issue
         id="LogNotTimber"
         message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
         errorLine1="                Log.w(&quot;ShellInterface&quot;, &quot;Unable to set installFlags via reflection; continuing without REPLACE_EXISTING_INSTALL_FLAG&quot;, e)"
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/mihon/app/shizuku/ShellInterface.kt"
-            line="86"
+            line="81"
             column="17"/>
     </issue>
-
 
     <issue
         id="TrustAllX509TrustManager"
@@ -231,17 +175,6 @@
     </issue>
 
     <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
-        errorLine1="        mutableStateOf(currentPage.toFloat())"
-        errorLine2="        ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/exh/pagepreview/components/PagePreviewScreen.kt"
-            line="131"
-            column="9"/>
-    </issue>
-
-    <issue
         id="IconLocation"
         message="Found bitmap drawable `res/drawable/komikku.png` in densityless folder">
         <location
@@ -253,13 +186,6 @@
         message="Found bitmap drawable `res/drawable/komikku.png` in densityless folder">
         <location
             file="src/main/res/drawable/komikku.png"/>
-    </issue>
-
-    <issue
-        id="IconMissingDensityFolder"
-        message="Missing density variation folders in `src/main/res`: drawable-mdpi, drawable-xhdpi, drawable-xxhdpi">
-        <location
-            file="src/main/res"/>
     </issue>
 
     <issue
@@ -282,17 +208,6 @@
             file="src/main/res/layout/edit_manga_dialog.xml"
             line="174"
             column="10"/>
-    </issue>
-
-    <issue
-        id="ViewConstructor"
-        message="Custom view `Pager` is missing constructor used by tools: `(Context)` or `(Context,AttributeSet)` or `(Context,AttributeSet,int)`"
-        errorLine1="open class Pager("
-        errorLine2="           ~~~~~">
-        <location
-            file="src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/Pager.kt"
-            line="16"
-            column="12"/>
     </issue>
 
     <issue
@@ -329,50 +244,6 @@
     </issue>
 
     <issue
-        id="ClickableViewAccessibility"
-        message="Custom view `Pager` overrides `onTouchEvent` but not `performClick`"
-        errorLine1="    override fun onTouchEvent(ev: MotionEvent): Boolean {"
-        errorLine2="                 ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/pager/Pager.kt"
-            line="97"
-            column="18"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="Custom view `ReaderButton` overrides `onTouchEvent` but not `performClick`"
-        errorLine1="    override fun onTouchEvent(event: MotionEvent): Boolean {"
-        errorLine2="                 ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/ReaderButton.kt"
-            line="22"
-            column="18"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="Custom view `WebtoonRecyclerView` overrides `onTouchEvent` but not `performClick`"
-        errorLine1="    override fun onTouchEvent(e: MotionEvent): Boolean {"
-        errorLine2="                 ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/webtoon/WebtoonRecyclerView.kt"
-            line="72"
-            column="18"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="Custom view `WebtoonSubsamplingImageView` overrides `onTouchEvent` but not `performClick`"
-        errorLine1="    override fun onTouchEvent(event: MotionEvent): Boolean {"
-        errorLine2="                 ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/eu/kanade/tachiyomi/ui/reader/viewer/webtoon/WebtoonSubsamplingImageView.kt"
-            line="17"
-            column="18"/>
-    </issue>
-
-    <issue
         id="ContentDescription"
         message="Missing `contentDescription` attribute on image"
         errorLine1="        &lt;ImageView"
@@ -395,58 +266,14 @@
     </issue>
 
     <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="        &lt;ImageView"
-        errorLine2="         ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/edit_merged_settings_item.xml"
-            line="18"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="ContentDescription"
-        message="Missing `contentDescription` attribute on image"
-        errorLine1="        &lt;ImageView"
-        errorLine2="         ~~~~~~~~~">
-        <location
-            file="src/main/res/layout/edit_merged_settings_item.xml"
-            line="32"
-            column="10"/>
-    </issue>
-
-    <issue
         id="SetTextI18n"
         message="Do not concatenate text displayed with `setText`. Use resource string with placeholders."
-        errorLine1="        binding.downloadProgressText.text = &quot;${download.downloadedImages}/${pages.size}&quot;"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="        binding.downloadProgressText.text = &quot;${download.progress}%&quot;"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/eu/kanade/tachiyomi/ui/download/DownloadHolder.kt"
-            line="76"
+            line="64"
             column="45"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
-        errorLine1="            binding.favorites.text = (meta.favorites ?: 0).toString()"
-        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/exh/ui/metadata/adapters/EHentaiDescriptionAdapter.kt"
-            line="76"
-            column="38"/>
-    </issue>
-
-    <issue
-        id="SetTextI18n"
-        message="Number formatting does not take into account locale settings. Consider using `String.format` instead."
-        errorLine1="                binding.favorites.text = it.toString()"
-        errorLine2="                                         ~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/exh/ui/metadata/adapters/NHentaiDescriptionAdapter.kt"
-            line="66"
-            column="42"/>
     </issue>
 
 </issues>
