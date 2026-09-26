@@ -166,16 +166,6 @@
             column="17"/>
     </issue>
 
-    <issue
-        id="ChromeOsAbiSupport"
-        message="Missing x86_64 ABI support for ChromeOS"
-        errorLine1="                *(project.findProperty(&quot;abis&quot;) as String?)"
-        errorLine2="                 ^">
-        <location
-            file="build.gradle.kts"
-            line="118"
-            column="18"/>
-    </issue>
 
     <issue
         id="TrustAllX509TrustManager"

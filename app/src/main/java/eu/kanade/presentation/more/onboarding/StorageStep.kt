@@ -78,10 +78,7 @@ internal class StorageStep : OnboardingStep {
             DisposableEffect(lifecycleOwner.lifecycle) {
                 val observer = object : DefaultLifecycleObserver {
                     override fun onResume(owner: LifecycleOwner) {
-                        if (allFilesAccessRequested &&
-                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
-                            Environment.isExternalStorageManager()
-                        ) {
+                        if (allFilesAccessRequested && Environment.isExternalStorageManager()) {
                             allFilesAccessRequested = false
                             useDefaultStorageLocation(context)
                         }
@@ -124,12 +121,10 @@ internal class StorageStep : OnboardingStep {
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            if (Environment.isExternalStorageManager()) {
-                                useDefaultStorageLocation(context)
-                            } else {
-                                requestAllFilesAccess(context)
-                            }
+                        if (Environment.isExternalStorageManager()) {
+                            useDefaultStorageLocation(context)
+                        } else {
+                            requestAllFilesAccess(context)
                         }
                     },
                 ) {
