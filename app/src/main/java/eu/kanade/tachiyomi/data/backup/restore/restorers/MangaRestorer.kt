@@ -382,12 +382,18 @@ class MangaRestorer(
     }
 
     private suspend fun restoreHistory(manga: Manga, backupHistory: List<BackupHistory>) {
-        val toUpdate = backupHistory.mapNotNull { history ->
+        // One entry per chapter: a backup can carry one per copy of a duplicated chapter, and
+        // comparing each with the stored row added its reading time once per copy.
+        val toUpdate = backupHistory.groupBy { it.url }.mapNotNull { (url, copies) ->
+            val history = copies.first()
             // KMK -->
-            val dbHistory = handler.awaitList { historyQueries.getHistoryByChapterUrl(manga.id, history.url) }
+            val dbHistory = handler.awaitList { historyQueries.getHistoryByChapterUrl(manga.id, url) }
                 .firstOrNull()
             // KMK <--
-            val item = history.getHistoryImpl()
+            val item = history.getHistoryImpl().copy(
+                readAt = Date(copies.maxOf { it.lastRead }),
+                readDuration = copies.sumOf { it.readDuration },
+            )
 
             if (dbHistory == null) {
                 // KMK -->
@@ -407,9 +413,8 @@ class MangaRestorer(
             item.copy(
                 id = dbHistory._id,
                 chapterId = dbHistory.chapter_id,
-                readAt = max(item.readAt?.time ?: 0L, dbHistory.last_read?.time ?: 0L)
-                    .takeIf { it > 0L }
-                    ?.let { Date(it) },
+                // A removed entry keeps its 0 rather than becoming null.
+                readAt = Date(max(item.readAt?.time ?: 0L, dbHistory.last_read?.time ?: 0L)),
                 readDuration = max(item.readDuration, dbHistory.time_read) - dbHistory.time_read,
             )
         }
