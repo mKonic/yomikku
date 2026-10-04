@@ -38,14 +38,6 @@ internal class DownloadNotifier(private val context: Context) {
         }
     }
 
-    private val errorNotificationBuilder by lazy {
-        context.notificationBuilder(Notifications.CHANNEL_DOWNLOADER_ERROR) {
-            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
-            setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.komikku))
-            setAutoCancel(false)
-        }
-    }
-
     /**
      * Status of download. Used for correct notification icon.
      */
@@ -181,12 +173,18 @@ internal class DownloadNotifier(private val context: Context) {
      * Only works on Android 8+.
      */
     fun onWarning(reason: String, timeout: Long? = null, contentIntent: PendingIntent? = null, mangaId: Long? = null) {
-        with(errorNotificationBuilder) {
+        context.notify(
+            Notifications.ID_DOWNLOAD_CHAPTER_ERROR,
+            Notifications.CHANNEL_DOWNLOADER_ERROR,
+        ) {
+            // KMK -->
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
+            setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.komikku))
+            // KMK <--
             setContentTitle(context.stringResource(MR.strings.download_notifier_downloader_title))
             setStyle(NotificationCompat.BigTextStyle().bigText(reason))
             setSmallIcon(R.drawable.ic_warning_white_24dp)
             setAutoCancel(true)
-            clearActions()
             setContentIntent(NotificationHandler.openDownloadManagerPendingActivity(context))
             if (mangaId != null) {
                 addAction(
@@ -195,11 +193,8 @@ internal class DownloadNotifier(private val context: Context) {
                     NotificationReceiver.openEntryPendingActivity(context, mangaId),
                 )
             }
-            setProgress(0, 0, false)
             timeout?.let { setTimeoutAfter(it) }
             contentIntent?.let { setContentIntent(it) }
-
-            show(Notifications.ID_DOWNLOAD_CHAPTER_ERROR)
         }
 
         // Reset download information
@@ -216,13 +211,19 @@ internal class DownloadNotifier(private val context: Context) {
      */
     fun onError(error: String? = null, chapter: String? = null, mangaTitle: String? = null, mangaId: Long? = null) {
         // Create notification
-        with(errorNotificationBuilder) {
+        context.notify(
+            Notifications.ID_DOWNLOAD_CHAPTER_ERROR,
+            Notifications.CHANNEL_DOWNLOADER_ERROR,
+        ) {
+            // KMK -->
+            setColor(ContextCompat.getColor(context, R.color.ic_launcher))
+            setLargeIcon(BitmapFactory.decodeResource(context.resources, R.drawable.komikku))
+            // KMK <--
             setContentTitle(
                 mangaTitle?.plus(": $chapter") ?: context.stringResource(MR.strings.download_notifier_downloader_title),
             )
             setContentText(error ?: context.stringResource(MR.strings.download_notifier_unknown_error))
             setSmallIcon(R.drawable.ic_warning_white_24dp)
-            clearActions()
             setContentIntent(NotificationHandler.openDownloadManagerPendingActivity(context))
             if (mangaId != null) {
                 addAction(
@@ -231,9 +232,6 @@ internal class DownloadNotifier(private val context: Context) {
                     NotificationReceiver.openEntryPendingActivity(context, mangaId),
                 )
             }
-            setProgress(0, 0, false)
-
-            show(Notifications.ID_DOWNLOAD_CHAPTER_ERROR)
         }
 
         // Reset download information
