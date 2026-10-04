@@ -19,7 +19,10 @@ fun List<Chapter>.removeDuplicates(currentChapter: Chapter): List<Chapter> {
     return fold(mutableListOf()) { acc, chapter ->
         val last = acc.lastOrNull()
         when {
-            last == null || last.chapterNumber != chapter.chapterNumber -> acc.add(chapter)
+            // KMK: a chapter with no recognised number (merged one-shots are all -1) is its own
+            // entry, never another's duplicate.
+            last == null || last.chapterNumber != chapter.chapterNumber || !chapter.isRecognizedNumber ->
+                acc.add(chapter)
             chapter.priority() > last.priority() -> acc[acc.lastIndex] = chapter
             else -> Unit
         }

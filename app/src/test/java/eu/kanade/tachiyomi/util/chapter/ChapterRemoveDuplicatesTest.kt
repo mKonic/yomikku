@@ -20,6 +20,17 @@ class ChapterRemoveDuplicatesTest {
     }
 
     @Test
+    fun `chapters with no recognised number are never duplicates`() {
+        val oneShots = listOf(
+            chapter(id = 1, number = -1.0),
+            chapter(id = 2, number = -1.0),
+            chapter(id = 3, number = -1.0),
+        )
+
+        oneShots.removeDuplicates(currentChapter = oneShots[1]).map { it.id } shouldBe listOf(1L, 2L, 3L)
+    }
+
+    @Test
     fun `adjacent duplicates keep the chapter being read`() {
         val chapters = listOf(
             chapter(id = 1, number = 1.0, scanlator = "A"),
