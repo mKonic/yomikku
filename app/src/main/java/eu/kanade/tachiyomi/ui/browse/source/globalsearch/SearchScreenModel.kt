@@ -13,8 +13,8 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.collections.immutable.toPersistentMap
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
@@ -35,7 +35,6 @@ import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.util.concurrent.Executors
 
 abstract class SearchScreenModel(
     initialState: State = State(),
@@ -47,7 +46,7 @@ abstract class SearchScreenModel(
     private val preferences: SourcePreferences = Injekt.get(),
 ) : StateScreenModel<SearchScreenModel.State>(initialState) {
 
-    private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
+    private val coroutineDispatcher = Dispatchers.IO.limitedParallelism(5)
     private var searchJob: Job? = null
 
     private val enabledLanguages = sourcePreferences.enabledLanguages().get()
@@ -218,7 +217,11 @@ abstract class SearchScreenModel(
     }
 
     private fun updateItem(source: Source, result: SearchItemResult) {
-        updateItems(state.value.items + (source to result))
+        // In the update: sources finish in parallel, and a result added to a stale map is lost.
+        mutableState.update {
+            val items = it.items + (source to result)
+            it.copy(items = items.toSortedMap(sortComparator(items)).toPersistentMap())
+        }
     }
 
     fun setMigrateDialog(currentId: Long, target: Manga) {
@@ -250,14 +253,6 @@ abstract class SearchScreenModel(
     sealed interface Dialog {
         data class Migrate(val target: Manga, val current: Manga) : Dialog
     }
-
-    // KMK --> its threads are not daemons, so every search screen that came and went kept five of them, and their
-    // stacks, for the rest of the process. FeedScreenModel and SourceFeedScreenModel already close theirs.
-    override fun onDispose() {
-        super.onDispose()
-        coroutineDispatcher.close()
-    }
-    // KMK <--
 }
 
 enum class SourceFilter {

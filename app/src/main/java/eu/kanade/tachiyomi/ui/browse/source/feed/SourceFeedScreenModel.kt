@@ -25,7 +25,7 @@ import exh.util.nullIfBlank
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.collectLatest
@@ -60,7 +60,6 @@ import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import xyz.nulldev.ts.api.http.serializer.FilterSerializer
-import java.util.concurrent.Executors
 import tachiyomi.domain.manga.model.Manga as DomainManga
 
 open class SourceFeedScreenModel(
@@ -86,7 +85,7 @@ open class SourceFeedScreenModel(
 
     var source = sourceManager.peekOrStub(sourceId)
 
-    private val coroutineDispatcher = Executors.newFixedThreadPool(5).asCoroutineDispatcher()
+    private val coroutineDispatcher = Dispatchers.IO.limitedParallelism(5)
 
     val startExpanded by uiPreferences.expandFilters().asState(screenModelScope)
 
@@ -399,11 +398,6 @@ open class SourceFeedScreenModel(
             val feedItem: SourceFeedUI.SourceSavedSearch,
         ) : Dialog()
         // KMK <--
-    }
-
-    override fun onDispose() {
-        super.onDispose()
-        coroutineDispatcher.close()
     }
 }
 
