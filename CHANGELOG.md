@@ -14,6 +14,17 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 ### Added
 - Sponsor button on the More screen, linking to Ko-fi.
 
+### Fixed
+- "Skip duplicate chapters" merged every chapter without a number into one.
+- Restoring a backup counted reading time more than once for a chapter listed twice.
+- Restoring a backup over an existing track paired the backup's remote entry with the stored one's title and link.
+- Global search could drop a source's results when several finished at once.
+- Entries tracked with a tracker that sets no remote id were all marked as duplicates of each other.
+- Tapping around the buttons in tracker search changed the selected result.
+- The chapter header showed a missing chapter count with missing chapter indicators hidden.
+- Download error notifications kept the first one's time and the previous warning's text.
+- A novel's categories and the updates list could come back out of order.
+
 ## [v1.0.1] - 2026-09-24
 ### Fixed
 - Syncing no longer restores the whole library again and again when nothing changed. Novels were matched by title and author as well as source and address, a synced novel's original title was never saved, and a chapter whose state matched but whose version was newer was skipped, so each device kept finding the other's library changed. A sync also restored every kind of data whatever the sync settings said.
