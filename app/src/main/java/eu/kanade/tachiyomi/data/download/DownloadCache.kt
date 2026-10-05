@@ -92,6 +92,8 @@ class DownloadCache(
     /**
      * The last time the cache was refreshed.
      */
+    // KMK: written by the disk read and renewals on IO threads, read by callers on any thread.
+    @Volatile
     private var lastRenew = 0L
     private var renewalJob: Job? = null
 

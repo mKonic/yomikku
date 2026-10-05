@@ -127,12 +127,17 @@ class DownloadCacheTest {
 
     @Test
     fun `invalidating still scans, even against a disk cache that just loaded`() = runBlocking<Unit> {
-        seedDiskCache()
-
-        val cache = cache()
-        cache.invalidateCache()
-
-        eventually { scans.get() > 0 } shouldBe true
+        // A race, so many tries: the disk read could land between the reset and the renewal's
+        // check and drop the forced scan, about 1 in 75 runs before the fix.
+        var misses = 0
+        repeat(150) {
+            diskCacheFile.writeBytes(ByteArray(0))
+            scans.set(0)
+            val cache = cache()
+            cache.invalidateCache()
+            if (!eventually(3.seconds) { scans.get() > 0 }) misses++
+        }
+        misses shouldBe 0
     }
 
     @Test
