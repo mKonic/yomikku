@@ -10,6 +10,7 @@ import eu.kanade.tachiyomi.data.backup.models.BackupFeed
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupPreference
 import eu.kanade.tachiyomi.data.backup.models.BackupSavedSearch
+import eu.kanade.tachiyomi.data.backup.models.BackupSource
 import eu.kanade.tachiyomi.data.backup.models.BackupSourcePreferences
 import eu.kanade.tachiyomi.data.backup.restore.restorers.CategoriesRestorer
 import eu.kanade.tachiyomi.data.backup.restore.restorers.ExtensionStoreRestorer
@@ -29,6 +30,8 @@ import logcat.LogPriority
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.DatabaseHandler
+import tachiyomi.domain.source.repository.StubSourceRepository
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import uy.kohesive.injekt.Injekt
@@ -54,6 +57,8 @@ class BackupRestorer(
     private val feedRestorer: FeedRestorer = FeedRestorer(),
     private val handler: DatabaseHandler = Injekt.get(),
     // KMK <--
+    private val sourceManager: SourceManager = Injekt.get(),
+    private val stubSourceRepository: StubSourceRepository = Injekt.get(),
 ) {
 
     private var restoreAmount = 0
@@ -104,6 +109,7 @@ class BackupRestorer(
         sourceMapping = backupMaps.associate { it.sourceId to it.name }
 
         if (options.libraryEntries) {
+            restoreSourceNames(backupMaps)
             restoreAmount += mangaCount
         }
         if (options.categories) {
@@ -153,6 +159,16 @@ class BackupRestorer(
 
             // TODO: optionally trigger online library + tracker update
         }
+    }
+
+    // Without a stub, a source that isn't installed has no name for the next backup to write
+    private suspend fun restoreSourceNames(backupSources: List<BackupSource>) {
+        backupSources
+            .filter { it.name.isNotBlank() }
+            .filter {
+                sourceManager.get(it.sourceId) == null && stubSourceRepository.getStubSource(it.sourceId) == null
+            }
+            .forEach { stubSourceRepository.upsertStubSource(it.sourceId, lang = "", name = it.name) }
     }
 
     context(scope: CoroutineScope)

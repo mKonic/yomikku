@@ -33,12 +33,12 @@ class BackupFileValidator(
         val sources = backup.backupSources.associate { it.sourceId to it.name }
         val missingSources = sources
             .filter { sourceManager.get(it.key) == null }
-            .values.map {
-                val id = it.toLongOrNull()
-                if (id == null) {
-                    it
-                } else {
+            .map { (id, name) ->
+                // Some backups store the id as the name, and sources without a stub were backed up with no name
+                if (name.isBlank() || name.toLongOrNull() != null) {
                     sourceManager.getOrStub(id).toString()
+                } else {
+                    name
                 }
             }
             .distinct()
