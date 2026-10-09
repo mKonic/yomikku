@@ -103,7 +103,8 @@ class MangaCoverFetcher(
             )
             // KMK <--
             Type.URI -> fileUriLoader(url)
-            Type.URL -> httpLoader()
+            // Requests for the same cover at different sizes or through Manga and MangaCover would each download it
+            Type.URL -> concurrentRequests.apply(diskCacheKey) { httpLoader() }
             null -> error("Invalid image")
         }
     }
@@ -426,5 +427,7 @@ class MangaCoverFetcher(
         private val CACHE_CONTROL_NO_NETWORK_NO_CACHE = CacheControl.Builder().noCache().onlyIfCached().build()
 
         private const val HTTP_NOT_MODIFIED = 304
+
+        private val concurrentRequests = DeDupeConcurrentRequests<FetchResult>()
     }
 }
