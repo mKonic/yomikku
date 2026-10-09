@@ -50,9 +50,16 @@ class ArchiveInputStream(
     }
 
     override fun read(b: ByteArray, off: Int, len: Int): Int {
+        if (off < 0 || len < 0 || len > b.size - off) throw IndexOutOfBoundsException()
+        if (len == 0) return 0
+        // KMK --> readData fills from the position to the limit and moves the position; clearing the buffer
+        // first reset the window to the whole array, so a read asked for fewer bytes than the array holds
+        // returned more than it asked for, written from index 0 instead of off.
         val buffer = ByteBuffer.wrap(b, off, len)
-        read(buffer)
-        return if (buffer.hasRemaining()) buffer.remaining() else -1
+        Archive.readData(archive, buffer)
+        val read = buffer.position() - off
+        // KMK <--
+        return if (read > 0) read else -1
     }
 
     private fun read(buffer: ByteBuffer) {
