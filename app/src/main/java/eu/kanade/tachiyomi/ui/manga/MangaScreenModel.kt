@@ -871,12 +871,9 @@ class MangaScreenModel(
         manga: Manga,
     ): List<ChapterList.Item> {
         val isLocal = manga.isLocal()
+        val queuedDownloads = if (isLocal) emptyMap() else downloadManager.getQueuedDownloadsByChapterId()
         return map { chapter ->
-            val activeDownload = if (isLocal) {
-                null
-            } else {
-                downloadManager.getQueuedDownloadOrNull(chapter.id)
-            }
+            val activeDownload = queuedDownloads[chapter.id]
 
             val downloaded = if (manga.isLocal()) {
                 true

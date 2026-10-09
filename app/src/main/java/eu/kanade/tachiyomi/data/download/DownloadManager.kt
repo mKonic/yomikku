@@ -109,6 +109,13 @@ class DownloadManager(
         return queueState.value.find { it.chapter.id == chapterId }
     }
 
+    /**
+     * Returns the queued downloads by chapter id, for looking up many chapters at once.
+     */
+    fun getQueuedDownloadsByChapterId(): Map<Long, Download> {
+        return queueState.value.associateBy { it.chapter.id }
+    }
+
     fun startDownloadNow(chapterId: Long) {
         val existingDownload = getQueuedDownloadOrNull(chapterId)
         // If not in queue try to start a new download
