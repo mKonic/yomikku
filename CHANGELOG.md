@@ -10,6 +10,20 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+## [v1.2.0] - 2026-10-09
+### Improved
+- Novels showing the same cover share one load instead of each downloading and decoding it.
+- Chapter and update lists look up the download queue once per list.
+
+### Fixed
+- Content read from local archives could fail to load when it was read in chunks.
+- Restoring a backup lost the names of sources that are not installed.
+- A damaged app image could crash every launch on Android versions before 17.
+- Range selection in the library crashed when the last selected novel was in another category.
+- A restored screen could be drawn together with its original during navigation.
+- The tracking start date taken from reading history was shifted by the timezone.
+- Settings search did not match preference group headings.
+
 ## [v1.1.0] - 2026-10-05
 ### Added
 - Sponsor button on the More screen, linking to Ko-fi.
