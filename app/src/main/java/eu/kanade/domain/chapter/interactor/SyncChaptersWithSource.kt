@@ -104,17 +104,13 @@ class SyncChaptersWithSource(
         // to a higher value than newer chapters
         var maxSeenUploadDate = 0L
 
-        for (sourceChapter in sourceChapters) {
-            var chapter = sourceChapter
+        // Recognize chapter numbers, from the whole list since names alone don't always tell.
+        val recognizedChapters = sourceChapters
+            .zip(ChapterRecognition.parseChapterNumbers(manga.title, sourceChapters)) { chapter, numbering ->
+                chapter.copy(chapterNumber = numbering.chapter?.let(ChapterRecognition::toDouble) ?: -1.0)
+            }
 
-            // Recognize chapter number for the chapter.
-            val chapterNumber = ChapterRecognition.parseChapterNumber(
-                manga.title,
-                chapter.name,
-                chapter.chapterNumber,
-            )
-            chapter = chapter.copy(chapterNumber = chapterNumber)
-
+        for (chapter in recognizedChapters) {
             val dbChapter = dbChapters.find { it.url == chapter.url }
 
             if (dbChapter == null) {
@@ -122,7 +118,7 @@ class SyncChaptersWithSource(
                     val altDateUpload = if (maxSeenUploadDate == 0L) nowMillis else maxSeenUploadDate
                     chapter.copy(dateUpload = altDateUpload)
                 } else {
-                    maxSeenUploadDate = max(maxSeenUploadDate, sourceChapter.dateUpload)
+                    maxSeenUploadDate = max(maxSeenUploadDate, chapter.dateUpload)
                     chapter
                 }
                 newChapters.add(toAddChapter)
