@@ -352,8 +352,18 @@ class ReaderViewModel @JvmOverloads constructor(
         val toDelete = chapterList.getOrNull(position - removeAfterReadSlots)?.takeIf { it.read || it.id == chapter.id }
             ?: return
         val manga = manga ?: return
+        // The duplicates marked read along with it, from the list loaded before they were (mihonapp/mihon#3030)
+        val markDuplicateAsRead = libraryPreferences.markDuplicateReadChapterAsRead().get()
+            .contains(LibraryPreferences.MARK_DUPLICATE_CHAPTER_READ_EXISTING)
+        val duplicates = if (markDuplicateAsRead && toDelete.isRecognizedNumber) {
+            unfilteredChapterList
+                .filter { it.id != toDelete.id && it.isRecognizedNumber && it.chapterNumber == toDelete.chapterNumber }
+                .map { it.copy(read = true) }
+        } else {
+            emptyList()
+        }
         viewModelScope.launchNonCancellable {
-            downloadManager.enqueueChaptersToDelete(listOf(toDelete), manga)
+            downloadManager.enqueueChaptersToDelete(listOf(toDelete) + duplicates, manga)
         }
     }
 
