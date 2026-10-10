@@ -3,7 +3,6 @@ package eu.kanade.tachiyomi.data.download
 import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
-import androidx.core.util.AtomicFile
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.source.Source
 import kotlinx.coroutines.CancellationException
@@ -53,6 +52,7 @@ import tachiyomi.domain.storage.service.StorageManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.File
+import java.io.IOException
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
@@ -110,8 +110,8 @@ class DownloadCache(
         .debounce(1000L) // Don't notify if it finishes quickly enough
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
-    private val diskCacheFile: AtomicFile
-        get() = AtomicFile(File(context.cacheDir, "dl_index_cache_v3"))
+    private val diskCacheFile: File
+        get() = File(context.cacheDir, "dl_index_cache_v3")
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
@@ -121,8 +121,8 @@ class DownloadCache(
         initJob = scope.launch {
             rootDownloadsDirMutex.withLock {
                 try {
-                    if (diskCacheFile.baseFile.exists()) {
-                        val diskCache = ProtoBuf.decodeFromByteArray<RootDirectory>(diskCacheFile.readFully())
+                    if (diskCacheFile.exists()) {
+                        val diskCache = ProtoBuf.decodeFromByteArray<RootDirectory>(diskCacheFile.readBytes())
                         rootDownloadsDir = diskCache
                         lastRenew = System.currentTimeMillis()
                     }
@@ -522,18 +522,13 @@ class DownloadCache(
             }
             ensureActive()
             // Written to the side and renamed into place, so a process killed mid-write leaves the old index
-            val file = diskCacheFile
-            val out = try {
-                file.startWrite()
-            } catch (e: Throwable) {
-                logcat(LogPriority.ERROR, e) { "Failed to write disk cache file" }
-                return@launchIO
-            }
+            val target = diskCacheFile
+            val tmp = File(target.path + ".tmp")
             try {
-                out.write(bytes)
-                file.finishWrite(out)
+                tmp.writeBytes(bytes)
+                if (!tmp.renameTo(target)) throw IOException("Failed to move $tmp to $target")
             } catch (e: Throwable) {
-                file.failWrite(out)
+                tmp.delete()
                 logcat(
                     priority = LogPriority.ERROR,
                     throwable = e,
