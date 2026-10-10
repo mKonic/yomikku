@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.data.download
 import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
+import androidx.core.util.AtomicFile
 import com.hippo.unifile.UniFile
 import eu.kanade.tachiyomi.source.Source
 import kotlinx.coroutines.CancellationException
@@ -109,8 +110,8 @@ class DownloadCache(
         .debounce(1000L) // Don't notify if it finishes quickly enough
         .stateIn(scope, SharingStarted.WhileSubscribed(), false)
 
-    private val diskCacheFile: File
-        get() = File(context.cacheDir, "dl_index_cache_v3")
+    private val diskCacheFile: AtomicFile
+        get() = AtomicFile(File(context.cacheDir, "dl_index_cache_v3"))
 
     private val rootDownloadsDirMutex = Mutex()
     private var rootDownloadsDir = RootDirectory(storageManager.getDownloadsDirectory())
@@ -120,10 +121,8 @@ class DownloadCache(
         initJob = scope.launch {
             rootDownloadsDirMutex.withLock {
                 try {
-                    if (diskCacheFile.exists()) {
-                        val diskCache = diskCacheFile.inputStream().use {
-                            ProtoBuf.decodeFromByteArray<RootDirectory>(it.readBytes())
-                        }
+                    if (diskCacheFile.baseFile.exists()) {
+                        val diskCache = ProtoBuf.decodeFromByteArray<RootDirectory>(diskCacheFile.readFully())
                         rootDownloadsDir = diskCache
                         lastRenew = System.currentTimeMillis()
                     }
@@ -518,12 +517,23 @@ class DownloadCache(
         updateDiskCacheJob?.cancel()
         updateDiskCacheJob = scope.launchIO {
             delay(1000)
+            val bytes = rootDownloadsDirMutex.withLock {
+                ProtoBuf.encodeToByteArray(rootDownloadsDir)
+            }
             ensureActive()
-            val bytes = ProtoBuf.encodeToByteArray(rootDownloadsDir)
-            ensureActive()
-            try {
-                diskCacheFile.writeBytes(bytes)
+            // Written to the side and renamed into place, so a process killed mid-write leaves the old index
+            val file = diskCacheFile
+            val out = try {
+                file.startWrite()
             } catch (e: Throwable) {
+                logcat(LogPriority.ERROR, e) { "Failed to write disk cache file" }
+                return@launchIO
+            }
+            try {
+                out.write(bytes)
+                file.finishWrite(out)
+            } catch (e: Throwable) {
+                file.failWrite(out)
                 logcat(
                     priority = LogPriority.ERROR,
                     throwable = e,
