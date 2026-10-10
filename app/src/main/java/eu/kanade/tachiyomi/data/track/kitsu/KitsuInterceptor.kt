@@ -15,28 +15,33 @@ class KitsuInterceptor(private val kitsu: Kitsu) : Interceptor {
     /**
      * OAuth object used for authenticated requests.
      */
+    @Volatile
     private var oauth: KitsuOAuth? = kitsu.restoreToken()
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
-        val currAuth = oauth ?: throw Exception("Not authenticated with Kitsu")
+        var currAuth = oauth ?: throw Exception("Not authenticated with Kitsu")
 
-        val refreshToken = currAuth.refreshToken!!
-
-        // Refresh access token if expired.
+        // Refresh access token if expired, once for all the requests that found it expired.
         if (currAuth.isExpired()) {
-            val response = chain.proceed(KitsuApi.refreshTokenRequest(refreshToken))
-            if (response.isSuccessful) {
-                newAuth(json.decodeFromString(response.body.string()))
-            } else {
-                response.close()
+            currAuth = synchronized(this) {
+                val latest = oauth ?: throw Exception("Not authenticated with Kitsu")
+                if (!latest.isExpired()) return@synchronized latest
+
+                val response = chain.proceed(KitsuApi.refreshTokenRequest(latest.refreshToken!!))
+                if (response.isSuccessful) {
+                    json.decodeFromString<KitsuOAuth>(response.body.string()).also(::newAuth)
+                } else {
+                    response.close()
+                    latest
+                }
             }
         }
 
         // Add the authorization header to the original request.
         val authRequest = originalRequest.newBuilder()
-            .addHeader("Authorization", "Bearer ${oauth!!.accessToken}")
+            .addHeader("Authorization", "Bearer ${currAuth.accessToken}")
             .header("User-Agent", "Yomikku v${BuildConfig.VERSION_NAME} (${BuildConfig.APPLICATION_ID})")
             .header("Accept", "application/vnd.api+json")
             .header("Content-Type", "application/vnd.api+json")
