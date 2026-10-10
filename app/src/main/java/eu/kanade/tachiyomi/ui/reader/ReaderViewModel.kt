@@ -577,7 +577,7 @@ class ReaderViewModel @JvmOverloads constructor(
                 downloadManager.downloadChapters(manga, listOf(chapter))
                 downloadManager.startDownloads()
             }
-            ChapterDownloadAction.START_NOW -> downloadManager.startDownloadNow(chapter.id)
+            ChapterDownloadAction.START_NOW -> viewModelScope.launch { downloadManager.startDownloadNow(chapter.id) }
             ChapterDownloadAction.CANCEL -> {
                 val download = downloadManager.getQueuedDownloadOrNull(chapter.id) ?: return
                 downloadManager.cancelQueuedDownloads(listOf(download))
