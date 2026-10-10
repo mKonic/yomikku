@@ -390,6 +390,15 @@ class Downloader internal constructor(
             download.chapter.url,
         ) + "." + DownloadProvider.CHAPTER_EXTENSION
 
+        // Being stopped after the download is moved into place but before it's indexed leaves a finished download
+        // on disk that is still queued, and downloading it again would save a second copy next to it
+        if (mangaDir.findFile(chapterFileName) != null) {
+            mangaDir.findFile(chapterFileName + TMP_DIR_SUFFIX)?.delete()
+            cache.addChapter(chapterFileName, mangaDir, download.manga)
+            download.status = Download.State.DOWNLOADED
+            return
+        }
+
         try {
             download.status = Download.State.DOWNLOADING
             download.progress = 0
