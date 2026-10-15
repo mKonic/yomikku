@@ -14,6 +14,12 @@ interface ChapterRepository {
 
     suspend fun removeChaptersWithIds(chapterIds: List<Long>)
 
+    suspend fun updateFromRemote(
+        removedIds: List<Long>,
+        added: List<Chapter>,
+        updated: List<ChapterUpdate>,
+    ): List<Chapter>
+
     suspend fun getChapterByMangaId(mangaId: Long, applyFilter: Boolean = false): List<Chapter>
 
     suspend fun getScanlatorsByMangaId(mangaId: Long): List<String>

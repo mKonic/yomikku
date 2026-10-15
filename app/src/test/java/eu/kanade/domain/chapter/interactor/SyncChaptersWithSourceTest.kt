@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import tachiyomi.domain.chapter.interactor.GetChaptersByMangaId
 import tachiyomi.domain.chapter.interactor.ShouldUpdateDbChapter
-import tachiyomi.domain.chapter.interactor.UpdateChapter
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.chapter.repository.ChapterRepository
 import tachiyomi.domain.library.service.LibraryPreferences
@@ -56,6 +55,7 @@ class SyncChaptersWithSourceTest {
     fun setUp() {
         downloadManager = mockk(relaxed = true)
         chapterRepository = mockk(relaxed = true)
+        coEvery { chapterRepository.updateFromRemote(any(), any(), any()) } returns emptyList()
         getChaptersByMangaId = mockk()
 
         val libraryPreferences = mockk<LibraryPreferences>()
@@ -76,7 +76,6 @@ class SyncChaptersWithSourceTest {
             chapterRepository = chapterRepository,
             shouldUpdateDbChapter = ShouldUpdateDbChapter(),
             updateManga = mockk<UpdateManga>(relaxed = true),
-            updateChapter = mockk<UpdateChapter>(relaxed = true),
             getChaptersByMangaId = getChaptersByMangaId,
             getExcludedScanlators = getExcludedScanlators,
             libraryPreferences = libraryPreferences,
@@ -98,7 +97,7 @@ class SyncChaptersWithSourceTest {
 
         syncChaptersWithSource.await(sourceChapters, manga, source)
 
-        coVerify(exactly = 0) { chapterRepository.removeChaptersWithIds(any()) }
+        coVerify(exactly = 0) { chapterRepository.updateFromRemote(any(), any(), any()) }
         verify(exactly = 0) { downloadManager.cancelQueuedDownloads(any()) }
     }
 
@@ -111,7 +110,7 @@ class SyncChaptersWithSourceTest {
 
         coVerifyOrder {
             downloadManager.cancelQueuedDownloads(listOf(download))
-            chapterRepository.removeChaptersWithIds(listOf(removedChapter.id))
+            chapterRepository.updateFromRemote(listOf(removedChapter.id), emptyList(), emptyList())
         }
     }
 
@@ -119,7 +118,7 @@ class SyncChaptersWithSourceTest {
     fun `removes a missing chapter that is neither downloaded nor queued`() = runTest {
         syncChaptersWithSource.await(sourceChapters, manga, source)
 
-        coVerify { chapterRepository.removeChaptersWithIds(listOf(removedChapter.id)) }
+        coVerify { chapterRepository.updateFromRemote(listOf(removedChapter.id), emptyList(), emptyList()) }
         verify(exactly = 0) { downloadManager.cancelQueuedDownloads(any()) }
     }
 
@@ -144,7 +143,25 @@ class SyncChaptersWithSourceTest {
 
         coVerifyOrder {
             downloadManager.cancelQueuedDownloads(listOf(queuedDownload))
-            chapterRepository.removeChaptersWithIds(listOf(queuedChapter.id))
+            chapterRepository.updateFromRemote(listOf(queuedChapter.id), emptyList(), emptyList())
+        }
+    }
+
+    @Test
+    fun `applies additions removals and updates in one repository call`() = runTest {
+        val chapters = listOf(
+            sourceChapter(presentChapter.url, "Chapter 1 (updated)", 1f),
+            sourceChapter("/chapter-3", "Chapter 3", 3f),
+        )
+
+        syncChaptersWithSource.await(chapters, manga, source)
+
+        coVerify(exactly = 1) {
+            chapterRepository.updateFromRemote(
+                listOf(removedChapter.id),
+                match { it.single().url == "/chapter-3" },
+                match { it.single().id == presentChapter.id && it.single().name == "Chapter 1 (updated)" },
+            )
         }
     }
 

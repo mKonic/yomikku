@@ -84,6 +84,66 @@ class ChapterRepositoryImpl(
         }
     }
 
+    override suspend fun updateFromRemote(
+        removedIds: List<Long>,
+        added: List<Chapter>,
+        updated: List<ChapterUpdate>,
+    ): List<Chapter> {
+        return handler.await(inTransaction = true) {
+            if (removedIds.isNotEmpty()) {
+                chaptersQueries.removeChaptersWithIds(removedIds)
+            }
+
+            val existing = added.map { it.mangaId }.distinct().flatMap { mangaId ->
+                chaptersQueries.getChaptersByMangaId(
+                    mangaId,
+                    false.toLong(),
+                    Manga.CHAPTER_SHOW_NOT_BOOKMARKED,
+                    Manga.CHAPTER_SHOW_BOOKMARKED,
+                    ChapterMapper::mapChapter,
+                ).executeAsList().map { mangaId to it.url }
+            }.toMutableSet()
+            val stored = added.filter { existing.add(it.mangaId to it.url) }.map { chapter ->
+                chaptersQueries.insert(
+                    chapter.mangaId,
+                    chapter.url,
+                    chapter.name,
+                    chapter.scanlator,
+                    chapter.read,
+                    chapter.bookmark,
+                    chapter.lastPageRead,
+                    chapter.chapterNumber,
+                    chapter.sourceOrder,
+                    chapter.dateFetch,
+                    chapter.dateUpload,
+                    chapter.version,
+                    chapter.memo,
+                )
+                chapter.copy(id = chaptersQueries.selectLastInsertedRowId().executeAsOne())
+            }
+            updated.forEach { chapterUpdate ->
+                chaptersQueries.update(
+                    mangaId = chapterUpdate.mangaId,
+                    url = chapterUpdate.url,
+                    name = chapterUpdate.name,
+                    scanlator = chapterUpdate.scanlator,
+                    read = chapterUpdate.read,
+                    bookmark = chapterUpdate.bookmark,
+                    lastPageRead = chapterUpdate.lastPageRead,
+                    chapterNumber = chapterUpdate.chapterNumber,
+                    sourceOrder = chapterUpdate.sourceOrder,
+                    dateFetch = chapterUpdate.dateFetch,
+                    dateUpload = chapterUpdate.dateUpload,
+                    chapterId = chapterUpdate.id,
+                    version = chapterUpdate.version,
+                    isSyncing = 0,
+                    memo = chapterUpdate.memo?.let(MemoColumnAdapter::encode),
+                )
+            }
+            stored
+        }
+    }
+
     override suspend fun getChapterByMangaId(mangaId: Long, applyFilter: Boolean): List<Chapter> {
         return handler.awaitList {
             chaptersQueries.getChaptersByMangaId(
