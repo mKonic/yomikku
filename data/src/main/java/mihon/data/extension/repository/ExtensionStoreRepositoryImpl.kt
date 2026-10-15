@@ -10,6 +10,7 @@ import mihon.data.extension.service.ExtensionStoreService
 import mihon.domain.extension.model.ExtensionStore
 import mihon.domain.extension.repository.ExtensionStoreRepository
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.data.Database
 import tachiyomi.data.DatabaseHandler
 
 class ExtensionStoreRepositoryImpl(
@@ -17,7 +18,7 @@ class ExtensionStoreRepositoryImpl(
     private val handler: DatabaseHandler,
 ) : ExtensionStoreRepository {
     override suspend fun insert(indexUrl: String): Result<Unit> {
-        return service.fetch(indexUrl).mapCatching { upsert(it) }
+        return service.fetch(indexUrl).mapCatching { store -> handler.await { upsert(store) } }
     }
 
     override suspend fun insertFromPreference(indexUrl: String, name: String) {
@@ -42,7 +43,8 @@ class ExtensionStoreRepositoryImpl(
             }.forEach { store ->
                 service.fetch(store.index_url)
                     .mapCatching {
-                        handler.await {
+                        handler.await(inTransaction = true) {
+                            if (extension_storeQueries.get(store.index_url).executeAsOneOrNull() == null) return@await
                             upsert(it)
                             if (store.index_url != it.indexUrl) {
                                 extension_storeQueries.delete(store.index_url)
@@ -60,19 +62,17 @@ class ExtensionStoreRepositoryImpl(
         }
     }
 
-    private suspend fun upsert(store: ExtensionStore) {
-        handler.await {
-            extension_storeQueries.upsert(
-                indexUrl = store.indexUrl,
-                name = store.name,
-                badgeLabel = store.badgeLabel,
-                signingKey = store.signingKey,
-                contactWebsite = store.contact.website,
-                contactDiscord = store.contact.discord,
-                isLegacy = store.isLegacy,
-                extensionListUrl = store.extensionListUrl,
-            )
-        }
+    private fun Database.upsert(store: ExtensionStore) {
+        extension_storeQueries.upsert(
+            indexUrl = store.indexUrl,
+            name = store.name,
+            badgeLabel = store.badgeLabel,
+            signingKey = store.signingKey,
+            contactWebsite = store.contact.website,
+            contactDiscord = store.contact.discord,
+            isLegacy = store.isLegacy,
+            extensionListUrl = store.extensionListUrl,
+        )
     }
 
     override suspend fun fetchExtensions(
