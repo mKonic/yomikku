@@ -169,8 +169,19 @@ class MangaRestorer(
             .associateBy { it.url }
 
         val (existingChapters, newChapters) = backupChapters
-            .mapNotNull { backupChapter ->
-                val chapter = backupChapter.toChapterImpl().copy(mangaId = manga.id)
+            .map(BackupChapter::toChapterImpl)
+            .groupBy { it.url }
+            .map { (_, copies) ->
+                copies.reduce { kept, other ->
+                    kept.copy(
+                        read = kept.read || other.read,
+                        bookmark = kept.bookmark || other.bookmark,
+                        lastPageRead = max(kept.lastPageRead, other.lastPageRead),
+                    )
+                }
+            }
+            .mapNotNull { restoredChapter ->
+                val chapter = restoredChapter.copy(mangaId = manga.id)
                 val dbChapter = dbChaptersByUrl[chapter.url]
 
                 when {
