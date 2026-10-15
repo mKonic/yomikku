@@ -86,12 +86,18 @@ class CloudflareInterceptor(
         var cloudflareBypassed = false
         var failed = false
         var isWebViewOutdated = false
+        var isRenderProcessGone = false
 
         var listenerScriptHandler: ScriptHandler? = null
         // Read once on the main thread, where the WebView APIs below run.
         var isolatedWorld = false
 
-        val origRequestUrl = originalRequest.url.toString()
+        val challengeUrl = if (originalRequest.method == "GET") {
+            originalRequest.url.toString()
+        } else {
+            // WebView loads with GET; a POST endpoint may not serve a challenge on GET.
+            originalRequest.url.newBuilder().encodedPath("/").query(null).fragment(null).build().toString()
+        }
         val headers = parseHeaders(originalRequest.headers)
 
         executor.execute {
@@ -155,7 +161,7 @@ class CloudflareInterceptor(
                         latch.countDown()
                     }
 
-                    if (url == origRequestUrl) {
+                    if (url == challengeUrl) {
                         if (!challengeFound) {
                             // The first request didn't return the challenge, abort.
                             latch.countDown()
@@ -184,30 +190,33 @@ class CloudflareInterceptor(
 
                 override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
                     // The renderer died; this WebView is unusable. Returning true keeps the app alive.
+                    isRenderProcessGone = true
                     latch.countDown()
                     return true
                 }
             }
 
-            webview.loadUrl(origRequestUrl, headers)
+            webview.loadUrl(challengeUrl, headers)
         }
 
         latch.awaitFor30Seconds()
 
         executor.execute {
-            if (!cloudflareBypassed) {
+            if (!cloudflareBypassed && !isRenderProcessGone) {
                 isWebViewOutdated = webview?.isOutdated() == true
             }
 
             webview?.let { view ->
-                if (isolatedWorld) {
-                    WebViewCompat.removeWebMessageListener(view, WebViewCompat.getExecutionWorld(view, BRIDGE), BRIDGE)
-                } else {
-                    view.removeJavascriptInterface(BRIDGE)
+                if (!isRenderProcessGone) {
+                    if (isolatedWorld) {
+                        WebViewCompat.removeWebMessageListener(view, WebViewCompat.getExecutionWorld(view, BRIDGE), BRIDGE)
+                    } else {
+                        view.removeJavascriptInterface(BRIDGE)
+                    }
+                    listenerScriptHandler?.remove()
+                    view.stopLoading()
                 }
-                listenerScriptHandler?.remove()
                 (view.parent as? ViewGroup)?.removeView(view)
-                view.stopLoading()
                 view.destroy()
             }
         }
