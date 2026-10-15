@@ -20,6 +20,14 @@ sealed class Extension {
     abstract val storeName: String?
     // KMK <--
 
+    /** An installed APK can have an update even when its sources cannot be loaded. */
+    sealed class OnDevice : Extension() {
+        abstract val signatures: List<String>
+        abstract val isShared: Boolean
+        abstract val hasUpdate: Boolean
+        abstract val store: ExtensionStore?
+    }
+
     data class Installed(
         override val name: String,
         override val pkgName: String,
@@ -36,14 +44,15 @@ sealed class Extension {
         val pkgFactory: String?,
         val sources: List<Source>,
         val icon: Drawable?,
-        val hasUpdate: Boolean = false,
+        override val hasUpdate: Boolean = false,
         val isObsolete: Boolean = false,
-        val isShared: Boolean,
-        val store: ExtensionStore? = null,
+        override val isShared: Boolean,
+        override val store: ExtensionStore? = null,
         // SY -->
         val isRedundant: Boolean = false,
         // SY <--
-    ) : Extension()
+        override val signatures: List<String> = listOf(signatureHash),
+    ) : OnDevice()
 
     data class Available(
         override val name: String,
@@ -79,6 +88,8 @@ sealed class Extension {
         }
     }
 
+    sealed class NotLoaded : OnDevice()
+
     data class Untrusted(
         override val name: String,
         override val pkgName: String,
@@ -92,5 +103,42 @@ sealed class Extension {
         // KMK <--
         override val lang: String? = null,
         override val isNsfw: Boolean = false,
-    ) : Extension()
+        override val isShared: Boolean = true,
+        override val signatures: List<String> = listOf(signatureHash),
+        override val store: ExtensionStore? = null,
+        override val hasUpdate: Boolean = false,
+    ) : NotLoaded()
+
+    data class Failed(
+        override val name: String,
+        override val pkgName: String,
+        override val versionName: String,
+        override val versionCode: Long,
+        override val libVersion: Double,
+        override val signatureHash: String,
+        override val isShared: Boolean,
+        val reason: String,
+        override val storeName: String? = null,
+        override val lang: String? = null,
+        override val isNsfw: Boolean = false,
+        override val signatures: List<String> = listOf(signatureHash),
+        override val store: ExtensionStore? = null,
+        override val hasUpdate: Boolean = false,
+    ) : NotLoaded()
 }
+
+/** A store listing is relevant only when its signing key belongs to the installed APK. */
+fun Extension.OnDevice.findListing(available: Iterable<Extension.Available>): Extension.Available? =
+    available.asSequence()
+        .filter { listing ->
+            listing.pkgName == pkgName &&
+                listing.signatureHash == listing.store.signingKey &&
+                listing.store.signingKey in signatures
+        }
+        .maxWithOrNull(compareBy<Extension.Available> { it.versionCode }.thenBy { it.libVersion })
+
+fun Extension.OnDevice.findUpdate(available: Iterable<Extension.Available>): Extension.Available? =
+    findListing(available)?.takeIf {
+        it.versionCode >= versionCode &&
+            (it.versionCode > versionCode || (libVersion > 0 && it.libVersion > libVersion))
+    }

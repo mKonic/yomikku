@@ -58,6 +58,7 @@ import mihon.domain.extension.model.YOMIKKU_SIGNATURE
 import mihon.icons.materialsymbols.MaterialSymbols
 import mihon.icons.materialsymbols.rounded.Close
 import mihon.icons.materialsymbols.rounded.Download
+import mihon.icons.materialsymbols.rounded.Info
 import mihon.icons.materialsymbols.rounded.Public
 import mihon.icons.materialsymbols.rounded.Refresh
 import mihon.icons.materialsymbols.rounded.Settings
@@ -88,7 +89,7 @@ fun ExtensionScreen(
     onOpenWebView: (Extension.Available) -> Unit,
     onInstallExtension: (Extension.Available) -> Unit,
     onUninstallExtension: (Extension) -> Unit,
-    onUpdateExtension: (Extension.Installed) -> Unit,
+    onUpdateExtension: (Extension.OnDevice) -> Unit,
     onTrustExtension: (Extension.Untrusted) -> Unit,
     onOpenExtension: (Extension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
@@ -149,13 +150,14 @@ private fun ExtensionContent(
     onOpenWebView: (Extension.Available) -> Unit,
     onInstallExtension: (Extension.Available) -> Unit,
     onUninstallExtension: (Extension) -> Unit,
-    onUpdateExtension: (Extension.Installed) -> Unit,
+    onUpdateExtension: (Extension.OnDevice) -> Unit,
     onTrustExtension: (Extension.Untrusted) -> Unit,
     onOpenExtension: (Extension.Installed) -> Unit,
     onClickUpdateAll: () -> Unit,
 ) {
     val context = LocalContext.current
     var trustState by remember { mutableStateOf<Extension.Untrusted?>(null) }
+    var failureState by remember { mutableStateOf<Extension.Failed?>(null) }
     val installGranted = rememberRequestPackageInstallsPermissionState(initialValue = true)
     // KMK -->
     val navigator = LocalNavigator.current
@@ -239,6 +241,7 @@ private fun ExtensionContent(
                 key = { item ->
                     when (item.extension) {
                         is Extension.Untrusted -> "extension-untrusted-${item.hashCode()}"
+                        is Extension.Failed -> "extension-failed-${item.hashCode()}"
                         is Extension.Installed -> "extension-installed-${item.hashCode()}"
                         is Extension.Available -> "extension-available-${item.hashCode()}"
                     }
@@ -251,6 +254,7 @@ private fun ExtensionContent(
                         when (it) {
                             is Extension.Available -> onInstallExtension(it)
                             is Extension.Installed -> onOpenExtension(it)
+                            is Extension.Failed -> failureState = it
                             is Extension.Untrusted -> {
                                 trustState = it
                             }
@@ -261,6 +265,7 @@ private fun ExtensionContent(
                         when (it) {
                             is Extension.Available -> onOpenWebView(it)
                             is Extension.Installed -> onOpenExtension(it)
+                            is Extension.Untrusted -> if (it.hasUpdate) onUpdateExtension(it)
                             else -> {}
                         }
                     },
@@ -274,6 +279,9 @@ private fun ExtensionContent(
                                 } else {
                                     onOpenExtension(it)
                                 }
+                            }
+                            is Extension.Failed -> {
+                                if (it.hasUpdate) onUpdateExtension(it) else failureState = it
                             }
                             is Extension.Untrusted -> {
                                 trustState = it
@@ -297,6 +305,18 @@ private fun ExtensionContent(
             onDismissRequest = {
                 trustState = null
             },
+        )
+    }
+    failureState?.let { failure ->
+        AlertDialog(
+            title = { Text(stringResource(MR.strings.ext_load_failed)) },
+            text = { Text(failure.reason) },
+            confirmButton = {
+                TextButton(onClick = { failureState = null }) {
+                    Text(stringResource(MR.strings.action_ok))
+                }
+            },
+            onDismissRequest = { failureState = null },
         )
     }
 }
@@ -410,6 +430,7 @@ private fun ExtensionItemContent(
 
                 val warning = when {
                     extension is Extension.Untrusted -> MR.strings.ext_untrusted
+                    extension is Extension.Failed -> MR.strings.ext_load_failed
                     extension is Extension.Installed && extension.isObsolete -> MR.strings.ext_obsolete
                     // SY -->
                     extension is Extension.Installed && extension.isRedundant -> SYMR.strings.ext_redundant
@@ -427,7 +448,7 @@ private fun ExtensionItemContent(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (extension is Extension.Installed && !extension.isShared) {
+                if (extension is Extension.OnDevice && !extension.isShared) {
                     if (hasAlreadyShownAnElement) DotSeparatorNoSpaceText()
                     Text(
                         text = stringResource(MR.strings.ext_installer_private),
@@ -506,6 +527,24 @@ private fun ExtensionItemActions(
                             Icon(
                                 imageVector = MaterialSymbols.Rounded.VerifiedUser,
                                 contentDescription = stringResource(MR.strings.ext_trust),
+                            )
+                        }
+                        if (extension.hasUpdate) {
+                            IconButton(onClick = { onClickItemSecondaryAction(extension) }) {
+                                Icon(
+                                    imageVector = MaterialSymbols.Rounded.Download,
+                                    contentDescription = stringResource(MR.strings.ext_update),
+                                )
+                            }
+                        }
+                    }
+                    is Extension.Failed -> {
+                        IconButton(onClick = { onClickItemAction(extension) }) {
+                            Icon(
+                                imageVector = if (extension.hasUpdate) MaterialSymbols.Rounded.Download else MaterialSymbols.Rounded.Info,
+                                contentDescription = stringResource(
+                                    if (extension.hasUpdate) MR.strings.ext_update else MR.strings.ext_load_failed,
+                                ),
                             )
                         }
                     }

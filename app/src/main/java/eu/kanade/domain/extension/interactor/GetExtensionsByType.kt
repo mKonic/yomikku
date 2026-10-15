@@ -19,10 +19,11 @@ class GetExtensionsByType(
             preferences.enabledLanguages().changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
+            extensionManager.failedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, _installed, _untrusted, _available ->
-            val (updates, installed) = _installed
-                .filter { (showNsfwSources || !it.isNsfw) }
+        ) { enabledLanguages, _installed, _untrusted, _failed, _available ->
+            val (installedUpdates, installed) = _installed
+                .filter { showNsfwSources || !it.isNsfw }
                 .sortedWith(
                     compareBy<Extension.Installed> {
                         !it.isObsolete /* SY --> */ && !it.isRedundant /* SY <-- */
@@ -30,24 +31,25 @@ class GetExtensionsByType(
                 )
                 .partition { it.hasUpdate }
 
-            val untrusted = _untrusted
+            val (notLoadedUpdates, notLoaded) = (_untrusted + _failed)
+                .filter { showNsfwSources || !it.isNsfw }
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+                .partition { it.hasUpdate }
+            val updates = (installedUpdates + notLoadedUpdates)
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
+            val onDevice = buildList<Extension.OnDevice> {
+                addAll(_installed)
+                addAll(_untrusted)
+                addAll(_failed)
+            }
             val available = _available
                 .filter { extension ->
-                    _installed.none {
-                        // KMK -->
-                        it.signatureHash == extension.signatureHash &&
-                            // KMK <--
-                            it.pkgName == extension.pkgName
-                    } &&
-                        _untrusted.none {
-                            // KMK -->
-                            it.signatureHash == extension.signatureHash &&
-                                // KMK <--
-                                it.pkgName == extension.pkgName
-                        } &&
-                        (showNsfwSources || !extension.isNsfw)
+                    onDevice.none {
+                        it.pkgName == extension.pkgName &&
+                            extension.signatureHash == extension.store.signingKey &&
+                            extension.store.signingKey in it.signatures
+                    } && (showNsfwSources || !extension.isNsfw)
                 }
                 .flatMap { ext ->
                     ext.sources.filter { it.lang in enabledLanguages }
@@ -62,7 +64,7 @@ class GetExtensionsByType(
                 }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
 
-            Extensions(updates, installed, available, untrusted)
+            Extensions(updates, installed, available, notLoaded)
         }
     }
 }

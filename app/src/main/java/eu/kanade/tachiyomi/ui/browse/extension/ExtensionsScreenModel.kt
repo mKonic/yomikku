@@ -74,7 +74,7 @@ class ExtensionsScreenModel(
                 // KMK <--
                 currentDownloads,
                 getExtensions.subscribe(),
-            ) { predicate, nsfwOnly, downloads, (_updates, _installed, _available, _untrusted) ->
+            ) { predicate, nsfwOnly, downloads, (_updates, _installed, _available, _notLoaded) ->
                 buildMap {
                     val updates = _updates.filter(predicate).map(extensionMapper(downloads))
                         // KMK -->
@@ -88,12 +88,12 @@ class ExtensionsScreenModel(
                         // KMK -->
                         .filter { !nsfwOnly || it.extension.isNsfw }
                     // KMK <--
-                    val untrusted = _untrusted.filter(predicate).map(extensionMapper(downloads))
+                    val notLoaded = _notLoaded.filter(predicate).map(extensionMapper(downloads))
                         // KMK -->
                         .filter { !nsfwOnly || it.extension.isNsfw }
                     // KMK <--
-                    if (installed.isNotEmpty() || untrusted.isNotEmpty()) {
-                        put(ExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + untrusted)
+                    if (installed.isNotEmpty() || notLoaded.isNotEmpty()) {
+                        put(ExtensionUiModel.Header.Resource(MR.strings.ext_installed), installed + notLoaded)
                     }
 
                     val languagesWithExtensions = _available
@@ -181,7 +181,7 @@ class ExtensionsScreenModel(
         screenModelScope.launchIO {
             state.value.items.values.flatten()
                 .map { it.extension }
-                .filterIsInstance<Extension.Installed>()
+                .filterIsInstance<Extension.OnDevice>()
                 .filter { it.hasUpdate }
                 .forEach(::updateExtension)
         }
@@ -193,7 +193,7 @@ class ExtensionsScreenModel(
         }
     }
 
-    fun updateExtension(extension: Extension.Installed) {
+    fun updateExtension(extension: Extension.OnDevice) {
         screenModelScope.launchIO {
             extensionManager.updateExtension(extension).collectToInstallUpdate(extension)
         }

@@ -118,6 +118,12 @@ fun ExtensionIcon(
             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
             modifier = modifier.then(defaultModifier),
         )
+        is Extension.Failed -> Image(
+            imageVector = MaterialSymbols.Rounded.Warning,
+            contentDescription = null,
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error),
+            modifier = modifier.then(defaultModifier),
+        )
     }
 }
 

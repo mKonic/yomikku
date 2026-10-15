@@ -5,6 +5,7 @@ import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.model.Extension
 import eu.kanade.tachiyomi.extension.model.LoadResult
+import eu.kanade.tachiyomi.extension.model.findUpdate
 import eu.kanade.tachiyomi.extension.util.ExtensionLoader
 import mihon.domain.extension.interactor.AddExtensionStore
 import mihon.domain.extension.interactor.UpdateExtensionStores
@@ -66,7 +67,7 @@ internal class ExtensionApi {
     suspend fun checkForUpdates(
         context: Context,
         fromAvailableExtensionList: Boolean = false,
-    ): List<Extension.Installed>? {
+    ): List<Extension.OnDevice>? {
         // Limit checks to once a day at most
         if (!fromAvailableExtensionList &&
             Instant.now().toEpochMilli() < lastExtCheck.get() + 1.days.inWholeMilliseconds
@@ -83,20 +84,16 @@ internal class ExtensionApi {
         }
 
         val installedExtensions = ExtensionLoader.loadExtensions(context)
-            .filterIsInstance<LoadResult.Success>()
-            .map { it.extension }
-
-        val extensionsWithUpdate = mutableListOf<Extension.Installed>()
-        for (installedExt in installedExtensions) {
-            val pkgName = installedExt.pkgName
-            val availableExt = extensions.find { it.pkgName == pkgName } ?: continue
-            val hasUpdatedVer = availableExt.versionCode > installedExt.versionCode
-            val hasUpdatedLib = availableExt.libVersion > installedExt.libVersion
-            val hasUpdate = hasUpdatedVer || hasUpdatedLib
-            if (hasUpdate) {
-                extensionsWithUpdate.add(installedExt)
+            .mapNotNull { result ->
+                when (result) {
+                    is LoadResult.Success -> result.extension
+                    is LoadResult.Untrusted -> result.extension
+                    is LoadResult.Failed -> result.extension
+                    LoadResult.Error -> null
+                }
             }
-        }
+
+        val extensionsWithUpdate = installedExtensions.filter { it.findUpdate(extensions) != null }
 
         if (extensionsWithUpdate.isNotEmpty()) {
             ExtensionUpdateNotifier(context).promptUpdates(extensionsWithUpdate.map { it.name })

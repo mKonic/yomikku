@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.SourceFactory
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -175,7 +176,11 @@ internal object ExtensionLoader {
         // Load each extension concurrently and wait for completion
         return runBlocking(/* KMK --> */ Dispatchers.IO /* KMK <-- */) {
             // KMK -->
-            val extStores = getExtensionStores.get()
+            val extStores = runCatching { getExtensionStores.get() }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                logcat(LogPriority.ERROR, error) { "Failed to read extension stores" }
+                emptyList()
+            }
             // KMK <--
             val deferred = extPkgs.map {
                 async {
@@ -254,9 +259,55 @@ internal object ExtensionLoader {
         extStores: List<ExtensionStore>? = null,
         // KMK <--
     ): LoadResult {
-        // KMK -->
-        val stores = extStores ?: getExtensionStores.get()
-        // KMK <--
+        val stores = extStores ?: runCatching { getExtensionStores.get() }.getOrElse { error ->
+            if (error is CancellationException) throw error
+            logcat(LogPriority.ERROR, error) { "Failed to read extension stores" }
+            emptyList()
+        }
+        return try {
+            loadExtensionChecked(context, extensionInfo, stores)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            val pkgInfo = extensionInfo.packageInfo
+            logcat(LogPriority.ERROR, e) { "Extension load error: ${pkgInfo.packageName}" }
+            val appInfo = pkgInfo.applicationInfo
+            val signatures = runCatching { getSignatures(pkgInfo).orEmpty() }.getOrDefault(emptyList())
+            val store = stores.firstOrNull { it.signingKey in signatures }
+            val versionName = pkgInfo.versionName.orEmpty()
+            val libVersion = appInfo?.metaData?.getFloat(METADATA_EXTENSION_LIB)
+                ?.takeUnless { it == 0.0f }
+                ?.toDouble()
+                ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+                ?: 0.0
+            LoadResult.Failed(
+                Extension.Failed(
+                    name = runCatching {
+                        appInfo?.metaData?.getString(METADATA_NAME)
+                            ?: context.packageManager.getApplicationLabel(appInfo!!).toString().substringAfter("Yomikku: ")
+                    }.getOrNull() ?: pkgInfo.packageName,
+                    pkgName = pkgInfo.packageName,
+                    versionName = versionName,
+                    versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo),
+                    libVersion = libVersion,
+                    signatureHash = signatures.lastOrNull().orEmpty(),
+                    isShared = extensionInfo.isShared,
+                    reason = e.message ?: e.javaClass.simpleName,
+                    isNsfw = (appInfo?.metaData?.getInt(METADATA_CONTENT_WARNING) ?: 0) > 0 ||
+                        (appInfo?.metaData?.getInt(METADATA_NSFW) ?: 0) == 1,
+                    signatures = signatures,
+                    store = store,
+                    storeName = store?.badgeLabel?.takeIf(String::isNotBlank) ?: store?.name,
+                ),
+            )
+        }
+    }
+
+    private suspend fun loadExtensionChecked(
+        context: Context,
+        extensionInfo: ExtensionInfo,
+        stores: List<ExtensionStore>,
+    ): LoadResult {
         val pkgManager = context.packageManager
         val pkgInfo = extensionInfo.packageInfo
         val appInfo = pkgInfo.applicationInfo!!
@@ -268,8 +319,7 @@ internal object ExtensionLoader {
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
         if (versionName.isNullOrEmpty()) {
-            logcat(LogPriority.WARN) { "Missing versionName for extension $extName" }
-            return LoadResult.Error
+            error("Missing versionName for extension $extName")
         }
 
         // Validate lib version
@@ -279,49 +329,40 @@ internal object ExtensionLoader {
             ?.toDouble()
             ?: versionName.substringBeforeLast('.').toDoubleOrNull()
         if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
-            logcat(LogPriority.WARN) {
-                "Lib version is $libVersion, while only version(s) ${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
-            }
-            return LoadResult.Error
+            error("Unsupported extension library version $libVersion; supported: ${SUPPORTED_LIB_VERSIONS.joinToString()}")
         }
 
         val signatures = getSignatures(pkgInfo)
         if (signatures.isNullOrEmpty()) {
-            logcat(LogPriority.WARN) { "Package $pkgName isn't signed" }
-            return LoadResult.Error
-        } else if (!trustExtension.isTrusted(pkgInfo, signatures)) {
+            error("Extension $pkgName is not signed")
+        }
+        val store = stores.firstOrNull { it.signingKey in signatures }
+        val storeName = store?.badgeLabel?.takeIf(String::isNotBlank) ?: store?.name
+        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
+            appInfo.metaData.getInt(METADATA_NSFW) == 1
+        if (!trustExtension.isTrusted(pkgInfo, signatures)) {
             val extension = Extension.Untrusted(
-                extName,
-                pkgName,
-                versionName,
-                versionCode,
-                libVersion,
-                signatures.last(),
-                // KMK -->
-                storeName = stores.firstOrNull { store ->
-                    signatures.all { it == store.signingKey }
-                }?.let { store ->
-                    store.badgeLabel.takeIf(String::isNotBlank) ?: store.name
-                },
-                // KMK <--
+                name = extName,
+                pkgName = pkgName,
+                versionName = versionName,
+                versionCode = versionCode,
+                libVersion = libVersion,
+                signatureHash = signatures.last(),
+                storeName = storeName,
+                isShared = extensionInfo.isShared,
+                isNsfw = isNsfw,
+                signatures = signatures,
+                store = store,
             )
             logcat(LogPriority.WARN) { "Extension $pkgName isn't trusted" }
             return LoadResult.Untrusted(extension)
         }
 
-        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
-            appInfo.metaData.getInt(METADATA_NSFW) == 1
         if (!loadNsfwSource && isNsfw) {
-            logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
-            return LoadResult.Error
+            error("NSFW extension $pkgName is disabled")
         }
 
-        val classLoader = try {
-            DelegateLastClassLoaderCompat(appInfo.sourceDir, null, context.classLoader)
-        } catch (e: Exception) {
-            logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($pkgName)" }
-            return LoadResult.Error
-        }
+        val classLoader = DelegateLastClassLoaderCompat(appInfo.sourceDir, null, context.classLoader)
 
         val sources = appInfo.metaData.getString(METADATA_SOURCE_CLASS)!!
             .split(";")
@@ -334,15 +375,10 @@ internal object ExtensionLoader {
                 }
             }
             .flatMap {
-                try {
-                    when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
-                        is Source -> listOf(obj)
-                        is SourceFactory -> obj.createSources()
-                        else -> throw Exception("Unknown source class type: ${obj.javaClass}")
-                    }
-                } catch (e: Throwable) {
-                    logcat(LogPriority.ERROR, e) { "Extension load error: $extName ($it)" }
-                    return LoadResult.Error
+                when (val obj = Class.forName(it, false, classLoader).getDeclaredConstructor().newInstance()) {
+                    is Source -> listOf(obj)
+                    is SourceFactory -> obj.createSources()
+                    else -> error("Unknown source class type: ${obj.javaClass}")
                 }
             }
 
@@ -365,13 +401,11 @@ internal object ExtensionLoader {
             pkgFactory = appInfo.metaData.getString(METADATA_SOURCE_FACTORY),
             icon = appInfo.loadIcon(pkgManager),
             isShared = extensionInfo.isShared,
+            signatures = signatures,
+            store = store,
             // KMK -->
             signatureHash = signatures.last(),
-            storeName = stores.firstOrNull { store ->
-                signatures.all { it == store.signingKey }
-            }?.let { store ->
-                store.badgeLabel.takeIf(String::isNotBlank) ?: store.name
-            },
+            storeName = storeName,
             // KMK <--
         )
         return LoadResult.Success(extension)
