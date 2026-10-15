@@ -8,11 +8,13 @@ import tachiyomi.domain.category.model.CategoryUpdate
 import tachiyomi.domain.category.repository.CategoryRepository
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.library.service.LibraryPreferences
+import tachiyomi.domain.updates.service.UpdatesPreferences
 
 class DeleteCategory(
     private val categoryRepository: CategoryRepository,
     private val libraryPreferences: LibraryPreferences,
     private val downloadPreferences: DownloadPreferences,
+    private val updatesPreferences: UpdatesPreferences,
 ) {
 
     suspend fun await(categoryId: Long) = withNonCancellableContext {
@@ -53,6 +55,16 @@ class DeleteCategory(
             val ids = preference.get()
             if (categoryIdString !in ids) return@forEach
             preference.set(ids.minus(categoryIdString))
+        }
+
+        // A deleted category left in these filters keeps them active with nothing to uncheck (mihonapp/mihon#4113)
+        listOf(
+            updatesPreferences.filterIncludedCategories(),
+            updatesPreferences.filterExcludedCategories(),
+        ).forEach { preference ->
+            val ids = preference.get()
+            if (categoryId !in ids) return@forEach
+            preference.set(ids.minus(categoryId))
         }
 
         try {
