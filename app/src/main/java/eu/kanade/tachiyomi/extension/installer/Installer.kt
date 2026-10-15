@@ -91,17 +91,17 @@ abstract class Installer(private val service: Service) {
         if (!ready) {
             return
         }
-        if (queue.isEmpty()) {
-            service.stopSelf()
-            return
+        val nextEntry = synchronized(queue) {
+            if (queue.isEmpty()) {
+                service.stopSelf()
+                return
+            }
+            val next = queue.first()
+            if (!waitingInstall.compareAndSet(null, next)) return
+            queue.remove(next)
+            next
         }
-        val nextEntry = queue.first()
-        if (waitingInstall.compareAndSet(null, nextEntry)) {
-            // KMK -->
-            queue.remove(nextEntry)
-            // KMK <--
-            processEntry(nextEntry)
-        }
+        processEntry(nextEntry)
     }
 
     /**
@@ -110,8 +110,8 @@ abstract class Installer(private val service: Service) {
     @CallSuper
     open fun onDestroy() {
         cancelListeners -= cancelListener
-        queue.forEach { extensionManager.updateInstallStep(it.downloadId, InstallStep.Error) }
-        queue.clear()
+        val remaining = synchronized(queue) { queue.toList().also { queue.clear() } }
+        remaining.forEach { extensionManager.updateInstallStep(it.downloadId, InstallStep.Error) }
         // The entry mid-install when the service dies would otherwise sit at "Installing" forever.
         waitingInstall.exchange(null)?.let { entry ->
             extensionManager.updateInstallStep(entry.downloadId, InstallStep.Error)
