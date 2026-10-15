@@ -483,6 +483,15 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    override fun reportFullyDrawn() {
+        try {
+            super.reportFullyDrawn()
+        } catch (e: SecurityException) {
+            // Some Samsung Android 9 to 11 builds deny the platform's fully drawn broadcast.
+            logcat(LogPriority.WARN, e)
+        }
+    }
+
     @Composable
     private fun HandleOnNewIntent(context: Context, navigator: Navigator) {
         LaunchedEffect(Unit) {
