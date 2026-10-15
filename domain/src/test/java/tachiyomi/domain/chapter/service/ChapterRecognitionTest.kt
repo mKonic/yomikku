@@ -427,6 +427,15 @@ class ChapterRecognitionTest {
             listOf(ChapterNumbering("1", "7"), ChapterNumbering(null, "2"))
     }
 
+    @Test
+    fun `Name holding a number sign does not share number slots`() {
+        assertNumbers(
+            "Chapter 1 (2024)" to ChapterNumbering(null, "1"),
+            "Chapter 2 (2024)" to ChapterNumbering(null, "2"),
+            "Chapter # (2024)" to ChapterNumbering(null, "2024"),
+        )
+    }
+
     private fun assertNumbers(vararg expected: Pair<String, ChapterNumbering>) = assertNumbers("", *expected)
 
     /**

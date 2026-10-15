@@ -3,6 +3,7 @@ package tachiyomi.domain.chapter.service
 import tachiyomi.domain.chapter.model.Chapter
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.round
 
@@ -77,9 +78,9 @@ object ChapterRecognition {
     private val prologue = Regex("""\b(?:prologue|one.?shot|pilot)\b""")
 
     /**
-     * Formats numbers without trailing zeros and with a dot whatever the locale, e.g. 10.5, 3, 24.005
+     * Formats numbers without trailing zeros, with ASCII digits and a dot whatever the locale, e.g. 10.5, 3, 24.005
      */
-    private val formatter = DecimalFormat("#.###", DecimalFormatSymbols().apply { decimalSeparator = '.' })
+    private val formatter = DecimalFormat("#.###", DecimalFormatSymbols(Locale.ROOT))
 
     /**
      * The volume and chapter number recognized for a chapter, e.g. "10.5" or "19a", `null` when there is none.
@@ -164,8 +165,8 @@ object ChapterRecognition {
         val sharedNumbers = MutableList(names.size) { emptyList<IntRange>() }
         names.indices
             .filterNot { chapters[it].chapterNumber.isKnown() }
-            // Grouped by all but their numbers, so that the nth number of each name means the same thing
-            .groupBy { names[it].replace(anyNumber, "#") }
+            // Grouped by the text around their numbers: a literal # must not match a missing number.
+            .groupBy { anyNumber.split(names[it]) }
             .values
             // Fewer names could share a number by chance
             .filter { it.size >= 3 }
