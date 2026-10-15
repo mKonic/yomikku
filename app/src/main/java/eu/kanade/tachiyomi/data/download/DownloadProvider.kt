@@ -53,6 +53,9 @@ class DownloadProvider(
             )
         }
 
+        // Keeps pages out of gallery apps while they download, even where the folder never got one (mihonapp/mihon#4110)
+        DiskUtil.createNoMediaFile(downloadsDir, context)
+
         val sourceDirName = getSourceDirName(source)
         val sourceDir = downloadsDir.createDirectory(sourceDirName)
         if (sourceDir == null) {
