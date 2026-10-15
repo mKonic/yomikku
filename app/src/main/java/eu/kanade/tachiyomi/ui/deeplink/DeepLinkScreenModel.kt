@@ -60,11 +60,9 @@ class DeepLinkScreenModel(
     private suspend fun getChapterFromSChapter(sChapter: SChapter, manga: Manga, source: Source): Chapter? {
         val localChapter = getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
 
-        return localChapter
-            ?: updateMangaFromRemote(manga = manga, fetchChapters = true)
-                .getOrElse { return null }
-                .newChapters
-                .find { it.url == sChapter.url }
+        if (localChapter != null) return localChapter
+        updateMangaFromRemote(manga = manga, fetchChapters = true).getOrElse { return null }
+        return getChapterByUrlAndMangaId.await(sChapter.url, manga.id)
     }
 
     sealed interface State {
