@@ -357,9 +357,18 @@ class MangaCoverFetcher(
         onlyFavorite: Boolean = !themeCoverBased,
         force: Boolean = false,
     ) {
-        if (!preloadLibraryColor) return
+        if (!preloadLibraryColor) {
+            bufferedSource?.close()
+            return
+        }
         scope.launch {
-            MangaCoverMetadata.setRatioAndColors(mangaCover, bufferedSource, ogFile, onlyFavorite, force)
+            try {
+                MangaCoverMetadata.setRatioAndColors(mangaCover, bufferedSource, ogFile, onlyFavorite, force)
+            } catch (e: Throwable) {
+                logcat(LogPriority.ERROR, e) { "Failed to set cover colors for manga ${mangaCover.mangaId}" }
+            } finally {
+                bufferedSource?.close()
+            }
         }
     }
     // KMK <--
