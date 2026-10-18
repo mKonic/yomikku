@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import cafe.adriel.voyager.core.stack.mutableStateStackOf
 import com.kevinnzou.web.AccompanistWebChromeClient
 import com.kevinnzou.web.AccompanistWebViewClient
@@ -102,6 +103,8 @@ fun WebViewScreenContent(
 
     // KMK: every window's WebView is destroyed on dispose once the renderer is gone
     val rendererGone = remember { AtomicBoolean(false) }
+    val headersHost = remember { url.toUri().host }
+
     val webClient = remember {
         object : AccompanistWebViewClient() {
             // KMK --> the renderer died, usually killed for memory; the WebViews it drew are unusable and have to go
@@ -147,6 +150,9 @@ fun WebViewScreenContent(
 
                 // Ignore intents urls
                 if (url.startsWith("intent://")) return true
+
+                // Only send source headers to the source itself
+                if (request.url.host != headersHost) return false
 
                 // Only open valid web urls
                 if (url.startsWith("http") || url.startsWith("https")) {
