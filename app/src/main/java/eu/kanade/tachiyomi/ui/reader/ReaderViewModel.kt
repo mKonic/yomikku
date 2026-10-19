@@ -499,6 +499,7 @@ class ReaderViewModel @JvmOverloads constructor(
                     Injekt.get<Application>().toast(KMR.strings.reader_tts_unavailable)
                 }
             },
+            onInterrupted = { viewModelScope.launch { stopSpeech() } },
         ).also { speech = it }
         engine.speak(
             document = document,
