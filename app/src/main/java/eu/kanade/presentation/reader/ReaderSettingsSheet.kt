@@ -146,6 +146,7 @@ private fun GeneralPage(preferences: ReaderPreferences) {
         )
     }
     CheckboxItem(stringResource(KMR.strings.reader_settings_show_progress), preferences.showProgress())
+    CheckboxItem(stringResource(KMR.strings.reader_settings_show_time_battery), preferences.showStatusLine())
     CheckboxItem(stringResource(MR.strings.pref_fullscreen), preferences.fullscreen())
     CheckboxItem(stringResource(MR.strings.pref_keep_screen_on), preferences.keepScreenOn())
 

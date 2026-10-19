@@ -100,6 +100,7 @@ fun ReaderScreen(
     val readingMode = state.manga?.let { ReadingMode.fromFlags(it.viewerFlags) } ?: defaultReadingMode
     val tapToTurn by preferences.tapToTurnPages().collectAsState()
     val showProgress by preferences.showProgress().collectAsState()
+    val showStatusLine by preferences.showStatusLine().collectAsState()
 
     CompositionLocalProvider(LocalDownloadedChapters provides state.downloadedChapterIds) {
         Box(
@@ -171,6 +172,17 @@ fun ReaderScreen(
                         .clip(RoundedCornerShape(50))
                         .background(style.background.copy(alpha = 0.85f))
                         .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+
+            if (showStatusLine && document != null && !state.menuVisible) {
+                ReaderStatusLine(
+                    foreground = style.foreground,
+                    background = style.background,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .navigationBarsPadding()
+                        .padding(start = 8.dp, bottom = 4.dp),
                 )
             }
 

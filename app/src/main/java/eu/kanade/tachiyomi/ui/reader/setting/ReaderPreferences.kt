@@ -55,6 +55,7 @@ class ReaderPreferences(
     fun keepScreenOn() = preferenceStore.getBoolean("pref_keep_screen_on_key", false)
 
     fun showProgress() = preferenceStore.getBoolean("pref_show_page_number_key", true)
+    fun showStatusLine() = preferenceStore.getBoolean("pref_text_show_time_battery", false)
 
     fun readWithVolumeKeys() = preferenceStore.getBoolean("reader_volume_keys", false)
 

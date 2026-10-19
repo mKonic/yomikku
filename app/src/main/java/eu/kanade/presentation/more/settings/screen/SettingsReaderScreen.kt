@@ -131,6 +131,10 @@ object SettingsReaderScreen : SearchableSettings {
                     preference = readerPreferences.showProgress(),
                     title = stringResource(KMR.strings.reader_settings_show_progress),
                 ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = readerPreferences.showStatusLine(),
+                    title = stringResource(KMR.strings.reader_settings_show_time_battery),
+                ),
             ),
         )
     }
