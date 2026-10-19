@@ -31,7 +31,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import tachiyomi.core.common.Constants
 import tachiyomi.core.common.i18n.pluralStringResource
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchUI
+import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.library.model.LibraryManga
 import tachiyomi.domain.manga.model.Manga
@@ -220,7 +220,9 @@ class LibraryUpdateNotifier(
 
         // Per-manga notification
         if (!securityPreferences.hideNotificationContent().get()) {
-            launchUI {
+            // KMK: off the main thread - each one decodes a cover and parcels it to the system, and a
+            // big update posting hundreds of them on main stalled input into an ANR.
+            launchIO {
                 context.notify(
                     updates.map { (manga, chapters) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(
