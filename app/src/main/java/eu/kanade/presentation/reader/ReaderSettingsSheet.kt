@@ -96,6 +96,8 @@ private fun TextPage(
     EnumChips(KMR.strings.reader_settings_theme, preferences.theme(), ReaderPreferences.ReaderTheme.entries) {
         stringResource(it.titleRes)
     }
+    val theme by preferences.theme().collectAsState()
+    if (theme == ReaderPreferences.ReaderTheme.CUSTOM) ReaderCustomColorRows(preferences)
     FontChips(preferences)
     EnumChips(KMR.strings.reader_settings_align, preferences.textAlign(), ReaderPreferences.ReaderTextAlign.entries) {
         stringResource(it.titleRes)

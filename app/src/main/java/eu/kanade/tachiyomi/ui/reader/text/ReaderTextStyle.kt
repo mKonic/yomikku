@@ -68,6 +68,8 @@ fun rememberReaderTextStyle(preferences: ReaderPreferences): ReaderTextStyle {
     val verticalMargin by preferences.verticalMargin().collectAsState()
     val theme by preferences.theme().collectAsState()
     val showImages by preferences.showImages().collectAsState()
+    val customBackground by preferences.customBackground().collectAsState()
+    val customForeground by preferences.customForeground().collectAsState()
 
     val colorScheme = MaterialTheme.colorScheme
     val (background, foreground) = when (theme) {
@@ -76,6 +78,7 @@ fun rememberReaderTextStyle(preferences: ReaderPreferences): ReaderTextStyle {
         ReaderTheme.SEPIA -> Color(0xFFF4ECD8) to Color(0xFF5B4636)
         ReaderTheme.DARK -> Color(0xFF1E1E1E) to Color(0xFFDADADA)
         ReaderTheme.BLACK -> Color(0xFF000000) to Color(0xFFC8C8C8)
+        ReaderTheme.CUSTOM -> Color(customBackground) to Color(customForeground)
     }
 
     return remember(

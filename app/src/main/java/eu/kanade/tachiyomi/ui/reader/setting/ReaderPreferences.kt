@@ -35,6 +35,10 @@ class ReaderPreferences(
 
     fun theme() = preferenceStore.getEnum("pref_text_theme", ReaderTheme.FOLLOW_APP)
 
+    /** Background and text colours of [ReaderTheme.CUSTOM], as ARGB. */
+    fun customBackground() = preferenceStore.getInt("pref_text_custom_background", 0xFF292832.toInt())
+    fun customForeground() = preferenceStore.getInt("pref_text_custom_foreground", 0xFFCCCCCC.toInt())
+
     fun showImages() = preferenceStore.getBoolean("pref_text_show_images", true)
 
     /** The [eu.kanade.tachiyomi.ui.reader.text.TextReplacement]s, as JSON. */
@@ -110,6 +114,7 @@ class ReaderPreferences(
         SEPIA(KMR.strings.reader_theme_sepia),
         DARK(MR.strings.theme_dark),
         BLACK(KMR.strings.reader_theme_black),
+        CUSTOM(KMR.strings.reader_theme_custom),
     }
 
     companion object {

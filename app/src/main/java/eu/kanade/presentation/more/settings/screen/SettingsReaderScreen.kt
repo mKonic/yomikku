@@ -9,6 +9,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.reader.TextReplacementsScreen
+import eu.kanade.presentation.reader.ReaderCustomColorRows
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.text.ReaderFonts
 import kotlinx.collections.immutable.persistentListOf
@@ -45,6 +46,7 @@ object SettingsReaderScreen : SearchableSettings {
         val context = LocalContext.current
         val fontFiles = remember { ReaderFonts.list(context) }
         val navigator = LocalNavigator.currentOrThrow
+        val theme by readerPreferences.theme().collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(KMR.strings.reader_settings_text),
             preferenceItems = persistentListOf(
@@ -62,6 +64,11 @@ object SettingsReaderScreen : SearchableSettings {
                         .toImmutableMap(),
                     title = stringResource(KMR.strings.reader_settings_theme),
                 ),
+                Preference.PreferenceItem.CustomPreference(
+                    title = stringResource(KMR.strings.reader_theme_custom),
+                ) {
+                    if (theme == ReaderPreferences.ReaderTheme.CUSTOM) ReaderCustomColorRows(readerPreferences)
+                },
                 // Added font files are listed by file name after the system fonts, which go by their enum name.
                 Preference.PreferenceItem.BasicListPreference(
                     value = customFont.ifEmpty { font.name },

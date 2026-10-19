@@ -234,6 +234,10 @@
     <string name="reader_theme_app">App theme</string>
     <string name="reader_theme_sepia">Sepia</string>
     <string name="reader_theme_black">Black</string>
+    <string name="reader_theme_custom">Custom</string>
+    <string name="reader_theme_custom_background">Background colour</string>
+    <string name="reader_theme_custom_text">Text colour</string>
+    <string name="reader_theme_custom_preview">The quick brown fox jumps over the lazy dog.</string>
     <string name="reader_end_of_chapter">End of chapter</string>
     <string name="reader_settings_text">Text</string>
     <string name="reader_settings_mode">Reading mode</string>
