@@ -10,6 +10,30 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+## [v1.4.0] - 2026-10-19
+### Added
+- Text replacements (Settings → Reader): change or remove words and lines in every chapter, as plain text or a
+  regular expression. A paragraph left empty is dropped, and reading aloud reads the result.
+- A custom reader theme with your own background and text colours.
+- Auto-scroll from the reader menu: the text scrolls by itself at a speed you set, or the page turns on a timer in
+  paged mode. It pauses while the menu is open and carries on into the next chapter.
+- An optional line with the time and battery level while reading.
+
+### Improved
+- Reading aloud now behaves like other audio: it stops for a phone call, when another app starts playing, or when
+  headphones are unplugged.
+- Reading aloud skips divider lines such as "* * *" and no longer says "quote" around quoted paragraphs.
+- When a source repeats the chapter's title at the top of its text, the repeat is left out.
+- Text can be made larger, up to 50.
+
+### Fixed
+- Sources that set an Origin header made the WebView close as soon as it opened.
+- Opening a link to another site in the WebView sent it the source's headers.
+- Downloads were not found for a source sharing its name with an uninstalled source.
+- Loading cover colours could leave files open.
+- WebDAV sync failed to upload to servers that check ETags strictly, and reported success when the upload was
+  rejected.
+
 ## [v1.3.0] - 2026-10-15
 ### Added
 - Extensions that fail to load are listed under Installed with the reason, and can be updated from their store,
