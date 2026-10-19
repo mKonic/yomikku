@@ -3,8 +3,11 @@ package eu.kanade.tachiyomi.ui.reader.text
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -42,6 +46,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -51,7 +56,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import eu.kanade.presentation.reader.ChapterTransition
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -63,6 +72,8 @@ import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.kmk.KMR
 import tachiyomi.presentation.core.i18n.stringResource
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** A request to move through the chapter, from volume keys or the keyboard. */
 enum class ReaderNavigation { FORWARD, BACKWARD }
@@ -91,6 +102,8 @@ fun ScrollTextReader(
     nextDocument: ChapterDocument? = null,
     onContinueToNext: (fraction: Float) -> Unit = {},
     speakingBlock: Int = -1,
+    autoScrollSpeed: Int = 0,
+    onAutoScrollEnd: () -> Unit = {},
 ) {
     val listState = rememberLazyListState()
     val currentOnContinue by rememberUpdatedState(onContinueToNext)
@@ -141,6 +154,41 @@ fun ScrollTextReader(
         if (!fits) listState.animateScrollToItem(item)
     }
 
+    // Auto-scroll moves the text a little every frame. A finger on it takes over, and it carries on once the
+    // text comes to rest; at the end it opens the next chapter, or stops after the last.
+    val autoScrollDensity = LocalDensity.current
+    val currentOnNext by rememberUpdatedState(onNextChapter)
+    val currentOnAutoScrollEnd by rememberUpdatedState(onAutoScrollEnd)
+    val hasNextChapter = nextChapter != null
+    val autoScrolling = autoScrollSpeed > 0
+    LaunchedEffect(autoScrollSpeed, listState, document) {
+        if (autoScrollSpeed <= 0) return@LaunchedEffect
+        val pxPerSecond = with(autoScrollDensity) { (autoScrollSpeed * AUTO_SCROLL_DP_PER_STEP).dp.toPx() }
+        while (true) {
+            snapshotFlow { listState.isScrollInProgress }.first { !it }
+            if (!listState.canScrollForward) {
+                if (hasNextChapter) currentOnNext() else currentOnAutoScrollEnd()
+                return@LaunchedEffect
+            }
+            try {
+                listState.scroll {
+                    var last = withFrameNanos { it }
+                    while (listState.canScrollForward) {
+                        val now = withFrameNanos { it }
+                        scrollBy(pxPerSecond * (now - last) / 1_000_000_000f)
+                        last = now
+                    }
+                }
+            } catch (e: CancellationException) {
+                // A drag interrupted the scroll; only a cancelled effect ends the loop. The gesture can keep
+                // the scroll to itself a little past the end of the drag, so wait before taking it back, or
+                // this would retry without ever yielding the thread.
+                currentCoroutineContext().ensureActive()
+                delay(AUTO_SCROLL_RESUME_DELAY)
+            }
+        }
+    }
+
     LaunchedEffect(navigation) {
         navigation.collect { direction ->
             val viewport = listState.layoutInfo.let { it.viewportEndOffset - it.viewportStartOffset }
@@ -154,8 +202,8 @@ fun ScrollTextReader(
         modifier = Modifier
             .fillMaxSize()
             .background(style.background)
-            .pointerInput(tapToTurn) {
-                detectTapGestures { position ->
+            .pointerInput(tapToTurn, autoScrolling) {
+                val onTapAt = { position: Offset ->
                     val zone = when {
                         !tapToTurn -> TapZone.MENU
                         position.y < size.height / 3f -> TapZone.PREVIOUS
@@ -169,6 +217,21 @@ fun ScrollTextReader(
                             val distance = viewport * PAGE_SCROLL_FRACTION
                             listState.animateScrollBy(if (zone == TapZone.NEXT) distance else -distance)
                         }
+                    }
+                }
+                if (!autoScrolling) {
+                    detectTapGestures { onTapAt(it) }
+                    return@pointerInput
+                }
+                // While the text moves, the list takes every touch to stop it, so taps are caught on their way down.
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    val up = waitForUpOrCancellation(pass = PointerEventPass.Initial) ?: return@awaitEachGesture
+                    val moved = (up.position - down.position).getDistance()
+                    if (moved < viewConfiguration.touchSlop &&
+                        up.uptimeMillis - down.uptimeMillis < viewConfiguration.longPressTimeoutMillis
+                    ) {
+                        onTapAt(up.position)
                     }
                 }
             },
@@ -253,9 +316,12 @@ fun PagedTextReader(
     onNextChapter: () -> Unit,
     speakingBlock: Int = -1,
     speakingOffset: Int = -1,
+    autoScrollSpeed: Int = 0,
+    onAutoScrollEnd: () -> Unit = {},
 ) {
     val density = LocalDensity.current
     val measurer = rememberTextMeasurer(cacheSize = 0)
+    val currentOnAutoScrollEnd by rememberUpdatedState(onAutoScrollEnd)
     val currentOnProgress by rememberUpdatedState(onProgress)
 
     BoxWithConstraints(
@@ -309,6 +375,20 @@ fun PagedTextReader(
         LaunchedEffect(navigation, pagerState) {
             navigation.collect { direction ->
                 pagerState.turn(direction == ReaderNavigation.FORWARD, onPreviousChapter, onNextChapter)
+            }
+        }
+
+        // Auto-scroll in pages: a turn every so often, the faster the speed the sooner.
+        LaunchedEffect(autoScrollSpeed, pagerState, laidOut) {
+            if (autoScrollSpeed <= 0) return@LaunchedEffect
+            while (true) {
+                delay(autoTurnInterval(autoScrollSpeed))
+                if (pagerState.isScrollInProgress) continue
+                if (pagerState.currentPage >= laidOut.size && nextChapter == null) {
+                    currentOnAutoScrollEnd()
+                    return@LaunchedEffect
+                }
+                pagerState.turn(true, onPreviousChapter, onNextChapter)
             }
         }
 
@@ -529,6 +609,15 @@ private fun LazyListState.readingPosition(document: ChapterDocument, firstItem: 
 }
 
 private const val PAGE_SCROLL_FRACTION = 0.9f
+
+/** Auto-scroll speed in scroll mode: this many dp a second for each step of the speed setting. */
+private const val AUTO_SCROLL_DP_PER_STEP = 4
+
+/** How long auto-scroll waits after a drag before it moves the text again. */
+private val AUTO_SCROLL_RESUME_DELAY = 600.milliseconds
+
+/** Time on a page in paged mode: a minute at the slowest speed, three seconds less for each step faster. */
+private fun autoTurnInterval(speed: Int) = (63 - speed * 3).coerceAtLeast(3).seconds
 
 /** Items of the current chapter before the appended one's blocks: its header, then the next chapter's title. */
 private const val NEXT_CHAPTER_ITEMS_BEFORE_BLOCKS = 2

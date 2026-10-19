@@ -63,6 +63,8 @@ import mihon.icons.materialsymbols.automirroredrounded.ArrowBack
 import mihon.icons.materialsymbols.automirroredrounded.FormatListBulleted
 import mihon.icons.materialsymbols.rounded.Bookmark
 import mihon.icons.materialsymbols.rounded.BookmarkAdd
+import mihon.icons.materialsymbols.rounded.KeyboardDoubleArrowDown
+import mihon.icons.materialsymbols.rounded.Pause
 import mihon.icons.materialsymbols.rounded.Public
 import mihon.icons.materialsymbols.rounded.RecordVoiceOver
 import mihon.icons.materialsymbols.rounded.Settings
@@ -94,6 +96,8 @@ fun ReaderScreen(
     onOpenChapterList: () -> Unit,
     onOpenSettings: () -> Unit,
     onToggleSpeech: () -> Unit,
+    onToggleAutoScroll: () -> Unit,
+    onAutoScrollEnd: () -> Unit,
 ) {
     val style = rememberReaderTextStyle(preferences)
     val defaultReadingMode by preferences.readingMode().collectAsState()
@@ -101,6 +105,11 @@ fun ReaderScreen(
     val tapToTurn by preferences.tapToTurnPages().collectAsState()
     val showProgress by preferences.showProgress().collectAsState()
     val showStatusLine by preferences.showStatusLine().collectAsState()
+    val autoScrollSetting by preferences.autoScrollSpeed().collectAsState()
+    // Auto-scroll waits while the menus or a dialog are open, and while reading aloud moves the text instead.
+    val autoScrollSpeed = autoScrollSetting.takeIf {
+        state.autoScrolling && !state.menuVisible && !state.speaking && state.dialog == null
+    } ?: 0
 
     CompositionLocalProvider(LocalDownloadedChapters provides state.downloadedChapterIds) {
         Box(
@@ -138,6 +147,8 @@ fun ReaderScreen(
                     onNextChapter = onNextChapter,
                     speakingBlock = state.speakingBlock,
                     speakingOffset = state.speakingOffset,
+                    autoScrollSpeed = autoScrollSpeed,
+                    onAutoScrollEnd = onAutoScrollEnd,
                 )
                 else -> ScrollTextReader(
                     document = document,
@@ -156,6 +167,8 @@ fun ReaderScreen(
                     nextDocument = state.nextDocument,
                     onContinueToNext = onContinueToNextChapter,
                     speakingBlock = state.speakingBlock,
+                    autoScrollSpeed = autoScrollSpeed,
+                    onAutoScrollEnd = onAutoScrollEnd,
                 )
             }
 
@@ -222,6 +235,8 @@ fun ReaderScreen(
                 onOpenSettings = onOpenSettings,
                 speaking = state.speaking,
                 onToggleSpeech = onToggleSpeech,
+                autoScrolling = state.autoScrolling,
+                onToggleAutoScroll = onToggleAutoScroll,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
             // While reading aloud with the menus hidden, stopping stays one tap away.
@@ -350,6 +365,8 @@ private fun ReaderBottomBar(
     onOpenSettings: () -> Unit,
     speaking: Boolean,
     onToggleSpeech: () -> Unit,
+    autoScrolling: Boolean,
+    onToggleAutoScroll: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
@@ -406,6 +423,16 @@ private fun ReaderBottomBar(
                         Icon(MaterialSymbols.Rounded.Stop, stringResource(KMR.strings.reader_tts_stop))
                     } else {
                         Icon(MaterialSymbols.Rounded.RecordVoiceOver, stringResource(KMR.strings.reader_tts_start))
+                    }
+                }
+                IconButton(onClick = onToggleAutoScroll) {
+                    if (autoScrolling) {
+                        Icon(MaterialSymbols.Rounded.Pause, stringResource(KMR.strings.reader_auto_scroll_stop))
+                    } else {
+                        Icon(
+                            MaterialSymbols.Rounded.KeyboardDoubleArrowDown,
+                            stringResource(KMR.strings.reader_auto_scroll_start),
+                        )
                     }
                 }
                 IconButton(onClick = onOpenSettings) {

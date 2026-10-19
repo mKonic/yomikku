@@ -150,6 +150,15 @@ private fun GeneralPage(preferences: ReaderPreferences) {
     CheckboxItem(stringResource(MR.strings.pref_fullscreen), preferences.fullscreen())
     CheckboxItem(stringResource(MR.strings.pref_keep_screen_on), preferences.keepScreenOn())
 
+    val autoScrollSpeed by preferences.autoScrollSpeed().collectAsState()
+    SliderItem(
+        value = autoScrollSpeed,
+        valueRange = 1..ReaderPreferences.MAX_AUTO_SCROLL_SPEED,
+        label = stringResource(KMR.strings.reader_settings_auto_scroll_speed),
+        onChange = { preferences.autoScrollSpeed().set(it) },
+        steps = ReaderPreferences.MAX_AUTO_SCROLL_SPEED - 2,
+    )
+
     HeadingItem(KMR.strings.reader_settings_tts)
     FloatSlider(KMR.strings.reader_settings_tts_rate, preferences.speechRate(), 0.5f, 3f, step = 0.1f)
     FloatSlider(KMR.strings.reader_settings_tts_pitch, preferences.speechPitch(), 0.5f, 2f, step = 0.1f)

@@ -142,6 +142,7 @@ object SettingsReaderScreen : SearchableSettings {
     @Composable
     private fun getReadingGroup(readerPreferences: ReaderPreferences): Preference.PreferenceGroup {
         val volumeKeys by readerPreferences.readWithVolumeKeys().collectAsState()
+        val autoScrollSpeed by readerPreferences.autoScrollSpeed().collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_reading),
             preferenceItems = persistentListOf(
@@ -160,6 +161,13 @@ object SettingsReaderScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = readerPreferences.tapToTurnPages(),
                     title = stringResource(KMR.strings.reader_settings_tap_to_turn),
+                ),
+                Preference.PreferenceItem.SliderPreference(
+                    value = autoScrollSpeed,
+                    valueRange = 1..ReaderPreferences.MAX_AUTO_SCROLL_SPEED,
+                    title = stringResource(KMR.strings.reader_settings_auto_scroll_speed),
+                    valueString = autoScrollSpeed.toString(),
+                    onValueChanged = { readerPreferences.autoScrollSpeed().set(it) },
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = readerPreferences.appendNextChapter(),

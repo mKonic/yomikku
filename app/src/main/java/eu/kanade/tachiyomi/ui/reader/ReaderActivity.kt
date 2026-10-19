@@ -116,6 +116,8 @@ class ReaderActivity : BaseActivity() {
                     onOpenChapterList = viewModel::openChapterList,
                     onOpenSettings = viewModel::openSettings,
                     onToggleSpeech = viewModel::toggleSpeech,
+                    onToggleAutoScroll = viewModel::toggleAutoScroll,
+                    onAutoScrollEnd = viewModel::stopAutoScroll,
                 )
                 when (state.dialog) {
                     ReaderViewModel.Dialog.Settings -> ReaderSettingsSheet(
@@ -150,7 +152,9 @@ class ReaderActivity : BaseActivity() {
             .onEach { (visible, fullscreen) -> setSystemBars(visible || !fullscreen) }
             .launchIn(lifecycleScope)
 
+        // Nobody touches the screen while it scrolls by itself, so it stays on then too.
         readerPreferences.keepScreenOn().changes()
+            .combine(viewModel.state.map { it.autoScrolling }.distinctUntilChanged()) { keep, auto -> keep || auto }
             .onEach { enabled ->
                 if (enabled) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

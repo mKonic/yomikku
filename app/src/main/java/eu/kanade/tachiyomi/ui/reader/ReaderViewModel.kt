@@ -474,9 +474,17 @@ class ReaderViewModel @JvmOverloads constructor(
             return
         }
         val document = state.value.document ?: return
-        mutableState.update { it.copy(speaking = true) }
+        mutableState.update { it.copy(speaking = true, autoScrolling = false) }
         speakFrom(document, state.value.progress)
     }
+
+    fun toggleAutoScroll() {
+        if (state.value.speaking) stopSpeech()
+        mutableState.update { it.copy(autoScrolling = !it.autoScrolling, menuVisible = false) }
+    }
+
+    /** Auto-scroll reached the end of the last chapter. */
+    fun stopAutoScroll() = mutableState.update { it.copy(autoScrolling = false) }
 
     fun stopSpeech() {
         speech?.stop()
@@ -642,6 +650,8 @@ class ReaderViewModel @JvmOverloads constructor(
         val speaking: Boolean = false,
         val speakingBlock: Int = -1,
         val speakingOffset: Int = -1,
+        /** Auto-scroll is on; it waits while the menus are open or the chapter is read aloud. */
+        val autoScrolling: Boolean = false,
         val dialog: Dialog? = null,
     )
 

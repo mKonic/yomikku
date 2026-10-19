@@ -63,6 +63,9 @@ class ReaderPreferences(
 
     fun tapToTurnPages() = preferenceStore.getBoolean("pref_text_tap_to_turn", true)
 
+    /** 1 to [MAX_AUTO_SCROLL_SPEED]: how fast auto-scroll moves, or how soon it turns the page in paged mode. */
+    fun autoScrollSpeed() = preferenceStore.getInt("pref_text_auto_scroll_speed", 4)
+
     /** In scroll mode, show the next chapter below the end of this one, so reading carries on. */
     fun speechRate() = preferenceStore.getFloat("pref_text_speech_rate", 1f)
 
@@ -122,5 +125,6 @@ class ReaderPreferences(
         const val DEFAULT_FONT_SIZE = 18
         const val MIN_FONT_SIZE = 10
         const val MAX_FONT_SIZE = 50
+        const val MAX_AUTO_SCROLL_SPEED = 20
     }
 }
