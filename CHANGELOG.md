@@ -10,6 +10,10 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+## [Unreleased]
+### Fixed
+- A library update that found new chapters for many entries could freeze the app while it posted their notifications.
+
 ## [v1.4.0] - 2026-10-19
 ### Added
 - Text replacements (Settings → Reader): change or remove words and lines in every chapter, as plain text or a
