@@ -41,8 +41,37 @@ class ChapterDocument(
 
     fun isEmpty() = blocks.isEmpty()
 
+    /**
+     * Without the paragraphs at the top that only repeat [title]: the reader shows the chapter's name above its
+     * text, and many sites open the text with it too, often twice.
+     */
+    fun withoutTitle(title: String): ChapterDocument {
+        val key = title.titleKey()
+        if (key.isEmpty()) return this
+        val repeats = blocks.take(MAX_TITLE_REPEATS)
+            .takeWhile { it is TextBlock.Paragraph && it.text.text.titleKey() == key }
+            .size
+        // A chapter that is nothing but its title keeps it, rather than reading as empty.
+        if (repeats == 0 || repeats == blocks.size) return this
+        val shift = blocks[repeats].start
+        return ChapterDocument(
+            blocks.drop(repeats).map { block ->
+                when (block) {
+                    is TextBlock.Paragraph -> block.copy(start = block.start - shift)
+                    is TextBlock.Image -> block.copy(start = block.start - shift)
+                    is TextBlock.Rule -> block.copy(start = block.start - shift)
+                }
+            },
+        )
+    }
+
     companion object {
         val EMPTY = ChapterDocument(emptyList())
+
+        private const val MAX_TITLE_REPEATS = 3
+
+        /** Letters and digits only, so "Chapter 5: Name" and "Chapter 5 - Name" match. */
+        private fun String.titleKey() = lowercase().filter { it.isLetterOrDigit() }
     }
 }
 

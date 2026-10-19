@@ -24,7 +24,7 @@ class ChapterTextLoader(
     suspend fun load(manga: Manga, chapter: Chapter, source: Source): ChapterDocument = withIOContext {
         val html = loadHtml(manga, chapter, source)
         val baseUrl = (source as? HttpSource)?.baseUrl.orEmpty()
-        ChapterParser.parse(html, baseUrl)
+        ChapterParser.parse(html, baseUrl).withoutTitle(chapter.name)
     }
 
     /**

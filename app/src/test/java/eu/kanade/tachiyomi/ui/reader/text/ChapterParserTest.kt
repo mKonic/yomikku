@@ -74,4 +74,15 @@ class ChapterParserTest {
         document.blocks.map { it.start } shouldBe listOf(0, 4, 5)
         document.length shouldBe 8
     }
+
+    @Test
+    fun `the title repeated at the top is dropped and offsets start again at zero`() {
+        val document = ChapterParser.parse("<h3>Chapter 5: Name</h3><p>Chapter 5 - name</p><p>Text</p><p>Chapter 5: Name</p>")
+            .withoutTitle("Chapter 5: Name")
+        document.paragraphs().map { it.text.text } shouldBe listOf("Text", "Chapter 5: Name")
+        document.blocks.first().start shouldBe 0
+
+        val onlyTitle = ChapterParser.parse("<p>Chapter 5</p>")
+        onlyTitle.withoutTitle("Chapter 5").blocks shouldHaveSize 1
+    }
 }
