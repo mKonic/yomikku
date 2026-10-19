@@ -256,6 +256,16 @@
     <string name="reader_settings_horizontal_margin">Side margins</string>
     <string name="reader_settings_vertical_margin">Top and bottom margins</string>
     <string name="reader_settings_show_images">Show images</string>
+    <string name="reader_text_replacements">Text replacements</string>
+    <string name="reader_text_replacements_summary">Change or remove words and lines in every chapter</string>
+    <string name="reader_text_replacements_empty">No replacements yet. Add one to fix a name or drop a site\'s ad line in every chapter.</string>
+    <string name="reader_text_replacements_add">Add replacement</string>
+    <string name="reader_text_replacements_edit">Edit replacement</string>
+    <string name="reader_text_replacements_find">Find</string>
+    <string name="reader_text_replacements_replace">Replace with</string>
+    <string name="reader_text_replacements_replace_hint">Leave empty to remove it; a paragraph left empty is dropped</string>
+    <string name="reader_text_replacements_regex">Regular expression ($1 for groups)</string>
+    <string name="reader_text_replacements_removed">Removed</string>
     <string name="reader_settings_tap_to_turn">Tap the edges to turn pages</string>
     <string name="reader_settings_append_next_chapter">Continue into the next chapter when scrolling</string>
     <string name="reader_settings_show_progress">Show chapter progress</string>

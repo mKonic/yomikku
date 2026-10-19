@@ -121,9 +121,14 @@ sealed interface TextBlock {
  */
 object ChapterParser {
 
-    fun parse(html: String, baseUrl: String = ""): ChapterDocument {
+    /** [replace] rewrites each paragraph, as the reader's text replacements do; see [TextReplacements]. */
+    fun parse(
+        html: String,
+        baseUrl: String = "",
+        replace: ((AnnotatedString) -> AnnotatedString)? = null,
+    ): ChapterDocument {
         val body = Jsoup.parseBodyFragment(html, baseUrl).body()
-        return Builder().apply { walkBlock(body) }.build()
+        return Builder(replace).apply { walkBlock(body) }.build()
     }
 
     /**
@@ -140,7 +145,7 @@ object ChapterParser {
         return builder.build()
     }
 
-    private class Builder {
+    private class Builder(private val replace: ((AnnotatedString) -> AnnotatedString)? = null) {
         private val blocks = mutableListOf<TextBlock>()
         private var offset = 0
 
@@ -169,7 +174,8 @@ object ChapterParser {
             current = AnnotatedString.Builder()
             openSpans.forEach { current.pushSpan(it) }
             pendingSpace = false
-            val trimmed = text.trimmed()
+            var trimmed = text.trimmed()
+            if (replace != null && trimmed.isNotEmpty()) trimmed = replace(trimmed).trimmed()
             if (trimmed.isNotEmpty()) addParagraph(trimmed, currentKind)
             currentKind = TextBlock.Kind.BODY
         }

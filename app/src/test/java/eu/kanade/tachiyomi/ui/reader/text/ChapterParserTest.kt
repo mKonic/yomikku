@@ -85,4 +85,24 @@ class ChapterParserTest {
         val onlyTitle = ChapterParser.parse("<p>Chapter 5</p>")
         onlyTitle.withoutTitle("Chapter 5").blocks shouldHaveSize 1
     }
+
+    @Test
+    fun `text replacements keep styling around a match, fill groups and drop emptied paragraphs`() {
+        val replace = TextReplacements.compile(
+            listOf(
+                TextReplacement("Lin Fen", "Lin Feng"),
+                TextReplacement("""Chapter (\d+)""", "Ch. $1", regex = true),
+                TextReplacement("Read at example.com"),
+                TextReplacement("off", "gone", enabled = false),
+            ),
+        )
+        val document = ChapterParser.parse(
+            "<p><b>Lin Fen</b> said off</p><p>Chapter 12 ends</p><p>Read at <a href='https://example.com'>example.com</a></p>",
+            replace = replace,
+        )
+        val paragraphs = document.paragraphs()
+        paragraphs.map { it.text.text } shouldBe listOf("Lin Feng said off", "Ch. 12 ends")
+        // The bold run that was not part of the match keeps its style.
+        paragraphs[0].text.spanStyles.single().item.fontWeight shouldBe FontWeight.Bold
+    }
 }

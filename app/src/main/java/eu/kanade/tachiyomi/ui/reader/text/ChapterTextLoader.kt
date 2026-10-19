@@ -5,6 +5,7 @@ import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.DownloadProvider
 import eu.kanade.tachiyomi.source.Source
 import eu.kanade.tachiyomi.source.online.HttpSource
+import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.domain.chapter.model.Chapter
 import tachiyomi.domain.manga.model.Manga
@@ -19,12 +20,14 @@ import uy.kohesive.injekt.api.get
 class ChapterTextLoader(
     private val downloadProvider: DownloadProvider = Injekt.get(),
     private val chapterCache: ChapterCache = Injekt.get(),
+    private val readerPreferences: ReaderPreferences = Injekt.get(),
 ) {
 
     suspend fun load(manga: Manga, chapter: Chapter, source: Source): ChapterDocument = withIOContext {
         val html = loadHtml(manga, chapter, source)
         val baseUrl = (source as? HttpSource)?.baseUrl.orEmpty()
-        ChapterParser.parse(html, baseUrl).withoutTitle(chapter.name)
+        val replace = TextReplacements.compile(TextReplacements.decode(readerPreferences.textReplacements().get()))
+        ChapterParser.parse(html, baseUrl, replace).withoutTitle(chapter.name)
     }
 
     /**

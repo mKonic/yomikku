@@ -37,6 +37,9 @@ class ReaderPreferences(
 
     fun showImages() = preferenceStore.getBoolean("pref_text_show_images", true)
 
+    /** The [eu.kanade.tachiyomi.ui.reader.text.TextReplacement]s, as JSON. */
+    fun textReplacements() = preferenceStore.getString("pref_text_replacements", "[]")
+
     // endregion
 
     // region Behaviour

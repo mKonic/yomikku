@@ -5,7 +5,10 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.more.settings.Preference
+import eu.kanade.presentation.more.settings.screen.reader.TextReplacementsScreen
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.text.ReaderFonts
 import kotlinx.collections.immutable.persistentListOf
@@ -41,6 +44,7 @@ object SettingsReaderScreen : SearchableSettings {
         val customFont by readerPreferences.customFont().collectAsState()
         val context = LocalContext.current
         val fontFiles = remember { ReaderFonts.list(context) }
+        val navigator = LocalNavigator.currentOrThrow
         return Preference.PreferenceGroup(
             title = stringResource(KMR.strings.reader_settings_text),
             preferenceItems = persistentListOf(
@@ -89,6 +93,11 @@ object SettingsReaderScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = readerPreferences.showImages(),
                     title = stringResource(KMR.strings.reader_settings_show_images),
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(KMR.strings.reader_text_replacements),
+                    subtitle = stringResource(KMR.strings.reader_text_replacements_summary),
+                    onClick = { navigator.push(TextReplacementsScreen()) },
                 ),
             ),
         )
