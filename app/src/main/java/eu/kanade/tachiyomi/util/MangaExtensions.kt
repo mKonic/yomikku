@@ -9,15 +9,10 @@ import tachiyomi.source.local.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.InputStream
-import java.time.Instant
 
-fun Manga.removeCovers(coverCache: CoverCache = Injekt.get()): Manga {
-    if (isLocal()) return this
-    return if (coverCache.deleteFromCache(this, true) > 0) {
-        copy(coverLastModified = Instant.now().toEpochMilli())
-    } else {
-        this
-    }
+fun Manga.removeCovers(coverCache: CoverCache = Injekt.get()) {
+    if (isLocal()) return
+    coverCache.deleteFromCache(this, true)
 }
 
 suspend fun Manga.editCover(

@@ -346,7 +346,7 @@ class BulkFavoriteScreenModel(
             )
             // TODO: also allow deleting chapters when remove favorite (just like in [MangaScreenModel])
             if (!new.favorite) {
-                new = new.removeCovers(coverCache)
+                new.removeCovers(coverCache)
             } else {
                 setMangaDefaultChapterFlags.await(manga)
                 addTracks.bindEnhancedTrackers(manga, source)

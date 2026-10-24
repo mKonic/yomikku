@@ -353,7 +353,7 @@ open class BrowseSourceScreenModel(
             )
 
             if (!new.favorite) {
-                new = new.removeCovers(coverCache)
+                new.removeCovers(coverCache)
             } else {
                 setMangaDefaultChapterFlags.await(manga)
                 addTracks.bindEnhancedTrackers(manga, source)
