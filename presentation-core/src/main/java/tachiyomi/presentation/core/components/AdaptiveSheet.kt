@@ -52,7 +52,7 @@ private val sheetAnimationSpec = tween<Float>(durationMillis = 350)
 @Composable
 fun AdaptiveSheet(
     isTabletUi: Boolean,
-    enableSwipeDismiss: Boolean,
+    enableImplicitDismiss: Boolean,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -77,6 +77,7 @@ fun AdaptiveSheet(
                 .clickable(
                     interactionSource = null,
                     indication = null,
+                    enabled = enableImplicitDismiss,
                     onClick = internalOnDismissRequest,
                 )
                 .fillMaxSize()
@@ -97,7 +98,7 @@ fun AdaptiveSheet(
                 shape = MaterialTheme.shapes.extraLarge,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 content = {
-                    BackHandler(enabled = alpha > 0f, onBack = internalOnDismissRequest)
+                    BackHandler(enabled = enableImplicitDismiss && alpha > 0f, onBack = internalOnDismissRequest)
                     content()
                 },
             )
@@ -148,7 +149,7 @@ fun AdaptiveSheet(
                         onClick = {},
                     )
                     .then(
-                        if (enableSwipeDismiss) {
+                        if (enableImplicitDismiss) {
                             Modifier.nestedScroll(
                                 remember(anchoredDraggableState) {
                                     anchoredDraggableState.preUpPostDownNestedScrollConnection(
@@ -173,7 +174,7 @@ fun AdaptiveSheet(
                     .anchoredDraggable(
                         state = anchoredDraggableState,
                         orientation = Orientation.Vertical,
-                        enabled = enableSwipeDismiss,
+                        enabled = enableImplicitDismiss,
                     )
                     .navigationBarsPadding()
                     .statusBarsPadding(),
@@ -181,7 +182,7 @@ fun AdaptiveSheet(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 content = {
                     BackHandler(
-                        enabled = anchoredDraggableState.targetValue == 0,
+                        enabled = enableImplicitDismiss && anchoredDraggableState.targetValue == 0,
                         onBack = internalOnDismissRequest,
                     )
                     content()
