@@ -11,8 +11,18 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Added
+- A setting under Advanced to keep credentials out of logged request headers (on by default).
+
+### Improved
+- Library updates start with the sources that hold the most entries.
+
 ### Fixed
 - A library update that found new chapters for many entries could freeze the app while it posted their notifications.
+- Removing a novel from the library reloaded its cover everywhere it was shown.
+- With the feed tab hidden, opening extensions from a notification opened Migrate.
+- Leaving a source's listing while a page loaded could show it as failed.
+- The tracking sheet closed on an outside tap or back while on its search screen.
 
 ## [v1.4.0] - 2026-10-19
 ### Added
