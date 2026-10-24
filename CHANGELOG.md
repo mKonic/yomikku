@@ -10,7 +10,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## [Unreleased]
+## [v1.5.0] - 2026-10-24
 ### Added
 - A setting under Advanced to keep credentials out of logged request headers (on by default).
 
