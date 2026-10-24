@@ -11,6 +11,10 @@ class NetworkPreferences(
         return preferenceStore.getBoolean("verbose_logging", verboseLogging)
     } KMK <-- */
 
+    fun redactSensitiveHeaders(): Preference<Boolean> {
+        return preferenceStore.getBoolean("redact_sensitive_headers", true)
+    }
+
     fun dohProvider(): Preference<Int> {
         return preferenceStore.getInt("doh_provider", -1)
     }

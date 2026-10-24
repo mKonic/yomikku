@@ -663,6 +663,9 @@ object SettingsAdvancedScreen : SearchableSettings {
         val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
         val exhPreferences = remember { Injekt.get<ExhPreferences>() }
         val securityPreferences = remember { Injekt.get<SecurityPreferences>() }
+        // KMK -->
+        val networkPreferences = remember { Injekt.get<NetworkPreferences>() }
+        // KMK <--
         return Preference.PreferenceGroup(
             title = stringResource(SYMR.strings.developer_tools),
             preferenceItems = persistentListOf(
@@ -678,6 +681,17 @@ object SettingsAdvancedScreen : SearchableSettings {
                     title = stringResource(SYMR.strings.log_level),
                     subtitle = stringResource(SYMR.strings.log_level_summary),
                 ),
+                // KMK -->
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = networkPreferences.redactSensitiveHeaders(),
+                    title = stringResource(MR.strings.pref_redact_sensitive_headers),
+                    subtitle = stringResource(MR.strings.pref_redact_sensitive_headers_summary),
+                    onValueChanged = {
+                        context.toast(MR.strings.requires_app_restart)
+                        true
+                    },
+                ),
+                // KMK <--
                 run {
                     var enableEncryptDatabase by rememberSaveable { mutableStateOf(false) }
 
