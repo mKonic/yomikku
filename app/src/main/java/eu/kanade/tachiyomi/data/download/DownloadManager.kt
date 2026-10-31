@@ -483,7 +483,7 @@ class DownloadManager(
 
             val categoriesForManga = getCategories.await(manga.id)
                 .map { it.id }
-                .ifEmpty { listOf(0) }
+                .ifEmpty { listOf(0L) }
             if (categoriesForManga.intersect(categoriesToExclude).isNotEmpty()) {
                 chapters.filterNot { it.read }
             } else {
