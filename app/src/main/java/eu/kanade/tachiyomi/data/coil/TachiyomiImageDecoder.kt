@@ -2,7 +2,6 @@ package eu.kanade.tachiyomi.data.coil
 
 import android.app.Application
 import android.graphics.Bitmap
-import androidx.core.graphics.scale
 import ca.mpreg.imagedecoder.ImageDecoder
 import coil3.Canvas
 import coil3.Image
@@ -20,7 +19,9 @@ import mihon.core.archive.CbzCrypto
 import mihon.core.archive.CbzCrypto.getCoverStream
 import mihon.core.archive.archiveReader
 import okio.BufferedSource
+import tachiyomi.core.common.util.system.DecodedImage
 import tachiyomi.core.common.util.system.ImageUtil
+import tachiyomi.core.common.util.system.decodeOwned
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.BufferedInputStream
@@ -32,6 +33,7 @@ class TachiyomiImageDecoder(private val resources: ImageSource, private val opti
     private val context = Injekt.get<Application>()
 
     override suspend fun decode(): DecodeResult {
+        var sampleSize: Int
         // SY -->
         var coverStream: BufferedInputStream? = null
         if (resources.sourceOrNull()?.peek()?.use { CbzCrypto.detectCoverImageArchive(it.inputStream()) } == true) {
@@ -43,44 +45,22 @@ class TachiyomiImageDecoder(private val resources: ImageSource, private val opti
         }
         val decoder = resources.sourceOrNull()?.use {
             coverStream.use { coverStream ->
-                ImageDecoder.new(coverStream ?: it.inputStream())
+                ImageDecoder.open(coverStream ?: it.inputStream())
             }
         }
         // SY <--
 
-        // The pixels come back in a Java direct buffer, so the decoder's native copy of the source
-        // can go now rather than whenever the finalizer gets to it.
-        val decoded = decoder.use {
-            check(it != null && it.pages > 0) { "Failed to initialize decoder" }
-            it.decode()
-        }
-        val srcWidth = decoded.width
-        val srcHeight = decoded.height
-        check(srcWidth > 0 && srcHeight > 0) { "Failed to decode image" }
-
-        val dstWidth = options.size.widthPx(options.scale) { srcWidth }
-        val dstHeight = options.size.heightPx(options.scale) { srcHeight }
-
-        val sampleSize = DecodeUtils.calculateInSampleSize(
-            srcWidth = srcWidth,
-            srcHeight = srcHeight,
-            dstWidth = dstWidth,
-            dstHeight = dstHeight,
-            scale = options.scale,
-        )
-
-        // The decoder hands back a full-resolution RGBA buffer, so any downsampling happens after
-        // the copy rather than during decode. Only formats the platform decoder cannot read reach
-        // this class at all, so that cost is paid on AVIF, JXL and JPEG 2000 - never on a page.
-        var bitmap = ImageUtil.toBitmap(decoded)
-
-        if (sampleSize > 1) {
-            val scaled = bitmap.scale(
-                (srcWidth / sampleSize).coerceAtLeast(1),
-                (srcHeight / sampleSize).coerceAtLeast(1),
+        // The decoder shrinks while it decodes, so a cover never exists at full size.
+        var bitmap = decoder.use {
+            check(it != null && it.width > 0 && it.height > 0) { "Failed to initialize decoder" }
+            sampleSize = DecodeUtils.calculateInSampleSize(
+                srcWidth = it.width,
+                srcHeight = it.height,
+                dstWidth = options.size.widthPx(options.scale) { it.width },
+                dstHeight = options.size.heightPx(options.scale) { it.height },
+                scale = options.scale,
             )
-            bitmap.recycle()
-            bitmap = scaled
+            ImageUtil.decodeToArgb(it, sampleSize)
         }
 
         if (
@@ -144,7 +124,7 @@ class TachiyomiImageDecoder(private val resources: ImageSource, private val opti
  */
 class RawImageDecoder(private val resources: ImageSource) : Decoder {
 
-    class RawImage(val result: ImageDecoder.DecodeResult) : Image {
+    class RawImage(val result: DecodedImage) : Image {
         override val size: Long get() = result.image.capacity().toLong()
         override val width: Int get() = result.width
         override val height: Int get() = result.height
@@ -154,7 +134,7 @@ class RawImageDecoder(private val resources: ImageSource) : Decoder {
     }
 
     override suspend fun decode(): DecodeResult {
-        val decoded = ImageDecoder.new(resources.source().inputStream()).use { it.decode() }
+        val decoded = ImageDecoder.open(resources.source().inputStream()).use { it.decodeOwned() }
         return DecodeResult(image = RawImage(decoded), isSampled = false)
     }
 }

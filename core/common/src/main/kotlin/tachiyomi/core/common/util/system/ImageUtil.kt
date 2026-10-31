@@ -22,7 +22,6 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.core.graphics.get
 import androidx.core.graphics.green
 import androidx.core.graphics.red
-import androidx.core.graphics.scale
 import androidx.exifinterface.media.ExifInterface
 import ca.mpreg.imagedecoder.ImageDecoder
 import com.hippo.unifile.UniFile
@@ -108,12 +107,11 @@ object ImageUtil {
     fun isWideImage(imageSource: BufferedSource): Boolean {
         val options = extractImageOptions(imageSource)
         // KMK --> the platform cannot read the bounds of a JXL (or an AVIF before Android 12), and
-        // the 0x0 it reports meant those pages were never split. The bundled decoder has no
-        // bounds-only mode, so it decodes; only formats the platform rejects ever get here.
+        // the 0x0 it reports meant those pages were never split. The bundled decoder reads them off
+        // the header; only formats the platform rejects ever get here.
         if (options.outWidth <= 0 || options.outHeight <= 0) {
             return try {
-                ImageDecoder.new(imageSource.peek().inputStream()).use { it.decode() }
-                    .let { it.width > it.height }
+                ImageDecoder.open(imageSource.peek().inputStream()).use { it.width > it.height }
             } catch (e: Exception) {
                 logcat(LogPriority.WARN, e) { "Failed to read image dimensions" }
                 false
@@ -372,21 +370,6 @@ object ImageUtil {
     }
 
     /**
-     * Copies a bundled-decoder result into a new ARGB_8888 bitmap.
-     *
-     * An HDR source (PQ, HLG, float) decodes to half-floats, which a straight byte copy turns into
-     * noise, so those are clipped to 8 bits first.
-     */
-    fun toBitmap(result: ImageDecoder.DecodeResult): Bitmap {
-        val pixels = if (result.pixelFormat == ImageDecoder.PixelFormat.RGBA16F) {
-            halfFloatRgbaToUnorm8(result.image, result.width * result.height)
-        } else {
-            result.image.apply { rewind() }
-        }
-        return createBitmap(result.width, result.height).apply { copyPixelsFromBuffer(pixels) }
-    }
-
-    /**
      * Decodes [imageSource] to a bitmap, subsampled by [sampleSize] when it is above 1.
      *
      * The platform decoder handles every format a manga page realistically arrives in and honours
@@ -401,23 +384,22 @@ object ImageUtil {
         val options = BitmapFactory.Options().apply { inSampleSize = sampleSize.coerceAtLeast(1) }
         BitmapFactory.decodeStream(imageSource.peek().inputStream(), null, options)?.let { return it }
 
-        val decoded = try {
-            ImageDecoder.new(imageSource.peek().inputStream()).use { it.decode() }
+        return try {
+            ImageDecoder.open(imageSource.peek().inputStream()).use { decodeToArgb(it, options.inSampleSize) }
         } catch (e: Exception) {
             logcat(LogPriority.WARN, e) { "Failed to decode image" }
-            return null
+            null
         }
+    }
 
-        val full = toBitmap(decoded)
-
-        if (options.inSampleSize <= 1) return full
-
-        val scaled = full.scale(
-            (decoded.width / options.inSampleSize).coerceAtLeast(1),
-            (decoded.height / options.inSampleSize).coerceAtLeast(1),
-        )
-        full.recycle()
-        return scaled
+    /**
+     * [decoder]'s first frame as an ARGB_8888 bitmap, shrunk by [sampleSize] while it decodes. An HDR
+     * source decodes to half-floats, which are clipped to 8 bits here as every caller draws SDR.
+     */
+    fun decodeToArgb(decoder: ImageDecoder, sampleSize: Int = 1): Bitmap {
+        val bitmap = decoder.decodeToBitmap(sampleSize = sampleSize.coerceAtLeast(1))
+        if (bitmap.config == Bitmap.Config.ARGB_8888) return bitmap
+        return bitmap.copy(Bitmap.Config.ARGB_8888, false).also { bitmap.recycle() }
     }
 
     /**

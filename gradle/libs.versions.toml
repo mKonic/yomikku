@@ -51,10 +51,10 @@ coil-gif = { module = "io.coil-kt.coil3:coil-gif" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp" }
 
-subsamplingscaleimageview = "com.github.mihonapp:subsampling-scale-image-view:94915e6f73"
-# KMK --> one decoder for everything: the old com.github.tachiyomiorg:image-decoder shipped a
+subsamplingscaleimageview = "com.github.mihonapp:subsampling-scale-image-view:72a0537151"
+# KMK --> one decoder for everything, the one Mihon ships: the old com.github.tachiyomiorg:image-decoder shipped a
 # 4 KB-aligned libimagedecoder.so, which cannot be loaded on a 16 KB-page device
-image-decoder = "ca.mpreg:imagedecoder:13"
+image-decoder = "ca.mpreg:imagedecoder:18"
 kim = "de.stefan-oltmann:kim:0.40.0"
 
 natural-comparator = "com.github.gpanther:java-nat-sort:natural-comparator-1.1"
