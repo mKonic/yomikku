@@ -10,7 +10,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## [Unreleased]
+## [v1.6.0] - 2026-10-31
 ### Changed
 - Covers and images decode with the same image decoder Mihon uses, which makes the app about 11 MB smaller.
 
