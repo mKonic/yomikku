@@ -11,6 +11,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Other` - for technical stuff.
 
 ## [Unreleased]
+### Changed
+- Covers and images decode with the same image decoder Mihon uses, which makes the app about 11 MB smaller.
+
 ### Improved
 - The browse feed refreshes once each time the browse tab is opened, not on every navigation back to it.
 
