@@ -67,6 +67,23 @@ data object BrowseTab : Tab {
         switchToExtensionTabChannel.trySend(Unit)
     }
 
+    // SY -->
+    private val feedRefreshChannel = Channel<Unit>(Channel.CONFLATED)
+    private var feedRefreshNotified = false
+
+    /** Refreshes the feed once each time the browse tab is selected. */
+    fun onBrowseTabSelected(isSelected: Boolean) {
+        if (isSelected) {
+            if (!feedRefreshNotified) {
+                feedRefreshNotified = true
+                feedRefreshChannel.trySend(Unit)
+            }
+        } else {
+            feedRefreshNotified = false
+        }
+    }
+    // SY <--
+
     @Composable
     override fun Content() {
         val context = LocalContext.current
@@ -135,6 +152,13 @@ data object BrowseTab : Tab {
             bulkFavoriteScreenModel = bulkFavoriteScreenModel,
             // KMK <--
         )
+        // SY -->
+        LaunchedEffect(Unit) {
+            feedRefreshChannel.receiveAsFlow().collect {
+                if (!hideFeedTab) feedScreenModel.init()
+            }
+        }
+        // SY <--
         LaunchedEffect(Unit) {
             switchToExtensionTabChannel.receiveAsFlow()
                 .collectLatest { state.scrollToPage(/* SY --> */if (hideFeedTab) 1 else 2/* SY <-- */) }

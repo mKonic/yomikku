@@ -77,7 +77,6 @@ open class FeedScreenModel(
     val events = _events.receiveAsFlow()
 
     private val coroutineDispatcher = Executors.newFixedThreadPool(1).asCoroutineDispatcher()
-    var pushed: Boolean = false
 
     init {
         getFeedSavedSearchGlobal.subscribe()
@@ -108,7 +107,6 @@ open class FeedScreenModel(
     }
 
     fun init() {
-        pushed = false
         screenModelScope.launchIO {
             val newItems = state.value.items?.map { it.copy(results = null) } ?: return@launchIO
             mutableState.update { state ->
