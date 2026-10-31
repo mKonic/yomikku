@@ -111,7 +111,6 @@ fun TabbedScreen(
                             TabText(
                                 text = stringResource(tab.titleRes),
                                 badgeCount = tab.badgeNumber,
-                                spaceConstrained = true,
                             )
                         },
                         unselectedContentColor = MaterialTheme.colorScheme.onSurface,
