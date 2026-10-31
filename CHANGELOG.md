@@ -10,6 +10,16 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+## [Unreleased]
+### Improved
+- The browse feed refreshes once each time the browse tab is opened, not on every navigation back to it.
+
+### Fixed
+- Read downloads of entries in no category were deleted even with the Default category excluded from deletion.
+- A failed extension update could leave the extension uninstalled.
+- Tab badges disappeared when the tab label was too long.
+- An exclusion search in the library (`-word`) hid every local source entry.
+
 ## [v1.5.0] - 2026-10-24
 ### Added
 - A setting under Advanced to keep credentials out of logged request headers (on by default).
