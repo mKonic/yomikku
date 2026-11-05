@@ -294,6 +294,21 @@ open class BrowseSourceScreenModel(
         }
     }
 
+    /**
+     * Applies [filters] using the current search field text as the query. An empty field means
+     * filters only, instead of keeping the query of the previous search.
+     */
+    fun searchWithFilters(filters: FilterList) {
+        if (filters !== state.value.filters) setFilters(filters)
+        val query = state.value.toolbarQuery?.takeIf(String::isNotBlank)
+        mutableState.update {
+            it.copy(
+                listing = Listing.Search(query = query, filters = filters),
+                toolbarQuery = query,
+            )
+        }
+    }
+
     fun searchGenre(genreName: String) {
         val defaultFilters = source.getFilterList()
         var genreExists = false

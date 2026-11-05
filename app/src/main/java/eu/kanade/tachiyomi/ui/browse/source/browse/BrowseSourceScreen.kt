@@ -383,7 +383,7 @@ data class BrowseSourceScreen(
                     onDismissRequest = onDismissRequest,
                     filters = state.filters,
                     onReset = screenModel::resetFilters,
-                    onFilter = { screenModel.search(filters = state.filters) },
+                    onFilter = { screenModel.searchWithFilters(state.filters) },
                     onUpdate = screenModel::setFilters,
                     // SY -->
                     startExpanded = screenModel.startExpanded,
