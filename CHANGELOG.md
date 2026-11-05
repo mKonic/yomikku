@@ -10,6 +10,19 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
+## [Unreleased]
+### Added
+- Extensions are found on ROMs that hide the list of installed apps behind an extra permission (such as Honor's
+  MagicOS): the app asks for it.
+
+### Fixed
+- The library update could stay at 0% forever when it couldn't start as a foreground job (seen on Android 8).
+- Applying source filters after clearing the search field searched the previous query again.
+- A store refresh could replace a saved store with a different store, listing its extensions under the wrong store,
+  and re-enabled a disabled store whose address had moved.
+- An extension update signed by a different key now stops with a message instead of failing to install.
+- A cover that the device's image decoder failed on could crash the app while reading its colours.
+
 ## [v1.6.0] - 2026-10-31
 ### Changed
 - Covers and images decode with the same image decoder Mihon uses, which makes the app about 11 MB smaller.
