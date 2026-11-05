@@ -5,6 +5,7 @@ import android.app.SearchManager
 import android.app.assist.AssistContent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +15,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -85,7 +87,9 @@ import eu.kanade.tachiyomi.data.updater.AppUpdateJob
 import eu.kanade.tachiyomi.debug.stress.StressHooks
 import eu.kanade.tachiyomi.debug.stress.StressMode
 import eu.kanade.tachiyomi.debug.stress.StressRunner
+import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.api.ExtensionApi
+import eu.kanade.tachiyomi.extension.util.InstalledAppsPermission
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.browse.source.browse.BrowseSourceScreen
 import eu.kanade.tachiyomi.ui.browse.source.feed.SourceFeedScreen
@@ -191,6 +195,46 @@ class MainActivity : BaseActivity() {
     }
 
     private var runExhConfigureDialog by mutableStateOf(false)
+
+    // KMK -->
+    // Some ROMs (Honor/MagicOS) gate the installed-package list behind an extra runtime permission:
+    // without it no extension is found.
+    private var installedAppsPermissionRequested = false
+    private var hadInstalledAppsPermission = false
+    private val installedAppsPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) {
+        refreshInstalledAppsPermission()
+    }
+
+    private fun refreshInstalledAppsPermission() {
+        val granted = checkSelfPermission(InstalledAppsPermission.NAME) == PackageManager.PERMISSION_GRANTED
+        val newlyGranted = granted && !hadInstalledAppsPermission
+        hadInstalledAppsPermission = granted
+        if (newlyGranted) {
+            lifecycleScope.launchIO {
+                Injekt.get<ExtensionManager>().reloadInstalledExtensions()
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!InstalledAppsPermission.isRuntimePermission(this)) return
+
+        refreshInstalledAppsPermission()
+        if (!hadInstalledAppsPermission && !installedAppsPermissionRequested) {
+            installedAppsPermissionRequested = true
+            installedAppsPermissionLauncher.launch(InstalledAppsPermission.NAME)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean(STATE_INSTALLED_APPS_REQUESTED, installedAppsPermissionRequested)
+        outState.putBoolean(STATE_HAD_INSTALLED_APPS, hadInstalledAppsPermission)
+        super.onSaveInstanceState(outState)
+    }
+    // KMK <--
     // SY <--
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -200,6 +244,12 @@ class MainActivity : BaseActivity() {
         val splashScreen = if (isLaunch) installSplashScreen() else null
 
         super.onCreate(savedInstanceState)
+
+        // KMK -->
+        installedAppsPermissionRequested = savedInstanceState?.getBoolean(STATE_INSTALLED_APPS_REQUESTED) ?: false
+        hadInstalledAppsPermission = savedInstanceState?.getBoolean(STATE_HAD_INSTALLED_APPS)
+            ?: (checkSelfPermission(InstalledAppsPermission.NAME) == PackageManager.PERMISSION_GRANTED)
+        // KMK <--
 
         val didMigration = if (isLaunch) {
             Migrator.awaitAndRelease()
@@ -753,6 +803,11 @@ class MainActivity : BaseActivity() {
         const val INTENT_SEARCH = "eu.kanade.tachiyomi.SEARCH"
         const val INTENT_SEARCH_QUERY = "query"
         const val INTENT_SEARCH_FILTER = "filter"
+
+        // KMK -->
+        private const val STATE_INSTALLED_APPS_REQUESTED = "installed_apps_permission_requested"
+        private const val STATE_HAD_INSTALLED_APPS = "had_installed_apps_permission"
+        // KMK <--
     }
 }
 
