@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.extension.api
 
 import android.content.Context
+import eu.kanade.domain.extension.interactor.RefreshExtensionStores
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.ExtensionManager
 import eu.kanade.tachiyomi.extension.model.Extension
@@ -8,7 +9,6 @@ import eu.kanade.tachiyomi.extension.model.LoadResult
 import eu.kanade.tachiyomi.extension.model.findUpdate
 import eu.kanade.tachiyomi.extension.util.ExtensionLoader
 import mihon.domain.extension.interactor.AddExtensionStore
-import mihon.domain.extension.interactor.UpdateExtensionStores
 import mihon.domain.extension.model.YOMIKKU_STORE_URL
 import mihon.domain.extension.repository.ExtensionStoreRepository
 import tachiyomi.core.common.preference.Preference
@@ -25,7 +25,7 @@ internal class ExtensionApi {
     private val repository: ExtensionStoreRepository by injectLazy()
 
     private val preferenceStore: PreferenceStore by injectLazy()
-    private val updateExtensionStores: UpdateExtensionStores by injectLazy()
+    private val refreshExtensionStores: RefreshExtensionStores by injectLazy()
     private val addExtensionStore: AddExtensionStore by injectLazy()
     private val extensionManager: ExtensionManager by injectLazy()
 
@@ -75,7 +75,7 @@ internal class ExtensionApi {
             return null
         }
 
-        updateExtensionStores()
+        refreshExtensionStores()
 
         val extensions = if (fromAvailableExtensionList) {
             extensionManager.availableExtensionsFlow.value
