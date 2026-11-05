@@ -5,7 +5,9 @@ import androidx.palette.graphics.Palette
 import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.coil.MangaCoverMetadata.setRatioAndColors
 import eu.kanade.tachiyomi.ui.manga.MangaScreenModel
+import logcat.LogPriority
 import okio.BufferedSource
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.model.MangaCover
 import uy.kohesive.injekt.injectLazy
@@ -122,13 +124,17 @@ object MangaCoverMetadata {
             ?: coverCache.getCustomCoverFile(mangaCover.mangaId).takeIf { it.exists() }
             ?: coverCache.getCoverFile(mangaCover.url)
 
-        val bitmap = when {
-            bufferedSource != null -> bufferedSource.inputStream().use { BitmapFactory.decodeStream(it, null, options) }
-            // if the file exists and the there was still an error then the file is corrupted
-            file?.exists() == true -> BitmapFactory.decodeFile(file.path, options)
-            else -> {
-                return
+        // Some OEM decoders throw from BitmapFactory (MediaTek's DcfDecoder hook); a bad cover only skips its colours.
+        val bitmap = try {
+            when {
+                bufferedSource != null -> bufferedSource.inputStream().use { BitmapFactory.decodeStream(it, null, options) }
+                // if the file exists and the there was still an error then the file is corrupted
+                file?.exists() == true -> BitmapFactory.decodeFile(file.path, options)
+                else -> return
             }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e) { "Failed to decode cover for colours" }
+            return
         }
 
         if (bitmap != null) {

@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.data.cache.CoverCache
 import eu.kanade.tachiyomi.data.coil.MangaCoverFetcher.Companion.USE_CUSTOM_COVER_KEY
 import eu.kanade.tachiyomi.network.await
 import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,7 +73,15 @@ class MangaCoverFetcher(
 ) : Fetcher {
 
     // KMK -->
-    private val scope by lazy { CoroutineScope(Dispatchers.IO) }
+    // Detached from any caller, so an uncaught throw here (an OEM BitmapFactory hook failing) would kill
+    // the process. The colours are cosmetic.
+    private val scope by lazy {
+        CoroutineScope(
+            Dispatchers.IO + CoroutineExceptionHandler { _, e ->
+                logcat(LogPriority.ERROR, e) { "Failed to preload cover colours" }
+            },
+        )
+    }
     private val uiPreferences = Injekt.get<UiPreferences>()
     private val themeCoverBased = uiPreferences.themeCoverBased().get()
     private val preloadLibraryColor = uiPreferences.preloadLibraryColor().get()

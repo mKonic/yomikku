@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
@@ -29,7 +30,11 @@ suspend fun CoroutineWorker.setForegroundSafely() {
     try {
         setForeground(getForegroundInfo())
         delay(500)
-    } catch (e: IllegalStateException) {
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        // IllegalStateException when not allowed, or a RuntimeException wrapping
+        // TransactionTooLargeException from startForegroundService: run in the background instead.
         logcat(LogPriority.ERROR, e) { "Not allowed to set foreground job" }
     }
 }

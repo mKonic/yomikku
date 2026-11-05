@@ -154,46 +154,51 @@ class LibraryUpdateJob(private val context: Context, workerParams: WorkerParamet
 
         // KMK -->
         libraryUpdateStatus.start()
-
-        deleteLibraryUpdateErrors.cleanUnrelevantMangaErrors()
         // KMK <--
 
-        setForegroundSafely()
+        // The cleanup sits in an outer finally: anything thrown before the update loop (pruning stale
+        // errors, going foreground, building the queue) would otherwise leave the banner at 0% and the
+        // progress notification up for the life of the process.
+        return try {
+            // KMK -->
+            deleteLibraryUpdateErrors.cleanUnrelevantMangaErrors()
+            // KMK <--
 
-        val target = inputData.getString(KEY_TARGET)?.let { Target.valueOf(it) } ?: Target.CHAPTERS
+            setForegroundSafely()
 
-        // If this is a chapter update, set the last update time to now
-        if (target == Target.CHAPTERS) {
-            libraryPreferences.lastUpdatedTimestamp().set(Instant.now().toEpochMilli())
-        }
+            val target = inputData.getString(KEY_TARGET)?.let { Target.valueOf(it) } ?: Target.CHAPTERS
 
-        val categoryId = inputData.getLong(KEY_CATEGORY, -1L)
-        // SY -->
-        val group = inputData.getInt(KEY_GROUP, LibraryGroup.BY_DEFAULT)
-        val groupExtra = inputData.getString(KEY_GROUP_EXTRA)
-        // SY <--
-        addMangaToQueue(categoryId, group, groupExtra)
+            // If this is a chapter update, set the last update time to now
+            if (target == Target.CHAPTERS) {
+                libraryPreferences.lastUpdatedTimestamp().set(Instant.now().toEpochMilli())
+            }
 
-        return withIOContext {
-            try {
+            val categoryId = inputData.getLong(KEY_CATEGORY, -1L)
+            // SY -->
+            val group = inputData.getInt(KEY_GROUP, LibraryGroup.BY_DEFAULT)
+            val groupExtra = inputData.getString(KEY_GROUP_EXTRA)
+            // SY <--
+            addMangaToQueue(categoryId, group, groupExtra)
+
+            withIOContext {
                 when (target) {
                     Target.CHAPTERS -> updateChapterList()
                 }
-                Result.success()
-            } catch (e: Exception) {
-                if (e is CancellationException) {
-                    // Assume success although cancelled
-                    Result.success()
-                } else {
-                    logcat(LogPriority.ERROR, e)
-                    Result.failure()
-                }
-            } finally {
-                notifier.cancelProgressNotification()
-                // KMK -->
-                libraryUpdateStatus.stop()
-                // KMK <--
             }
+            Result.success()
+        } catch (e: Exception) {
+            if (e is CancellationException) {
+                // Assume success although cancelled
+                Result.success()
+            } else {
+                logcat(LogPriority.ERROR, e)
+                Result.failure()
+            }
+        } finally {
+            notifier.cancelProgressNotification()
+            // KMK -->
+            libraryUpdateStatus.stop()
+            // KMK <--
         }
     }
 
