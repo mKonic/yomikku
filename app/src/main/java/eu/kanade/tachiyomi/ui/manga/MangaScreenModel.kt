@@ -542,12 +542,15 @@ class MangaScreenModel(
                     MangaUpdate(
                         manga.id,
                         title = newTitle,
-                        author = newAuthor,
-                        artist = newArtist,
+                        // KMK -->
+                        // A null field means "unchanged" here, so blank ones are written empty to clear them
+                        author = newAuthor.orEmpty(),
+                        artist = newArtist.orEmpty(),
                         thumbnailUrl = newThumbnailUrl,
-                        description = newDesc,
+                        description = newDesc.orEmpty(),
                         genre = tags,
-                        status = status,
+                        status = status ?: 0,
+                        // KMK <--
                     ),
                 )
             }

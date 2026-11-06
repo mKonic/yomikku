@@ -16,6 +16,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
   MagicOS): the app asks for it.
 
 ### Fixed
+- Reset info on a local source entry didn't clear its author, artist, description or status.
 - The library update could stay at 0% forever when it couldn't start as a foreground job (seen on Android 8).
 - Applying source filters after clearing the search field searched the previous query again.
 - A store refresh could replace a saved store with a different store, listing its extensions under the wrong store,
