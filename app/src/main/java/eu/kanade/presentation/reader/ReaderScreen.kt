@@ -1,5 +1,6 @@
 package eu.kanade.presentation.reader
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +32,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,11 +44,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 import eu.kanade.tachiyomi.ui.reader.ReaderViewModel
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences.ReadingMode
@@ -110,6 +115,18 @@ fun ReaderScreen(
     val autoScrollSpeed = autoScrollSetting.takeIf {
         state.autoScrolling && !state.menuVisible && !state.speaking && state.dialog == null
     } ?: 0
+
+    // System bar icons contrast with what is under them: the menu's bars, or else the page
+    val view = LocalView.current
+    val lightAppBars = MaterialTheme.colorScheme.surface.luminance() > 0.5f
+    LaunchedEffect(state.menuVisible, style.background, lightAppBars) {
+        val window = (view.context as? Activity)?.window ?: return@LaunchedEffect
+        val lightBehindBars = if (state.menuVisible) lightAppBars else style.background.luminance() > 0.5f
+        WindowCompat.getInsetsController(window, view).apply {
+            isAppearanceLightStatusBars = lightBehindBars
+            isAppearanceLightNavigationBars = lightBehindBars
+        }
+    }
 
     CompositionLocalProvider(LocalDownloadedChapters provides state.downloadedChapterIds) {
         Box(

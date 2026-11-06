@@ -22,6 +22,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
   entry's cover, which can be changed or reset there.
 
 ### Fixed
+- Reader: the status and navigation bar icons were white over the Light and Sepia themes in dark mode.
 - Reset info on a local source entry didn't clear its author, artist, description or status.
 - The library update could stay at 0% forever when it couldn't start as a foreground job (seen on Android 8).
 - Applying source filters after clearing the search field searched the previous query again.
