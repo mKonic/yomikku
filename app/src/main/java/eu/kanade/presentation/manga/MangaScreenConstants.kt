@@ -7,6 +7,10 @@ enum class DownloadAction {
     NEXT_25_CHAPTERS,
     UNREAD_CHAPTERS,
     BOOKMARKED_CHAPTERS,
+
+    // KMK -->
+    ALL_CHAPTERS,
+    // KMK <--
 }
 
 enum class EditCoverAction {

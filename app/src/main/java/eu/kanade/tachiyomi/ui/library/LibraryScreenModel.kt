@@ -796,7 +796,10 @@ class LibraryScreenModel(
             DownloadAction.NEXT_10_CHAPTERS -> downloadNextChapters(10)
             DownloadAction.NEXT_25_CHAPTERS -> downloadNextChapters(25)
             DownloadAction.UNREAD_CHAPTERS -> downloadNextChapters(null)
-            DownloadAction.BOOKMARKED_CHAPTERS -> downloadBookmarkedChapters()
+            // KMK -->
+            DownloadAction.BOOKMARKED_CHAPTERS -> downloadChapters { getBookmarkedChaptersByMangaId.await(it.id) }
+            DownloadAction.ALL_CHAPTERS -> downloadChapters { getChaptersByMangaId.await(it.id, applyFilter = true) }
+            // KMK <--
         }
         clearSelection()
     }
@@ -825,12 +828,17 @@ class LibraryScreenModel(
         }
     }
 
-    private fun downloadBookmarkedChapters() {
+    // KMK -->
+    /**
+     * Queues the chapters [loadChapters] returns for each selected entry, skipping ones already queued or downloaded.
+     */
+    private fun downloadChapters(loadChapters: suspend (Manga) -> List<Chapter>) {
+        // KMK <--
         val mangas = state.value.selectedManga
         screenModelScope.launchNonCancellable {
             mangas.forEach { manga ->
 
-                val chapters = getBookmarkedChaptersByMangaId.await(manga.id)
+                val chapters = loadChapters(manga)
                     .fastFilterNot { chapter ->
                         downloadManager.getQueuedDownloadOrNull(chapter.id) != null ||
                             downloadManager.isChapterDownloaded(

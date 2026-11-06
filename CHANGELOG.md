@@ -12,6 +12,8 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 
 ## [Unreleased]
 ### Added
+- An "All" download option, on the entry page and for library selections, that queues every chapter not yet
+  downloaded, read or not.
 - Extensions are found on ROMs that hide the list of installed apps behind an extra permission (such as Honor's
   MagicOS): the app asks for it.
 
