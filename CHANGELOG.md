@@ -17,6 +17,10 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - Extensions are found on ROMs that hide the list of installed apps behind an extra permission (such as Honor's
   MagicOS): the app asks for it.
 
+### Changed
+- Edit info and the download queue are redrawn in Material 3, matching the rest of the app. Edit info shows the
+  entry's cover, which can be changed or reset there.
+
 ### Fixed
 - Reset info on a local source entry didn't clear its author, artist, description or status.
 - The library update could stay at 0% forever when it couldn't start as a foreground job (seen on Android 8).
@@ -25,6 +29,9 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
   and re-enabled a disabled store whose address had moved.
 - An extension update signed by a different key now stops with a message instead of failing to install.
 - A cover that the device's image decoder failed on could crash the app while reading its colours.
+
+### Other
+- The remaining XML screens moved to Jetpack Compose; the FlexibleAdapter library is gone.
 
 ## [v1.6.0] - 2026-10-31
 ### Changed
