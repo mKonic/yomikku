@@ -10,7 +10,7 @@ The format is a modified version of [Keep a Changelog](https://keepachangelog.co
 - `Fixed` - for any bug fixes.
 - `Other` - for technical stuff.
 
-## [Unreleased]
+## [v1.7.0] - 2026-11-07
 ### Added
 - An "All" download option, on the entry page and for library selections, that queues every chapter not yet
   downloaded, read or not.
