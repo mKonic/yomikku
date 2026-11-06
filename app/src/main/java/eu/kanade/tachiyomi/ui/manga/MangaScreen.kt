@@ -62,6 +62,7 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.source.ConfigurableSource
 import eu.kanade.tachiyomi.source.Source
+import eu.kanade.tachiyomi.source.getNameForMangaInfo
 import eu.kanade.tachiyomi.source.isLocalOrStub
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.browse.BulkFavoriteScreenModel
@@ -504,13 +505,23 @@ class MangaScreen(
             }
             // SY -->
             is MangaScreenModel.Dialog.EditMangaInfo -> {
+                val coverSm = rememberScreenModel { MangaCoverScreenModel(successState.manga.id) }
+                val coverManga by coverSm.state.collectAsState()
+                val getContent = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) {
+                    if (it == null) return@rememberLauncherForActivityResult
+                    coverSm.editCover(context, it)
+                }
                 EditMangaDialog(
                     manga = dialog.manga,
+                    coverManga = coverManga,
+                    sourceName = remember { successState.source.getNameForMangaInfo() },
                     // KMK -->
                     coverRatio = coverRatio,
                     // KMK <--
                     onDismissRequest = screenModel::dismissDialog,
                     onPositiveClick = screenModel::updateMangaInfo,
+                    onCoverClick = { getContent.launch("image/*") },
+                    onResetCoverClick = { coverSm.deleteCustomCover(context) },
                 )
             }
 
